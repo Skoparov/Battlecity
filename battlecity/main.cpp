@@ -1,6 +1,8 @@
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
 
+#include "MapData.h"
+
 #include "ecs/framework/world.h"
 #include "ecs/components.h"
 
@@ -40,32 +42,43 @@ public:
 
 int main(int argc, char *argv[])
 {
-    ecs::world world;
+//    ecs::world world;
 
-    health_system system{ world };
-    world.add_system( system );
+//    health_system system{ world };
+//    world.add_system( system );
 
-    my_subscription sub;
-    world.subscribe< death >( sub );
-
-
-    ecs::entity& e = world.create_entity();
-    ecs::entity& e1 = world.create_entity();
-
-    uint32_t max_health{ 3 };
-
-    e.add_component< component::health >( max_health );
-    e1.add_component< component::health >( max_health );
+//    my_subscription sub;
+//    world.subscribe< death >( sub );
 
 
+//    ecs::entity& e = world.create_entity();
+//    ecs::entity& e1 = world.create_entity();
 
-    world.tick();
+//    uint32_t max_health{ 3 };
 
-    QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
-    QGuiApplication app(argc, argv);
+//    e.add_component< component::health >( max_health );
+//    e1.add_component< component::health >( max_health );
 
-    QQmlApplicationEngine engine;
-    engine.load(QUrl(QLatin1String("qrc:/main.qml")));
+
+
+//    world.tick();
+
+    try
+        {
+            MapData d{ read_map_file( QStringLiteral( ":/maps/map_1" ) ) };
+            int i =0;
+            ++i;
+        }
+        catch( const std::exception& e )
+        {
+            std::string  a= e.what();
+            int  i =0;
+        }
+
+        QGuiApplication app(argc, argv);
+
+        QQmlApplicationEngine engine;
+        engine.load( QUrl{ QStringLiteral( "qrc:/qml/main.qml" ) } );
 
     return app.exec();
 }

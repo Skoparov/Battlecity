@@ -3,7 +3,7 @@
 namespace ecs
 {
 
-entity_id generate_entity_id( const std::map< entity_id, entity >& present_entries )
+entity_id generate_entity_id( const std::unordered_map< entity_id, entity >& present_entries )
 {
     numeric_id id{ generate_numeric_id() };
     while( present_entries.count( id ) )

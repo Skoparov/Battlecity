@@ -20,7 +20,7 @@ public:
     entity_caused_event() = default;
 
     void add_target_entity( ecs::entity_id id );
-    const std::vector< ecs::entity_id > get_entities() const noexcept;
+    const std::vector< ecs::entity_id >& get_entities() const noexcept;
 
 private:
     std::vector< ecs::entity_id > m_entities;

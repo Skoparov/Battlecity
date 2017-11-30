@@ -108,8 +108,7 @@ private:
     std::list< system* > m_systems_to_remove;
     std::list< entity_id > m_entities_to_remove;
 
-    std::unordered_map< event_id,
-                        std::unordered_set< detail::event_callback_base* > > m_subscribers;
+    std::unordered_map< event_id, std::unordered_set< detail::event_callback_base* > > m_subscribers;
 };
 
 }// ecs

@@ -13,6 +13,10 @@ HEADERS += \
         ecs/components.h \
         ecs/events.h \
         ecs/systems.h \
+# game stuff
+        MapInterface.h \
+        MapData.h
+
 
 SOURCES += \
         main.cpp \
@@ -26,6 +30,9 @@ SOURCES += \
         ecs/components.cpp \
         ecs/events.cpp \
         ecs/systems.cpp \
+# game stuff
+        MapInterface.cpp \
+        MapData.cpp
 
 RESOURCES += qml.qrc
 
