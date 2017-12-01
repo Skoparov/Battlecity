@@ -7,10 +7,41 @@
 namespace game
 {
 
+enum class tile_type{ wall, empty, player_base };
+enum class tank_type{ player, enemy };
+
 namespace component
 {
 
-class projectile{};
+class tile_object
+{
+public:
+    tile_object() = default;
+    tile_object( const tile_type& type ) noexcept;
+
+    void set_tile_type( const tile_type& type ) noexcept;
+    const tile_type& get_tile_type() const noexcept;
+
+private:
+    tile_type m_tile_type{ tile_type::empty };
+};
+
+//
+
+class tank_object
+{
+public:
+    tank_object() = default;
+    tank_object( const tank_type& type ) noexcept;
+
+    void set_tank_type( const tank_type& type ) noexcept;
+    const tank_type& get_tank_type() const noexcept;
+
+private:
+    tank_type m_tank_type{ tank_type::enemy };
+};
+
+//
 
 class geometry final
 {
@@ -33,11 +64,43 @@ private:
     int m_rotation{ 0 };
 };
 
+//
+
+class traversibility final
+{
+public:
+    traversibility() = default;
+    explicit traversibility( bool traversible ) noexcept;
+
+    void set_traversible( bool traversible ) noexcept;
+    bool set_traversible() const noexcept;
+
+private:
+    bool m_traversible{ true };
+};
+
+//
+
+class graphics final
+{
+public:
+    graphics() = default;
+    explicit graphics( const QString& image_path );
+
+    void set_image_path( const QString& image_path );
+    const QString& get_image_path() const noexcept;
+
+private:
+    QString m_image_path;
+};
+
+//
+
 class health final
 {
 public:
     health() = default;
-    health( uint32_t max_health ) noexcept;
+    explicit health( uint32_t max_health ) noexcept;
 
     void increase( uint32_t value ) noexcept;
     void decrease( uint32_t value ) noexcept;
@@ -50,11 +113,6 @@ public:
 private:
     uint32_t m_health{ 0 };
     const uint32_t m_max_health{ 0 };
-};
-
-struct object_graphics
-{
-    QString image_path;
 };
 
 }// components

@@ -6,7 +6,8 @@ Item
     width: modelData.width
     height: modelData.height
 
-    Image {
+    Image
+    {
         id: tileBackground
         anchors.centerIn: parent
         source: modelData.objectImagePath

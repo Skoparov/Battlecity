@@ -13,9 +13,13 @@ HEADERS += \
         ecs/components.h \
         ecs/events.h \
         ecs/systems.h \
+        ecs/entity_factory.h \
 # game stuff
-        MapInterface.h \
-        MapData.h
+        map_objects/base_map_object.h \
+        map_objects/graphics_map_object.h \
+        map_objects/tile_map_object.h \
+        map_interface.h \
+        map_data.h
 
 
 SOURCES += \
@@ -30,14 +34,12 @@ SOURCES += \
         ecs/components.cpp \
         ecs/events.cpp \
         ecs/systems.cpp \
+        ecs/entity_factory.cpp \
 # game stuff
-        MapInterface.cpp \
-        MapData.cpp
+        map_objects/base_map_object.cpp \
+        map_objects/graphics_map_object.cpp \
+        map_objects/tile_map_object.cpp \
+        map_interface.cpp \
+        map_data.cpp
 
 RESOURCES += qml.qrc
-
-# Additional import path used to resolve QML modules in Qt Creator's code model
-QML_IMPORT_PATH =
-
-# Default rules for deployment.
-include(deployment.pri)

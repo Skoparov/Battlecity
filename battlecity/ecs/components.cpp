@@ -6,8 +6,39 @@ namespace game
 namespace component
 {
 
+tile_object::tile_object( const tile_type& type ) noexcept :
+    m_tile_type( type ){}
+
+void tile_object::set_tile_type( const tile_type& type ) noexcept
+{
+    m_tile_type = type;
+}
+
+const tile_type& tile_object::get_tile_type() const noexcept
+{
+    return m_tile_type;
+}
+
+//
+
+tank_object::tank_object( const tank_type& type ) noexcept :
+    m_tank_type( type ){}
+
+void tank_object::set_tank_type( const tank_type& type ) noexcept
+{
+    m_tank_type = type;
+}
+
+const tank_type& tank_object::get_tank_type() const noexcept
+{
+    return m_tank_type;
+}
+
+//
+
 geometry::geometry( const QRect& rect, int rotation ) noexcept:
-    m_rect( rect ), m_rotation( rotation ) {}
+    m_rect( rect ),
+    m_rotation( rotation ){}
 
 bool geometry::intersects_with( const geometry& other ) const noexcept
 {
@@ -37,6 +68,36 @@ int geometry::get_rotation() const noexcept
 const QRect &geometry::get_rect() const noexcept
 {
     return m_rect;
+}
+
+//
+
+traversibility::traversibility( bool traversible ) noexcept :
+    m_traversible( traversible ){}
+
+void traversibility::set_traversible( bool traversible ) noexcept
+{
+    m_traversible = traversible;
+}
+
+bool traversibility::set_traversible() const noexcept
+{
+    return m_traversible;
+}
+
+//
+
+graphics::graphics( const QString& image_path ) :
+    m_image_path( image_path ){}
+
+void graphics::set_image_path( const QString& image_path )
+{
+    m_image_path = image_path;
+}
+
+const QString &graphics::get_image_path() const noexcept
+{
+    return m_image_path;
 }
 
 //

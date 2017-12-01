@@ -1,7 +1,9 @@
+#include <iostream>
+
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
 
-#include "MapData.h"
+#include "map_interface.h"
 
 #include "ecs/framework/world.h"
 #include "ecs/components.h"
@@ -30,10 +32,10 @@ public:
     void tick() override
     {
         m_world.for_each< component::health >(
-            []( ecs::entity& e, component::health& h )
-            {
-                //h.
-            } );
+                    []( ecs::entity& e, component::health& h )
+        {
+            //h.
+        } );
 
         death e;
         m_world.emit_event( e );
@@ -42,43 +44,48 @@ public:
 
 int main(int argc, char *argv[])
 {
-//    ecs::world world;
+    //    ecs::world world;
 
-//    health_system system{ world };
-//    world.add_system( system );
+    //    health_system system{ world };
+    //    world.add_system( system );
 
-//    my_subscription sub;
-//    world.subscribe< death >( sub );
-
-
-//    ecs::entity& e = world.create_entity();
-//    ecs::entity& e1 = world.create_entity();
-
-//    uint32_t max_health{ 3 };
-
-//    e.add_component< component::health >( max_health );
-//    e1.add_component< component::health >( max_health );
+    //    my_subscription sub;
+    //    world.subscribe< death >( sub );
 
 
+    //    ecs::entity& e = world.create_entity();
+    //    ecs::entity& e1 = world.create_entity();
 
-//    world.tick();
+    //    uint32_t max_health{ 3 };
+
+    //    e.add_component< component::health >( max_health );
+    //    e1.add_component< component::health >( max_health );
+
+
+
+    //    world.tick();
+
+    int exit_code{ 0 };
 
     try
-        {
-            MapData d{ read_map_file( QStringLiteral( ":/maps/map_1" ) ) };
-            int i =0;
-            ++i;
-        }
-        catch( const std::exception& e )
-        {
-            std::string  a= e.what();
-            int  i =0;
-        }
+    {
+        ecs::world world;
 
-        QGuiApplication app(argc, argv);
+        map_interface interface{ world };
+        interface.load_level( 1 );
 
-        QQmlApplicationEngine engine;
-        engine.load( QUrl{ QStringLiteral( "qrc:/qml/main.qml" ) } );
+//        QQmlApplicationEngine engine;
+//        engine.rootContext()->setContextProperty( "map_interface", map_interface );
+//        engine.load( QUrl{ QStringLiteral( "qrc:/qml/main.qml" ) } );
 
-    return app.exec();
+        QGuiApplication app{ argc, argv };
+        exit_code = app.exec();
+    }
+    catch( const std::exception& e )
+    {
+        std::cerr << e.what() << std::endl;
+        exit_code = 1;
+    }
+
+
 }

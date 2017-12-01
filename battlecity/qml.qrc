@@ -3,6 +3,10 @@
         <file>qml/main.qml</file>
         <file>qml/MainWindow.ui.qml</file>
         <file>qml/tile.qml</file>
+
         <file>maps/map_1</file>
+
+        <file>graphics/tile_empty.png</file>
+        <file>graphics/tile_wall.png</file>
     </qresource>
 </RCC>
