@@ -3,7 +3,7 @@
 #include <QFile>
 #include <QTextStream>
 
-#include "ecs/components.h"
+#include "ecs/entity_factory.h"
 
 #define TILE_EMPTY 'e'
 #define TILE_WALL 'w'
@@ -12,16 +12,9 @@
 namespace game
 {
 
-map_data::map_data( const QSize& map_size, const QSize& tile_size, ecs::world* world ) noexcept:
+map_data::map_data(const QSize& map_size, const QSize& tile_size) noexcept:
     m_map_size( map_size ),
-    m_tile_size( tile_size ),
-    m_world( world )
-{
-    if( !m_world )
-    {
-        throw std::invalid_argument{ "World pointer is not initialized" };
-    }
-}
+    m_tile_size( tile_size ){}
 
 int map_data::get_rows_count() const noexcept
 {
@@ -48,7 +41,7 @@ int map_data::get_tile_height() const noexcept
     return m_tile_size.height();
 }
 
-const QSize &map_data::get_tile_size() const noexcept
+const QSize& map_data::get_tile_size() const noexcept
 {
     return m_tile_size;
 }
@@ -92,10 +85,11 @@ map_data read_map_file( const QString& file, ecs::world& world )
     QSize tile_size{ tile_width_height.constFirst().toInt(),
                      tile_width_height.constLast().toInt() };
 
-    char tile_char;
-    int columns_count{ 0 };
-    int curr_row_columns_count{ 0 };
     int rows_count{ 0 };
+    int columns_count{ 0 };
+
+    char tile_char;
+    int curr_column{ 0 };
     bool player_base_found{ false };
 
     while( !text_stream.atEnd() )
@@ -117,21 +111,22 @@ map_data read_map_file( const QString& file, ecs::world& world )
             }
 
             //data.tiles_data.insert( QPoint{ curr_row_len, data.rows - 1 }, type );
-            ++curr_row_columns_count;
+            create_tile( type, QPoint{ rows_count, curr_column }, tile_size, 0, world );
+            ++curr_column;
         }
         else
         {
-            if( columns_count && columns_count != curr_row_columns_count )
+            if( columns_count && columns_count != curr_column )
             {
                 throw std::logic_error{ "Length of all tile rows must be equal" };
             }
             else if( !columns_count )
             {
-                columns_count = curr_row_columns_count;
+                columns_count = curr_column;
             }
 
             ++rows_count;
-            curr_row_columns_count = 0;
+            curr_column = 0;
         }
     }
 
@@ -140,7 +135,7 @@ map_data read_map_file( const QString& file, ecs::world& world )
         throw std::logic_error{ "Player base not found" };
     }
 
-    return map_data{ QSize{ rows_count, columns_count }, tile_size, &world };
+    return map_data{ QSize{ rows_count, columns_count }, tile_size };
 }
 
 }// game

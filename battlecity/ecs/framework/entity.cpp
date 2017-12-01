@@ -10,7 +10,7 @@ bool entity::has_component( const component_id& id ) const
     return m_components.count( id ) != 0;
 }
 
-entity_id entity::id() const noexcept
+entity_id entity::get_id() const noexcept
 {
     return m_id;
 }

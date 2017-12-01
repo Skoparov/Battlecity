@@ -50,9 +50,19 @@ void geometry::set_pos(const QPoint& point ) noexcept
     m_rect.setTopLeft( point );
 }
 
-QPoint geometry::get_pos() const noexcept
+const QPoint& geometry::get_pos() const noexcept
 {
     return m_rect.topLeft();
+}
+
+void geometry::set_size( const QSize& size ) noexcept
+{
+    m_rect.setSize( size );
+}
+
+const QSize& geometry::get_size() const noexcept
+{
+    return m_rect.size();
 }
 
 void geometry::set_rotation( int rotation ) noexcept
@@ -72,32 +82,28 @@ const QRect &geometry::get_rect() const noexcept
 
 //
 
-traversibility::traversibility( bool traversible ) noexcept :
-    m_traversible( traversible ){}
-
-void traversibility::set_traversible( bool traversible ) noexcept
-{
-    m_traversible = traversible;
-}
-
-bool traversibility::set_traversible() const noexcept
-{
-    return m_traversible;
-}
-
-//
-
-graphics::graphics( const QString& image_path ) :
-    m_image_path( image_path ){}
+graphics::graphics( const QString& image_path, bool visible ) :
+    m_image_path( image_path ),
+    m_visible( visible ){}
 
 void graphics::set_image_path( const QString& image_path )
 {
     m_image_path = image_path;
 }
 
-const QString &graphics::get_image_path() const noexcept
+const QString& graphics::get_image_path() const noexcept
 {
     return m_image_path;
+}
+
+void graphics::set_visible( bool visible ) noexcept
+{
+    m_visible = visible;
+}
+
+bool graphics::get_visible() const noexcept
+{
+    return m_visible;
 }
 
 //

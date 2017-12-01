@@ -52,7 +52,10 @@ public:
     bool intersects_with( const geometry& other ) const noexcept;
 
     void set_pos( const QPoint& point ) noexcept;
-    QPoint get_pos() const noexcept;
+    const QPoint& get_pos() const noexcept;
+
+    void set_size( const QSize& size ) noexcept;
+    const QSize& get_size() const noexcept;
 
     void set_rotation( int rotation ) noexcept;
     int get_rotation() const noexcept;
@@ -66,18 +69,7 @@ private:
 
 //
 
-class traversibility final
-{
-public:
-    traversibility() = default;
-    explicit traversibility( bool traversible ) noexcept;
-
-    void set_traversible( bool traversible ) noexcept;
-    bool set_traversible() const noexcept;
-
-private:
-    bool m_traversible{ true };
-};
+class non_traversible final{};
 
 //
 
@@ -85,12 +77,16 @@ class graphics final
 {
 public:
     graphics() = default;
-    explicit graphics( const QString& image_path );
+    graphics( const QString& image_path, bool visible );
 
     void set_image_path( const QString& image_path );
     const QString& get_image_path() const noexcept;
 
+    void set_visible( bool visible ) noexcept;
+    bool get_visible() const noexcept;
+
 private:
+    bool m_visible{ true };
     QString m_image_path;
 };
 

@@ -1,53 +1,74 @@
 #include "base_map_object.h"
 
-base_map_object::base_map_object( bool traversible, QObject* parent ):
+#include "ecs/components.h"
+
+namespace game
+{
+
+base_map_object::base_map_object( ecs::entity& entity, const object_type& type, QObject* parent ):
     QObject( parent ),
-    m_traversible( traversible ){}
+    m_entity( entity ),
+    m_object_type( type ){}
+
+ecs::entity_id base_map_object::get_id() const noexcept
+{
+    return m_entity.get_id();
+}
 
 void base_map_object::set_position_x( int x ) noexcept
 {
-    m_position.setX( x );
+
     emit pos_x_changed( x );
 }
 
 int base_map_object::get_position_x() const noexcept
 {
-    return m_position.x();
+    const component::geometry& g = m_entity.get_component< component::geometry >();
+    return g.get_pos().x();
 }
 
 void base_map_object::set_position_y( int y ) noexcept
 {
-    m_position.setY( y );
     emit pos_y_changed( y );
 }
 
 int base_map_object::get_position_y() const noexcept
 {
-    return m_position.y();
+    const component::geometry& g = m_entity.get_component< component::geometry >();
+    return g.get_pos().y();
 }
 
 int base_map_object::get_width() const noexcept
 {
-    return m_width;
+    const component::geometry& g = m_entity.get_component< component::geometry >();
+    return g.get_size().width();
 }
 
 int base_map_object::get_height() const noexcept
 {
-    return m_height;
+    const component::geometry& g = m_entity.get_component< component::geometry >();
+    return g.get_size().height();
 }
 
 void base_map_object::set_rotation( int rotation ) noexcept
 {
-    m_rotation = rotation;
-    emit rotation_changed( rotation );
+
 }
 
 int base_map_object::get_rotation() const noexcept
 {
-    return m_rotation;
+    const component::geometry& g = m_entity.get_component< component::geometry >();
+    return g.get_rotation();
 }
 
 bool base_map_object::get_traversible() const noexcept
 {
-    return m_traversible;
+    return !m_entity.has_component< component::non_traversible >();
 }
+
+const object_type &base_map_object::get_type() const noexcept
+{
+    return m_object_type;
+}
+
+}// game

@@ -5,8 +5,8 @@ Rectangle
 {
     property alias mouseArea: mouseArea
 
-    width: board_grid.width
-    height: board_grid.height
+    width: board.width + 64
+    height: board.height + 128
     color: "gray"
 
     MouseArea
@@ -20,14 +20,15 @@ Rectangle
 
             Grid
             {
-                id: board_grid
-                columns: map_interface.rows_num
-                rows: map_interface.columns_num
+                id: board
+                columns: map_interface.colsCount
+                rows: map_interface.rowsCount
                 spacing: 0
+
                 Repeater
                 {
                     model: map_interface.tiles
-                    tile{}
+                    Tile{}
                 }
             }
         }

@@ -7,16 +7,7 @@
 namespace game
 {
 
-namespace factory
-{
-
-enum class entity_type{ tile, tank, projectile };
-
-template< typename... entity_specific_args >
-ecs::entity& create_entity( const entity_type& type,
-                            ecs::world* world,
-                            entity_specific_args&& ...args );
-}// components
+void create_tile( const tile_type& type, const QPoint& pos, const QSize& size, int rotation, ecs::world& world );
 
 }// game
 

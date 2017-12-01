@@ -33,7 +33,7 @@ entity& world::create_entity()
 
 void world::schedule_destroy_entity( entity& e )
 {
-    m_entities_to_remove.emplace_back( e.id() );
+    m_entities_to_remove.emplace_back( e.get_id() );
 }
 
 void world::add_system( system& system )

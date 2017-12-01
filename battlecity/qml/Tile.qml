@@ -10,7 +10,7 @@ Item
     {
         id: tileBackground
         anchors.centerIn: parent
-        source: modelData.objectImagePath
+        source: modelData.image_path
         rotation: modelData.rotation
     }
 }

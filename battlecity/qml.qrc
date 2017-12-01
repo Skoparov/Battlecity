@@ -2,7 +2,7 @@
     <qresource prefix="/">
         <file>qml/main.qml</file>
         <file>qml/MainWindow.ui.qml</file>
-        <file>qml/tile.qml</file>
+        <file>qml/Tile.qml</file>
 
         <file>maps/map_1</file>
 

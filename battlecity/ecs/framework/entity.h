@@ -48,7 +48,7 @@ public:
         return ch.get< component_type >();
     }
 
-    bool has_component( const component_id& id ) const; //TODO make private
+    bool has_component( const component_id& get_id ) const; //TODO make private
 
     template< typename component_type > //TODO make private
     bool has_component() const
@@ -56,11 +56,11 @@ public:
         return m_components.count( get_type_id< component_type >() ) != 0;
     }
 
-    entity_id id() const noexcept;
+    entity_id get_id() const noexcept;
 
 private:
     entity() = default;
-    explicit entity( entity_id id ) noexcept;
+    explicit entity( entity_id get_id ) noexcept;
 
     template< typename component_type, typename function_type >
     void apply_to( function_type&& func )

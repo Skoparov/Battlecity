@@ -1,7 +1,7 @@
 #ifndef EVENTS_H
 #define EVENTS_H
 
-#include <unordered_set>
+#include <list>
 
 #include "framework/entity.h"
 
@@ -14,25 +14,23 @@ namespace events
 namespace detail
 {
 
-class entity_caused_event
+class causes
 {
 public:
-    entity_caused_event() = default;
-
-    void add_target_entity( ecs::entity_id id );
-    const std::vector< ecs::entity_id >& get_entities() const noexcept;
+    void add_entity( ecs::entity_id id );
+    const std::list< ecs::entity_id >& get_entities() const noexcept;
 
 private:
-    std::vector< ecs::entity_id > m_entities;
+    std::list< ecs::entity_id > m_entities;
 };
 
 }// detail
 
-class entities_killed : public detail::entity_caused_event
+class geometry_changed : public detail::causes
 {
-public:
-    using detail::entity_caused_event::entity_caused_event;
 };
+
+class entities_killed : public detail::causes{};
 
 }// components
 
