@@ -6,10 +6,12 @@
 #include "ecs/events.h"
 #include "ecs/framework/world.h"
 
+#include <cassert>
+
 namespace game
 {
 
-enum class object_type{ tile, enemy_tank, player_tank, undefined };
+enum class object_type{ tile, enemy_tank, player_tank };
 
 class base_map_object : public QObject
 {
@@ -36,7 +38,7 @@ public:
 
     const object_type& get_type() const noexcept;
 
-    Q_PROPERTY( ecs::entity_id object_id READ get_id CONSTANT )
+    Q_PROPERTY( uint32_t object_id READ get_id CONSTANT ) //TODO: Replace by numeric_id
     Q_PROPERTY( int pos_x READ get_position_x WRITE set_position_x NOTIFY pos_x_changed )
     Q_PROPERTY( int pos_y READ get_position_y WRITE set_position_y NOTIFY pos_y_changed )
     Q_PROPERTY( int width READ get_width CONSTANT )

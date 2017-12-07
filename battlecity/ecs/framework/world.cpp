@@ -31,7 +31,12 @@ entity& world::create_entity()
     return res.first->second;
 }
 
-void world::schedule_destroy_entity( entity& e )
+void world::remove_entity( entity& e )
+{
+    m_entities.erase( e.get_id() );
+}
+
+void world::schedule_remove_entity( entity& e )
 {
     m_entities_to_remove.emplace_back( e.get_id() );
 }
@@ -39,6 +44,11 @@ void world::schedule_destroy_entity( entity& e )
 void world::add_system( system& system )
 {
     m_systems.emplace( &system );
+}
+
+void world::remove_system( system& s )
+{
+    m_systems.erase( &s );
 }
 
 void world::schedule_remove_system( system& system )
@@ -53,9 +63,9 @@ void world::cleanup()
         m_entities.erase( id );
     }
 
-    for( system* system : m_systems_to_remove )
+    for( system* s : m_systems_to_remove )
     {
-        m_systems.erase( system );
+        m_systems.erase( s );
     }
 
     m_entities_to_remove.clear();

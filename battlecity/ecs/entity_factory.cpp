@@ -22,6 +22,21 @@ bool tile_traversible( const tile_type& type )
     return traversible;
 }
 
+bool tile_has_health( const tile_type& type )
+{
+    bool has_health{ false };
+
+    switch( type )
+    {
+    case tile_type::empty : has_health = false; break;
+    case tile_type::wall : has_health = false; break;
+    case tile_type::player_base : has_health = true; break;
+    default: throw std::invalid_argument{ "Unimplemented tile type" };
+    }
+
+    return has_health;
+}
+
 QString tile_image_path( const tile_type& type )
 {
     QString image_name;
@@ -42,17 +57,42 @@ constexpr QRect tile_rect( const QPoint& pos, const QSize& size ) noexcept
     return QRect{ pos, QPoint{ pos.x() + size.width(), pos.y() + size.height() } };
 }
 
-void create_tile( const tile_type& type, const QPoint& pos, const QSize& size, int rotation, ecs::world& world )
+ecs::entity& create_entity_tile( const tile_type& type,
+                                 const QPoint& pos,
+                                 const QSize& size,
+                                 ecs::world& world,
+                                 uint32_t max_health )
 {
     ecs::entity& entity = world.create_entity();
 
-    entity.add_component< component::geometry >( tile_rect( pos, size ), rotation );
-    entity.add_component< component::graphics >( tile_image_path( type ), true );
-
-    if( !tile_traversible( type ) )
+    try
     {
-        entity.add_component< component::non_traversible >();
+        entity.add_component< component::geometry >( tile_rect( pos, size ), 0 );
+        entity.add_component< component::graphics >( tile_image_path( type ), true );
+
+        if( !tile_traversible( type ) )
+        {
+            entity.add_component< component::non_traversible >();
+        }
+
+        if( tile_has_health( type ) )
+        {
+            if( !max_health )
+            {
+                throw std::invalid_argument{ "Tile has health but max health is set to 0" };
+            }
+
+            entity.add_component< component::health >( max_health );
+        }
     }
+    catch( ... )
+    {
+        world.remove_entity( entity );
+        throw;
+    }
+
+    return entity;
+
 }
 
 // factory

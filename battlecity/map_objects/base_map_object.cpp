@@ -17,7 +17,7 @@ ecs::entity_id base_map_object::get_id() const noexcept
 
 void base_map_object::set_position_x( int x ) noexcept
 {
-
+    assert(false);
     emit pos_x_changed( x );
 }
 
@@ -29,6 +29,7 @@ int base_map_object::get_position_x() const noexcept
 
 void base_map_object::set_position_y( int y ) noexcept
 {
+    assert(false);
     emit pos_y_changed( y );
 }
 
@@ -50,9 +51,9 @@ int base_map_object::get_height() const noexcept
     return g.get_size().height();
 }
 
-void base_map_object::set_rotation( int rotation ) noexcept
+void base_map_object::set_rotation( int /*rotation*/ ) noexcept
 {
-
+    assert(false);
 }
 
 int base_map_object::get_rotation() const noexcept

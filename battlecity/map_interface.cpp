@@ -34,9 +34,8 @@ int qml_map_interface::get_tile_height() const noexcept
 
 QQmlListProperty< tile_map_object > qml_map_interface::get_tiles()
 {
-    QList< tile_map_object* > list{ };
+    QList< tile_map_object* > list = m_map_data.get_objects_of_type< object_type::tile >();
 
-     m_map_data.get_objects_of_type< object_type::tile >();
     return QQmlListProperty< tile_map_object >{ this, list };
 }
 

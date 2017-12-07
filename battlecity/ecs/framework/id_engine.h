@@ -9,7 +9,7 @@ namespace ecs
 {
 
 using type_id = std::type_index;
-using numeric_id = uint64_t;
+using numeric_id = uint32_t;
 
 #define INVALID_NUMERIC_ID 0
 

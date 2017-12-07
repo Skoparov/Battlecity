@@ -67,9 +67,11 @@ public:
     }
 
     entity& create_entity();
-    void schedule_destroy_entity( entity& e );
+    void remove_entity( entity& e );
+    void schedule_remove_entity( entity& e );
 
     void add_system( system& system );
+    void remove_system( system& s );
     void schedule_remove_system( system& system );
 
     template< typename event_type >

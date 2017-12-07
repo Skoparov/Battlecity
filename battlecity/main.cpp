@@ -21,11 +21,12 @@ int main(int argc, char *argv[])
         qml_map_interface map_interface{ world };
         map_interface.load_level( 1 );
 
+        QGuiApplication app{ argc, argv };
         QQmlApplicationEngine engine;
         engine.rootContext()->setContextProperty( "map_interface", &map_interface );
         engine.load( QUrl{ QStringLiteral( "qrc:/qml/main.qml" ) } );
 
-        QGuiApplication app{ argc, argv };
+
         exit_code = app.exec();
     }
     catch( const std::exception& e )

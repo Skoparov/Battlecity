@@ -9,12 +9,17 @@
 #define TILE_WALL 'w'
 #define TILE_PLAYER_BASE 'b'
 
+#define PLAYER_BASE_HEALTH 5
+
 namespace game
 {
 
-map_data::map_data(const QSize& map_size, const QSize& tile_size) noexcept:
+map_data::map_data(const QSize& map_size,
+                   const QSize& tile_size,
+                   std::list<std::unique_ptr<base_map_object> >&& objects ) noexcept:
     m_map_size( map_size ),
-    m_tile_size( tile_size ){}
+    m_tile_size( tile_size ),
+    m_map_objects( std::move( objects ) ){}
 
 int map_data::get_rows_count() const noexcept
 {
@@ -82,8 +87,8 @@ map_data read_map_file( const QString& file, ecs::world& world )
         throw std::logic_error{ "Map file is empty" };
     }
 
-    QSize tile_size{ tile_width_height.constFirst().toInt(),
-                     tile_width_height.constLast().toInt() };
+    QSize tile_size{ tile_width_height.first().toInt(),
+                     tile_width_height.first().toInt() };
 
     int rows_count{ 0 };
     int columns_count{ 0 };
@@ -91,6 +96,7 @@ map_data read_map_file( const QString& file, ecs::world& world )
     char tile_char;
     int curr_column{ 0 };
     bool player_base_found{ false };
+    std::list< std::unique_ptr< base_map_object > > objects;
 
     while( !text_stream.atEnd() )
     {
@@ -100,6 +106,8 @@ map_data read_map_file( const QString& file, ecs::world& world )
         {
             tile_type type{ char_to_tile_type( tile_char ) };
 
+            uint32_t tile_health{ 0 };
+
             if( type == tile_type::player_base )
             {
                 if( player_base_found )
@@ -108,10 +116,14 @@ map_data read_map_file( const QString& file, ecs::world& world )
                 }
 
                 player_base_found = true;
+                tile_health = PLAYER_BASE_HEALTH;
             }
 
-            //data.tiles_data.insert( QPoint{ curr_row_len, data.rows - 1 }, type );
-            create_tile( type, QPoint{ rows_count, curr_column }, tile_size, 0, world );
+            ecs::entity& tile_entity =
+                    create_entity_tile( type, QPoint{ rows_count, curr_column }, tile_size, world, tile_health );
+
+            std::unique_ptr< base_map_object > tile{ new tile_map_object{ tile_entity } };
+            objects.emplace_back( std::move( tile ) );
             ++curr_column;
         }
         else
@@ -135,7 +147,7 @@ map_data read_map_file( const QString& file, ecs::world& world )
         throw std::logic_error{ "Player base not found" };
     }
 
-    return map_data{ QSize{ rows_count, columns_count }, tile_size };
+    return map_data{ QSize{ rows_count, columns_count }, tile_size, std::move( objects ) };
 }
 
 }// game

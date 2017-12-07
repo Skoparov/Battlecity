@@ -11,7 +11,7 @@ class graphics_map_object : public base_map_object
     Q_OBJECT
 
 public:
-    graphics_map_object(ecs::entity& entity, const object_type& type, QObject* parent = nullptr );
+    graphics_map_object( ecs::entity& entity, const object_type& type, QObject* parent = nullptr );
 
     void set_image_path( const QString& path );
     const QString& get_image_path() const noexcept;

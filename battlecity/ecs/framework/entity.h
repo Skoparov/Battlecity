@@ -38,14 +38,14 @@ public:
     component_type& get_component()
     {
         component_wrapper& ch = m_components.at( get_type_id< component_type >() );
-        return ch.get< component_type >();
+        return ch.get_unsafe< component_type >();
     }
 
     template< typename component_type > //TODO make private
     const component_type& get_component() const
     {
         const component_wrapper& ch = m_components.at( get_type_id< component_type >() );
-        return ch.get< component_type >();
+        return ch.get_unsafe< component_type >();
     }
 
     bool has_component( const component_id& get_id ) const; //TODO make private
