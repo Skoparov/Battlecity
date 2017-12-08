@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Settings>
+    <TileSize>32</TileSize>
+    <BaseHealth>5</BaseHealth>
+    <PlayerHealth>5</PlayerHealth>
+    <BaseKillsToWin>10</BaseKillsToWin>
+    <FPS>30</FPS>
+</Settings>

@@ -5,7 +5,7 @@
 namespace game
 {
 
-graphics_map_object::graphics_map_object( ecs::entity& entity, const object_type& type, QObject* parent ):
+graphics_map_object::graphics_map_object( ecs::entity* entity, const object_type& type, QObject* parent ):
     base_map_object( entity, type, parent ){}
 
 void graphics_map_object::set_image_path( const QString& /*path*/ )
@@ -15,7 +15,7 @@ void graphics_map_object::set_image_path( const QString& /*path*/ )
 
 const QString& graphics_map_object::get_image_path() const noexcept
 {
-    const component::graphics& g = m_entity.get_component< component::graphics >();
+    const component::graphics& g = m_entity->get_component< component::graphics >();
     return g.get_image_path();
 }
 
@@ -26,7 +26,7 @@ void graphics_map_object::set_visible( bool /*visible*/ ) noexcept
 
 bool graphics_map_object::get_visible() const noexcept
 {
-    const component::graphics& g = m_entity.get_component< component::graphics >();
+    const component::graphics& g = m_entity->get_component< component::graphics >();
     return g.get_visible();
 }
 

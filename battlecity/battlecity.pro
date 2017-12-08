@@ -3,7 +3,6 @@ QT += qml quick
 CONFIG += c++11
 
 HEADERS += \
-        *.h \
 # ecs framework
         ecs/framework/entity.h \
         ecs/framework/id_engine.h \
@@ -20,6 +19,8 @@ HEADERS += \
         map_objects/movable_map_object.h \
         map_objects/tile_map_object.h \
         map_interface.h \
+        controller.h \
+        game_settings.h \
         map_data.h
 
 
@@ -42,6 +43,8 @@ SOURCES += \
         map_objects/movable_map_object.cpp \
         map_objects/tile_map_object.cpp \
         map_interface.cpp \
+        controller.cpp \
+        game_settings.cpp \
         map_data.cpp
 
 RESOURCES += qml.qrc

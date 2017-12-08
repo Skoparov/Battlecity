@@ -50,7 +50,7 @@ void geometry::set_pos(const QPoint& point ) noexcept
     m_rect.setTopLeft( point );
 }
 
-const QPoint& geometry::get_pos() const noexcept
+QPoint geometry::get_pos() const noexcept
 {
     return m_rect.topLeft();
 }
@@ -60,7 +60,7 @@ void geometry::set_size( const QSize& size ) noexcept
     m_rect.setSize( size );
 }
 
-const QSize& geometry::get_size() const noexcept
+QSize geometry::get_size() const noexcept
 {
     return m_rect.size();
 }

@@ -12,7 +12,8 @@ class tile_map_object : public graphics_map_object
     Q_OBJECT
 
 public:
-    tile_map_object( ecs::entity& entity, QObject* parent = nullptr );
+    tile_map_object() = default;
+    tile_map_object( ecs::entity* entity, QObject* parent = nullptr );
 
     const tile_type& get_tile_type() const noexcept;
 

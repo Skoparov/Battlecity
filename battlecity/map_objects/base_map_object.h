@@ -11,14 +11,20 @@
 namespace game
 {
 
-enum class object_type{ tile, enemy_tank, player_tank };
+enum class object_type{ tile,
+                        player_base,
+                        enemy_tank,
+                        player_tank,
+                        projectile,
+                        undefined };
 
 class base_map_object : public QObject
 {
     Q_OBJECT
 
 public:
-    base_map_object( ecs::entity& entity, const object_type& type, QObject* parent = nullptr );
+    base_map_object() = default;
+    base_map_object( ecs::entity* entity, const object_type& type, QObject* parent = nullptr );
 
     ecs::entity_id get_id() const noexcept;
 
@@ -38,7 +44,7 @@ public:
 
     const object_type& get_type() const noexcept;
 
-    Q_PROPERTY( uint32_t object_id READ get_id CONSTANT ) //TODO: Replace by numeric_id
+    Q_PROPERTY( ecs::numeric_id object_id READ get_id CONSTANT )
     Q_PROPERTY( int pos_x READ get_position_x WRITE set_position_x NOTIFY pos_x_changed )
     Q_PROPERTY( int pos_y READ get_position_y WRITE set_position_y NOTIFY pos_y_changed )
     Q_PROPERTY( int width READ get_width CONSTANT )
@@ -52,8 +58,8 @@ signals:
     void rotation_changed( int );
 
 protected:
-    ecs::entity& m_entity;
-    object_type m_object_type;
+    ecs::entity* m_entity{ nullptr };
+    object_type m_object_type{ object_type::undefined };
 };
 
 }// game

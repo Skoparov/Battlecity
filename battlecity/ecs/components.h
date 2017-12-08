@@ -7,7 +7,7 @@
 namespace game
 {
 
-enum class tile_type{ wall, empty, player_base };
+enum class tile_type{ wall, empty };
 enum class tank_type{ player, enemy };
 
 namespace component
@@ -52,10 +52,10 @@ public:
     bool intersects_with( const geometry& other ) const noexcept;
 
     void set_pos( const QPoint& point ) noexcept;
-    const QPoint& get_pos() const noexcept;
+    QPoint get_pos() const noexcept;
 
     void set_size( const QSize& size ) noexcept;
-    const QSize& get_size() const noexcept;
+    QSize get_size() const noexcept;
 
     void set_rotation( int rotation ) noexcept;
     int get_rotation() const noexcept;
@@ -86,8 +86,8 @@ public:
     bool get_visible() const noexcept;
 
 private:
-    bool m_visible{ true };
     QString m_image_path;
+    bool m_visible{ true };
 };
 
 //

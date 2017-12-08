@@ -18,11 +18,9 @@ namespace game
 namespace detail
 {
 
+// Compile-time object_type enum to actual object type conversion
 template< object_type > struct object_type_to_type;
 template<> struct object_type_to_type< object_type::tile >{ using type = tile_map_object; };
-
-template< object_type type >
-using object_type_to_type_t = typename object_type_to_type< type >::type;
 
 }// detail
 
@@ -30,21 +28,17 @@ class map_data final
 {
 private:
     template< object_type type >
-    using object_ptr = typename std::add_pointer< detail::object_type_to_type_t< type > >::type;
+    using object_ptr =
+    typename std::add_pointer< typename detail::object_type_to_type< type >::type >::type;
 
 public:
     map_data() = default;
-    map_data( const QSize& map_size, const QSize& tile_size,
+    map_data( const QSize& map_size,
               std::list< std::unique_ptr< base_map_object > >&& objects ) noexcept;
 
     int get_rows_count() const noexcept;
     int get_columns_count() const noexcept;
     const QSize& get_map_size() const noexcept;
-
-    int get_tile_width() const noexcept;
-    int get_tile_height() const noexcept;
-    const QSize& get_tile_size() const noexcept;
-
 
     template< object_type type >
     auto get_objects_of_type() const ->
@@ -66,12 +60,11 @@ public:
 
 private:
     QSize m_map_size{};
-    QSize m_tile_size{};
     std::list< std::unique_ptr< base_map_object > > m_map_objects;
 };
 
-
-map_data read_map_file(const QString& file, ecs::world& world );
+class game_settings;
+map_data read_map_file(const QString& file, const game_settings& settings, ecs::world& world );
 
 }// game
 

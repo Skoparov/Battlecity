@@ -5,8 +5,10 @@
         <file>qml/Tile.qml</file>
 
         <file>maps/map_1</file>
+        <file>settings/settings.xml</file>
 
         <file>graphics/tile_empty.png</file>
         <file>graphics/tile_wall.png</file>
+        <file>graphics/tile_player_base.png</file>
     </qresource>
 </RCC>

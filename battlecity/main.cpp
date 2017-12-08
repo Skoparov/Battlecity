@@ -1,31 +1,36 @@
 #include <iostream>
 
+#include <QtQml>
+#include <QQmlContext>
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
-#include <QQmlContext>
-#include <QtQml>
 
+#include "controller.h"
 #include "map_interface.h"
 #include "ecs/framework/world.h"
-
-using namespace game;
 
 int main(int argc, char *argv[])
 {
     int exit_code{ 0 };
 
     try
-    {
+    {               
+        game::game_settings settings{ game::read_game_settings( ":/settings/settings.xml" ) };
         ecs::world world;
 
-        qml_map_interface map_interface{ world };
-        map_interface.load_level( 1 );
+        game::controller controller{ settings, world };
+        controller.load_next_level();
+
+        qmlRegisterType< game::tile_map_object >();
+
+        game::qml_map_interface map_interface{ controller };
 
         QGuiApplication app{ argc, argv };
         QQmlApplicationEngine engine;
         engine.rootContext()->setContextProperty( "map_interface", &map_interface );
         engine.load( QUrl{ QStringLiteral( "qrc:/qml/main.qml" ) } );
 
+        controller.start();
 
         exit_code = app.exec();
     }
