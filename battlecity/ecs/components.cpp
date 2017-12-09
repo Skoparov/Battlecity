@@ -42,7 +42,12 @@ geometry::geometry( const QRect& rect, int rotation ) noexcept:
 
 bool geometry::intersects_with( const geometry& other ) const noexcept
 {
-    return m_rect.intersects( other.m_rect );
+    return intersects_with( other.m_rect );
+}
+
+bool geometry::intersects_with( const QRect& rect ) const noexcept
+{
+    return m_rect.intersects( rect );
 }
 
 void geometry::set_pos(const QPoint& point ) noexcept
@@ -81,6 +86,28 @@ const QRect &geometry::get_rect() const noexcept
 }
 
 //
+
+movement::movement( uint32_t speed ) noexcept : m_speed( speed ){}
+
+void movement::set_speed( uint32_t speed ) noexcept
+{
+    m_speed = speed;
+}
+
+uint32_t movement::get_speed() const noexcept
+{
+    return m_speed;
+}
+
+void movement::set_move_direction( const movement_direction& direction ) noexcept
+{
+    m_move_direction = direction;
+}
+
+const movement_direction& movement::get_move_direction() const noexcept
+{
+    return m_move_direction;
+}
 
 graphics::graphics( const QString& image_path, bool visible ) :
     m_image_path( image_path ),

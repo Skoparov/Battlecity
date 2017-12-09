@@ -64,6 +64,16 @@ uint32_t game_settings::get_fps() const noexcept
     return m_fps;
 }
 
+void game_settings::set_tank_movement_speed( uint32_t speed ) noexcept
+{
+    m_tank_movement_speed = speed;
+}
+
+uint32_t game_settings::get_tank_movement_speed() const noexcept
+{
+    return m_tile_size.width() / 4; /*m_tank_movement_speed*/;
+}
+
 game_settings read_game_settings( const QString& file )
 {
     QFile settings_file{ file };

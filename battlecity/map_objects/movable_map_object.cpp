@@ -1,15 +1,80 @@
-//#include "tile_map_object.h"
+#include "movable_map_object.h"
 
+#include "ecs/components.h"
 
+static constexpr auto str_move_direction_up = "Up";
+static constexpr auto str_move_direction_down = "Down";
+static constexpr auto str_move_direction_left = "Left";
+static constexpr auto str_move_direction_right = "Right";
 
-//tile_map_object::tile_map_object( const tile_type& type, QObject* parent ):
-//    graphics_map_object( tile_type_to_image_path( type ),
-//                         tile_type_to_visible( type ),
-//                         tile_type_to_traversible( type ),
-//                         parent ),
-//    m_type( type ){}
+namespace game
+{
 
-//const tile_type &tile_map_object::get_tile_type() const noexcept
-//{
-//    return m_type;
-//}
+component::movement_direction str_to_move_direction( const QString& direction_str ) noexcept
+{
+    using namespace component;
+    movement_direction direction{ movement_direction::none };
+
+    if( direction_str == str_move_direction_up )
+    {
+        direction = movement_direction::up;
+    }
+    else if( direction_str == str_move_direction_down )
+    {
+        direction = movement_direction::down;
+    }
+    else if( direction_str == str_move_direction_left )
+    {
+        direction = movement_direction::left;
+    }
+    else if( direction_str == str_move_direction_right )
+    {
+        direction = movement_direction::right;
+    }
+
+    return direction;
+}
+
+QString move_direction_to_str( const component::movement_direction& direction )
+{
+    using namespace component;
+    QString direction_str{ "None" };
+
+    if( direction == movement_direction::up )
+    {
+        direction_str = str_move_direction_up;
+    }
+    else if( direction == movement_direction::down )
+    {
+        direction_str = str_move_direction_down;
+    }
+    else if( direction == movement_direction::left )
+    {
+        direction_str = str_move_direction_left;
+    }
+    else if( direction == movement_direction::right )
+    {
+        direction_str = str_move_direction_right;
+    }
+
+    return direction_str;
+}
+
+movable_map_object::movable_map_object( ecs::entity* entity,
+                                        const object_type& type,
+                                        QObject* parent ):
+    base_map_object( entity, type, parent ){}
+
+void movable_map_object::set_move_direction( const QString& direction )
+{
+    component::movement& m = m_entity->get_component< component::movement >();
+    m.set_move_direction( str_to_move_direction( direction ) );
+}
+
+QString movable_map_object::get_move_direction() const
+{
+    component::movement& m = m_entity->get_component< component::movement >();
+    return move_direction_to_str( m.get_move_direction() );
+}
+
+}// game

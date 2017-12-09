@@ -13,7 +13,7 @@ enum class tank_type{ player, enemy };
 namespace component
 {
 
-class tile_object
+class tile_object final
 {
 public:
     tile_object() = default;
@@ -28,7 +28,7 @@ private:
 
 //
 
-class tank_object
+class tank_object final
 {
 public:
     tank_object() = default;
@@ -43,13 +43,23 @@ private:
 
 //
 
+
+class map_object final{};
+
+//
+
+class projectile final{};
+
+//
+
 class geometry final
 {
 public:
     geometry() = default;
-    geometry( const QRect& rect, int rotation ) noexcept;
+    geometry( const QRect& rect, int rotation = 0 ) noexcept;
 
     bool intersects_with( const geometry& other ) const noexcept;
+    bool intersects_with( const QRect& rect ) const noexcept;
 
     void set_pos( const QPoint& point ) noexcept;
     QPoint get_pos() const noexcept;
@@ -65,6 +75,26 @@ public:
 private:
     QRect m_rect;
     int m_rotation{ 0 };
+};
+
+//
+
+enum class movement_direction{ left, right, up, down, none };
+
+class movement final
+{
+public:
+    movement() = default;
+    movement( uint32_t step ) noexcept;
+
+    void set_speed( uint32_t speed ) noexcept;
+    uint32_t get_speed() const noexcept;
+
+    void set_move_direction( const movement_direction& direction ) noexcept;
+    const movement_direction& get_move_direction() const noexcept;
+private:
+    uint32_t m_speed{ 0 };
+    movement_direction m_move_direction{ movement_direction::none };
 };
 
 //

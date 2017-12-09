@@ -54,6 +54,22 @@ public:
 
     void tick();
 
+    template< typename component_type >
+    std::list< entity* > entities_with_component()
+    {
+        std::list< entity* > entities;
+
+        for( auto& entity : m_entities )
+        {
+            if( entity.second.has_component< component_type >() )
+            {
+                entities.emplace_back( &entity.second );
+            }
+        }
+
+        return entities;
+    }
+
     template< typename component_type, typename func_type >
     void for_each( func_type&& func )
     {

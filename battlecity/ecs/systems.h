@@ -11,25 +11,32 @@ namespace game
 namespace systems
 {
 
-class health_system : public ecs::system
+class movement_system : public ecs::system
 {
 public:
-    health_system( ecs::world& world ) : ecs::system( world ){}
-
-    void tick() override
-    {
-        events::entity_killed killed_event;
-
-        m_world.for_each< component::health >(
-            []( ecs::entity& entity, component::health& health )
-            {
-                if( !health.alive() )
-                {
-                    m_world.emit_event(  )
-                }
-            } );
-    }
+    explicit movement_system( ecs::world& world );
+    void tick() override;
 };
+
+//class health_system : public ecs::system
+//{
+//public:
+//    health_system( ecs::world& world ) : ecs::system( world ){}
+
+//    void tick() override
+//    {
+//        events::entity_killed killed_event;
+
+//        m_world.for_each< component::health >(
+//            []( ecs::entity& entity, component::health& health )
+//            {
+//                if( !health.alive() )
+//                {
+//                    m_world.emit_event(  )
+//                }
+//            } );
+//    }
+//};
 
 }// systems
 

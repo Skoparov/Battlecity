@@ -1,5 +1,7 @@
 #include "controller.h"
 
+#include "ecs/systems.h"
+
 static constexpr auto map_name_pattern = ":/maps/map_%1";
 
 namespace game
@@ -11,6 +13,17 @@ controller::controller( const game_settings& settings, ecs::world& world ) :
 {
     m_tick_timer = new QTimer{ this };
     connect( m_tick_timer, SIGNAL( timeout() ), this, SLOT( tick() ) );
+}
+
+void controller::init()
+{
+    load_next_level();
+
+    // create systems
+    std::unique_ptr< ecs::system > move_system{ new systems::movement_system{ m_world } };
+    m_world.add_system( *move_system );
+
+    m_systems.emplace_back( std::move( move_system ) );
 }
 
 void controller::load_next_level()

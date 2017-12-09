@@ -19,7 +19,7 @@ class entity final
     friend class world;
 
 public:
-    ~entity() = default;
+    ~entity() = default;        
 
     template< typename component_type, typename... constructor_args >
     void add_component( constructor_args&&... args )
@@ -77,6 +77,9 @@ private:
     const entity_id m_id{ INVALID_NUMERIC_ID };
     std::unordered_map< component_id, component_wrapper > m_components;
 };
+
+bool operator==( const entity& l, const entity& r ) noexcept;
+bool operator!=( const entity& l, const entity& r ) noexcept;
 
 }// ecs
 

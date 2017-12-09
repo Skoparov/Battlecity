@@ -124,7 +124,12 @@ map_data read_map_file( const QString& file, const game_settings& settings, ecs:
         throw std::logic_error{ "Player base not found" };
     }
 
-    return map_data{ QSize{ columns_count, rows_count }, std::move( objects ) };
+    QSize map_size{ columns_count, rows_count };
+
+    // add world entity
+    create_world_entity( settings.get_tile_size(), map_size, world );
+
+    return map_data{ map_size, std::move( objects ) };
 }
 
 }// game

@@ -6,6 +6,21 @@
 namespace game
 {
 
+ecs::entity& create_world_entity( const QSize& tile_size, const QSize& map_size, ecs::world& world )
+{
+    ecs::entity& entity = world.create_entity();
+
+    entity.add_component< component::map_object >();
+
+    QRect map_rect{ 0, 0,
+                    tile_size.width() * map_size.width(),
+                    tile_size.height() * map_size.height() };
+
+    entity.add_component< component::geometry >( map_rect );
+
+    return entity;
+}
+
 bool tile_traversible( const tile_type& type )
 {
     bool traversible{ false };
@@ -48,7 +63,7 @@ ecs::entity& create_entity_tile(const tile_type& type,
 
     try
     {
-        entity.add_component< component::geometry >( tile_rect( pos, size ), 0 );
+        entity.add_component< component::geometry >( tile_rect( pos, size ) );
         entity.add_component< component::graphics >( tile_image_path( type ), true );
 
         if( !tile_traversible( type ) )

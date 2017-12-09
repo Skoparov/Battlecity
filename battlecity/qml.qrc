@@ -3,6 +3,7 @@
         <file>qml/main.qml</file>
         <file>qml/MainWindow.ui.qml</file>
         <file>qml/Tile.qml</file>
+	 <file>qml/PlayerBase.qml</file>
 
         <file>maps/map_1</file>
         <file>settings/settings.xml</file>

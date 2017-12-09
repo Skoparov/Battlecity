@@ -19,7 +19,7 @@ int main(int argc, char *argv[])
         ecs::world world;
 
         game::controller controller{ settings, world };
-        controller.load_next_level();
+        controller.init();
 
         qmlRegisterType< game::tile_map_object >();
 

@@ -15,7 +15,7 @@ class controller : public QObject
 
 public:
     controller( const game_settings& settings, ecs::world& world );
-    void load_next_level();
+    void init();
 
     void start();
     void stop();
@@ -28,15 +28,20 @@ public:
 
     QList< tile_map_object* > get_tiles();
 
+private:
+    void load_next_level();
+
 public slots:
     void tick();
 
 private:
     game_settings m_settings;
-    map_data m_map_data;
     ecs::world& m_world;
-    QTimer* m_tick_timer{ nullptr };
+
+    map_data m_map_data;
     uint32_t m_level{ 0 };
+    QTimer* m_tick_timer{ nullptr };
+    std::list< std::unique_ptr< ecs::system > > m_systems;
 };
 
 }// game

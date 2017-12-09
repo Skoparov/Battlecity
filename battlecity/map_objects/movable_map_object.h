@@ -3,24 +3,23 @@
 
 #include "base_map_object.h"
 
-//namespace game
-//{
+namespace game
+{
 
-//class tile_map_object : public base_map_object
-//{
-//    Q_OBJECT
+class movable_map_object : public base_map_object
+{
+    Q_OBJECT
 
-//public:
-//    tile_map_object( ecs::entity& m_entity, QObject* parent = nullptr );
+public:
+    movable_map_object() = default;
+    movable_map_object( ecs::entity* entity, const object_type& type, QObject* parent = nullptr );
 
-//    const tile_type& get_tile_type() const noexcept;
+    void set_move_direction( const QString& direction );
+    QString get_move_direction() const;
 
-//    Q_PROPERTY( tile_type type READ get_tile_type CONSTANT )
+    Q_PROPERTY( QString move_direction READ get_move_direction WRITE set_move_direction )
+};
 
-//private:
-//    ecs::entity& m_entity;
-//};
-
-//}
+}// game
 
 #endif
