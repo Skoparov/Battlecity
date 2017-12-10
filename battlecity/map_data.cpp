@@ -53,6 +53,11 @@ std::pair< tile_type, bool > char_to_tile_info( char c )
     return { type, is_player_base };
 }
 
+QRect obj_rect( int row, int col, const QSize& tile_size, const QSize& size ) noexcept
+{
+    return QRect{ QPoint{ col * tile_size.width(), row * tile_size.height() }, size };
+}
+
 map_data read_map_file( const QString& file, const game_settings& settings, ecs::world& world )
 {
     QFile map_file{ file };
@@ -75,6 +80,8 @@ map_data read_map_file( const QString& file, const game_settings& settings, ecs:
     bool player_base_found{ false };
     std::list< std::unique_ptr< base_map_object > > objects;
 
+    const QSize& tile_size{ settings.get_tile_size() };
+
     while( !text_stream.atEnd() )
     {
         text_stream >> tile_char;
@@ -91,12 +98,17 @@ map_data read_map_file( const QString& file, const game_settings& settings, ecs:
                     throw std::logic_error{ "More than one player bases found" };
                 }
 
-                player_base_found = true;                
+                player_base_found = true;
+
+                QRect base_rect{ obj_rect( rows_count, curr_column, tile_size, settings.get_player_base_size() ) };
+                ecs::entity& base_entity = create_entity_player_base( base_rect, world );
+
+                std::unique_ptr< base_map_object > player_base{ new graphics_map_object{ &base_entity, object_type::player_base } };
+                objects.emplace_back( std::move( player_base ) );
             }
 
             ecs::entity& tile_entity = create_entity_tile( type,
-                                                           QPoint{ rows_count, curr_column },
-                                                           settings.get_tile_size(),
+                                                           obj_rect( rows_count, curr_column, tile_size, tile_size ),
                                                            world );
 
             std::unique_ptr< base_map_object > tile{ new tile_map_object{ &tile_entity } };
@@ -126,8 +138,12 @@ map_data read_map_file( const QString& file, const game_settings& settings, ecs:
 
     QSize map_size{ columns_count, rows_count };
 
-    // add world entity
-    create_world_entity( settings.get_tile_size(), map_size, world );
+    // add map entity
+    QRect map_rect{ 0, 0,
+                    tile_size.width() * map_size.width(),
+                            tile_size.height() * map_size.height() };
+
+    create_entity_map( map_rect, world );
 
     return map_data{ map_size, std::move( objects ) };
 }

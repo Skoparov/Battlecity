@@ -7,14 +7,9 @@
 namespace game
 {
 
-ecs::entity& create_world_entity( const QSize& tile_size,
-                                  const QSize& map_size,
-                                  ecs::world& world );
-
-ecs::entity& create_entity_tile( const tile_type& type,
-                                 const QPoint& pos,
-                                 const QSize& size,
-                                 ecs::world& world );
+ecs::entity& create_entity_map( const QRect& rect, ecs::world& world );
+ecs::entity& create_entity_player_base( const QRect& rect, ecs::world& world );
+ecs::entity& create_entity_tile( const tile_type& type, const QRect& rect, ecs::world& world );
 
 }// game
 

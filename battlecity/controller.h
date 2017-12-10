@@ -26,7 +26,8 @@ public:
     int get_tile_width() const noexcept;
     int get_tile_height() const noexcept;
 
-    QList< tile_map_object* > get_tiles();
+    QList< tile_map_object* > get_tiles() const;
+    QList< graphics_map_object* > get_player_bases() const;
 
 private:
     void load_next_level();

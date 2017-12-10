@@ -65,9 +65,14 @@ int controller::get_tile_height() const noexcept
     return m_settings.get_tile_size().height();
 }
 
-QList< tile_map_object* > controller::get_tiles()
+QList< tile_map_object* > controller::get_tiles() const
 {
     return m_map_data.get_objects_of_type< object_type::tile >();
+}
+
+QList< graphics_map_object* > controller::get_player_bases() const
+{
+    return m_map_data.get_objects_of_type< object_type::player_base >();
 }
 
 void controller::tick()

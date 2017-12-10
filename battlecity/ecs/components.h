@@ -9,6 +9,7 @@ namespace game
 
 enum class tile_type{ wall, empty };
 enum class tank_type{ player, enemy };
+enum class movement_direction{ left, right, up, down, none };
 
 namespace component
 {
@@ -48,6 +49,10 @@ class map_object final{};
 
 //
 
+class player_base final{};
+
+//
+
 class projectile final{};
 
 //
@@ -79,8 +84,6 @@ private:
 
 //
 
-enum class movement_direction{ left, right, up, down, none };
-
 class movement final
 {
 public:
@@ -107,7 +110,7 @@ class graphics final
 {
 public:
     graphics() = default;
-    graphics( const QString& image_path, bool visible );
+    graphics( const QString& image_path, bool visible = true );
 
     void set_image_path( const QString& image_path );
     const QString& get_image_path() const noexcept;

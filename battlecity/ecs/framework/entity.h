@@ -34,23 +34,37 @@ public:
         m_components.erase( get_type_id< component_type >() );
     }
 
-    template< typename component_type > //TODO make private
-    component_type& get_component()
+    template< typename component_type >
+    component_type& get_component_unsafe()
     {
         component_wrapper& ch = m_components.at( get_type_id< component_type >() );
         return ch.get_unsafe< component_type >();
     }
 
-    template< typename component_type > //TODO make private
-    const component_type& get_component() const
+    template< typename component_type >
+    const component_type& get_component_unsafe() const
     {
         const component_wrapper& ch = m_components.at( get_type_id< component_type >() );
         return ch.get_unsafe< component_type >();
     }
 
-    bool has_component( const component_id& get_id ) const; //TODO make private
+    template< typename component_type >
+    component_type& get_component()
+    {
+        component_wrapper& ch = m_components.at( get_type_id< component_type >() );
+        return ch.get< component_type >();
+    }
 
-    template< typename component_type > //TODO make private
+    template< typename component_type >
+    const component_type& get_component() const
+    {
+        const component_wrapper& ch = m_components.at( get_type_id< component_type >() );
+        return ch.get< component_type >();
+    }
+
+    bool has_component( const component_id& get_id ) const;
+
+    template< typename component_type >
     bool has_component() const
     {
         return m_components.count( get_type_id< component_type >() ) != 0;

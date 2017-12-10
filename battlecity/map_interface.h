@@ -26,8 +26,10 @@ public:
     int get_tile_height() const noexcept;
 
     QQmlListProperty< tile_map_object > get_tiles();
+    QQmlListProperty< graphics_map_object > get_player_bases();
 
     Q_PROPERTY( QQmlListProperty< game::tile_map_object > tiles READ get_tiles NOTIFY tiles_changed )
+    Q_PROPERTY( QQmlListProperty< game::graphics_map_object > player_bases READ get_player_bases NOTIFY player_bases_changed )
     Q_PROPERTY( int rows_num READ get_rows_count CONSTANT )
     Q_PROPERTY( int columns_num READ get_columns_count CONSTANT )
     Q_PROPERTY( int tile_width READ get_tile_width CONSTANT )
@@ -35,9 +37,13 @@ public:
 
 signals:
     void tiles_changed( QQmlListProperty< tile_map_object > );
+    void player_bases_changed( QQmlListProperty< tile_map_object > );
 
 private:
     controller& m_controller;
+
+    QList< tile_map_object* > m_tiles;
+    QList< graphics_map_object* > m_player_bases;
 };
 
 }// game

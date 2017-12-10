@@ -21,6 +21,7 @@ namespace detail
 // Compile-time object_type enum to actual object type conversion
 template< object_type > struct object_type_to_type;
 template<> struct object_type_to_type< object_type::tile >{ using type = tile_map_object; };
+template<> struct object_type_to_type< object_type::player_base >{ using type = graphics_map_object; };
 
 }// detail
 

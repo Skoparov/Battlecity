@@ -22,6 +22,7 @@ int main(int argc, char *argv[])
         controller.init();
 
         qmlRegisterType< game::tile_map_object >();
+        qmlRegisterType< game::graphics_map_object >();
 
         game::qml_map_interface map_interface{ controller };
 

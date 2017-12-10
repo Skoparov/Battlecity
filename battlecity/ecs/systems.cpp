@@ -72,18 +72,18 @@ bool can_pass_through_non_traversible( ecs::entity& e )
 void movement_system::tick()
 {
     ecs::entity* map_entity{ m_world.entities_with_component< map_object >().front() };
-    geometry& map_geom = map_entity->get_component< geometry >();
+    geometry& map_geom = map_entity->get_component_unsafe< geometry >();
 
     std::list< ecs::entity* > entities_with_movement{
         m_world.entities_with_component< movement >() };
 
-    std::list< ecs::entity* > entities_with_geometry{
-        m_world.entities_with_component< geometry >() };
+    std::list< ecs::entity* > non_traversable_entities{
+        m_world.entities_with_component< non_traversible >() };
 
     for( ecs::entity* curr_entity : entities_with_movement )
     {
-        geometry& curr_geom = curr_entity->get_component< geometry >();
-        movement& move = curr_entity->get_component< movement >();
+        geometry& curr_geom = curr_entity->get_component_unsafe< geometry >();
+        movement& move = curr_entity->get_component_unsafe< movement >();
 
         if( move.get_move_direction() != movement_direction::none )
         {
@@ -92,12 +92,11 @@ void movement_system::tick()
 
             if( !can_pass_through_non_traversible( *curr_entity ) )
             {
-                for( ecs::entity* other_entity : entities_with_geometry )
+                for( ecs::entity* other_entity : non_traversable_entities )
                 {
-                    if( curr_entity != other_entity  &&
-                        other_entity->has_component< non_traversible >() )
+                    if( curr_entity != other_entity )
                     {
-                        geometry& other_geom = other_entity->get_component< geometry >();
+                        geometry& other_geom = other_entity->get_component_unsafe< geometry >();
                         if( other_geom.intersects_with( rect_after_move ) )
                         {
                             movement_valid = false;
@@ -111,6 +110,8 @@ void movement_system::tick()
             {
                 curr_geom.set_pos( rect_after_move.topLeft() );
             }
+
+            move.set_move_direction( movement_direction::none );
         }
     }
 }

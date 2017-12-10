@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Settings>
+    <Fps>30</Fps>
     <TileSize>32</TileSize>
-    <BaseHealth>5</BaseHealth>
     <PlayerHealth>5</PlayerHealth>
+    <PlayerBaseHealth>5</PlayerBaseHealth>
+    <PlayerBaseSize>64</PlayerBaseSize>
     <BaseKillsToWin>10</BaseKillsToWin>
-    <FPS>30</FPS>
+    <TankMoveSpeed>8</TankMoveSpeed>
 </Settings>

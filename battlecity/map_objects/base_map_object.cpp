@@ -23,7 +23,7 @@ void base_map_object::set_position_x( int x ) noexcept
 
 int base_map_object::get_position_x() const noexcept
 {
-    const component::geometry& g = m_entity->get_component< component::geometry >();
+    const component::geometry& g = m_entity->get_component_unsafe< component::geometry >();
     return g.get_pos().x();
 }
 
@@ -35,19 +35,19 @@ void base_map_object::set_position_y( int y ) noexcept
 
 int base_map_object::get_position_y() const noexcept
 {
-    const component::geometry& g = m_entity->get_component< component::geometry >();
+    const component::geometry& g = m_entity->get_component_unsafe< component::geometry >();
     return g.get_pos().y();
 }
 
 int base_map_object::get_width() const noexcept
 {
-    const component::geometry& g = m_entity->get_component< component::geometry >();
+    const component::geometry& g = m_entity->get_component_unsafe< component::geometry >();
     return g.get_size().width();
 }
 
 int base_map_object::get_height() const noexcept
 {
-    const component::geometry& g = m_entity->get_component< component::geometry >();
+    const component::geometry& g = m_entity->get_component_unsafe< component::geometry >();
     return g.get_size().height();
 }
 
@@ -58,7 +58,7 @@ void base_map_object::set_rotation( int /*rotation*/ ) noexcept
 
 int base_map_object::get_rotation() const noexcept
 {
-    const component::geometry& g = m_entity->get_component< component::geometry >();
+    const component::geometry& g = m_entity->get_component_unsafe< component::geometry >();
     return g.get_rotation();
 }
 

@@ -37,6 +37,7 @@ public:
     system( world& world ) noexcept;
     virtual ~system() = default;
     virtual void tick() = 0;
+    virtual void clean(){}
 
 protected:
     world& m_world;
@@ -52,7 +53,10 @@ class world final
 public:
     world() = default;
 
-    void tick();
+    void tick(); // tick() of each system
+
+    void reset(); // remove all entities, preserve systems
+    void clean(); // remove all entities and systems
 
     template< typename component_type >
     std::list< entity* > entities_with_component()
@@ -110,7 +114,7 @@ public:
         {
             for( auto& subscriber : it->second )
             {
-                event_callback< event_type >* callback{ reinterpret_cast< event_callback< event_type >* >( subscriber ) };
+                event_callback< event_type >* callback{ static_cast< event_callback< event_type >* >( subscriber ) };
                 callback->on_event( event );
             }
         }

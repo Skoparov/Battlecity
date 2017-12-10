@@ -32,8 +32,14 @@ int qml_map_interface::get_tile_height() const noexcept
 
 QQmlListProperty< tile_map_object > qml_map_interface::get_tiles()
 {
-    static QList< tile_map_object* > list = m_controller.get_tiles();
-    return QQmlListProperty< tile_map_object >{ this, list };
+    m_tiles = m_controller.get_tiles();
+    return QQmlListProperty< tile_map_object >{ this, m_tiles };
+}
+
+QQmlListProperty< graphics_map_object > qml_map_interface::get_player_bases()
+{
+    m_player_bases = m_controller.get_player_bases();
+    return QQmlListProperty< graphics_map_object >{ this, m_player_bases };
 }
 
 }// game

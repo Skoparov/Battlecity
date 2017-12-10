@@ -10,9 +10,8 @@ static constexpr auto str_move_direction_right = "Right";
 namespace game
 {
 
-component::movement_direction str_to_move_direction( const QString& direction_str ) noexcept
+movement_direction str_to_move_direction( const QString& direction_str ) noexcept
 {
-    using namespace component;
     movement_direction direction{ movement_direction::none };
 
     if( direction_str == str_move_direction_up )
@@ -35,9 +34,8 @@ component::movement_direction str_to_move_direction( const QString& direction_st
     return direction;
 }
 
-QString move_direction_to_str( const component::movement_direction& direction )
+QString move_direction_to_str( const movement_direction& direction )
 {
-    using namespace component;
     QString direction_str{ "None" };
 
     if( direction == movement_direction::up )
@@ -67,13 +65,13 @@ movable_map_object::movable_map_object( ecs::entity* entity,
 
 void movable_map_object::set_move_direction( const QString& direction )
 {
-    component::movement& m = m_entity->get_component< component::movement >();
+    component::movement& m = m_entity->get_component_unsafe< component::movement >();
     m.set_move_direction( str_to_move_direction( direction ) );
 }
 
 QString movable_map_object::get_move_direction() const
 {
-    component::movement& m = m_entity->get_component< component::movement >();
+    component::movement& m = m_entity->get_component_unsafe< component::movement >();
     return move_direction_to_str( m.get_move_direction() );
 }
 

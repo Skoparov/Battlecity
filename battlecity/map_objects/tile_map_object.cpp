@@ -8,7 +8,7 @@ tile_map_object::tile_map_object( ecs::entity* entity, QObject* parent ):
 
 const tile_type& tile_map_object::get_tile_type() const noexcept
 {
-    const component::tile_object& t = m_entity->get_component< component::tile_object >();
+    const component::tile_object& t = m_entity->get_component_unsafe< component::tile_object >();
     return t.get_tile_type();
 }
 

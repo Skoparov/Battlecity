@@ -27,6 +27,12 @@ Rectangle
                     model: map_interface.tiles
                     Tile{}
                 }
+
+                Repeater
+                {
+                    model: map_interface.player_bases
+                    PlayerBase{}
+                }
             }
         }
     }

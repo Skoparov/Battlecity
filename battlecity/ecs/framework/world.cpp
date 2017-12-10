@@ -24,6 +24,26 @@ void world::tick()
     }
 }
 
+void world::reset()
+{
+    m_entities.clear();
+    m_entities_to_remove.clear();
+    m_systems_to_remove.clear();
+
+    for( system* system : m_systems )
+    {
+        system->clean();
+    }
+}
+
+void world::clean()
+{
+    m_entities.clear();
+    m_systems.clear();
+    m_entities_to_remove.clear();
+    m_systems_to_remove.clear();
+}
+
 entity& world::create_entity()
 {
     entity_id id{ generate_entity_id( m_entities ) };
