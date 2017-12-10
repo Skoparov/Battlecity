@@ -8,7 +8,7 @@
 namespace game
 {
 
-namespace systems
+namespace system
 {
 
 class movement_system : public ecs::system
@@ -38,7 +38,7 @@ public:
 //    }
 //};
 
-}// systems
+}// system
 
 }// ecs
 

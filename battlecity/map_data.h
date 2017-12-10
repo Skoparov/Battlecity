@@ -1,7 +1,6 @@
 #ifndef MAPDATA_H
 #define MAPDATA_H
 
-#include <list>
 #include <type_traits>
 
 #include <QSize>
@@ -11,6 +10,25 @@
 #include "ecs/framework/world.h"
 
 #include "map_objects/tile_map_object.h"
+#include "map_objects/tank_map_object.h"
+
+namespace std
+{
+
+template<> struct hash< game::object_type >
+{
+    using argument_type = game::object_type;
+    using underlying_type = std::underlying_type< argument_type >::type;
+    using result_type = std::hash< underlying_type >::result_type;
+
+    size_t operator()( const argument_type& arg ) const
+    {
+        std::hash< underlying_type > hasher;
+        return hasher( static_cast< underlying_type >( arg ) );
+    }
+};
+
+}// std
 
 namespace game
 {
@@ -22,38 +40,37 @@ namespace detail
 template< object_type > struct object_type_to_type;
 template<> struct object_type_to_type< object_type::tile >{ using type = tile_map_object; };
 template<> struct object_type_to_type< object_type::player_base >{ using type = graphics_map_object; };
+template<> struct object_type_to_type< object_type::player_tank >{ using type = tank_map_object; };
 
 }// detail
 
 class map_data final
 {
 private:
-    template< object_type type >
-    using object_ptr =
+    template< object_type type > using object_ptr =
     typename std::add_pointer< typename detail::object_type_to_type< type >::type >::type;
 
 public:
     map_data() = default;
-    map_data( const QSize& map_size,
-              std::list< std::unique_ptr< base_map_object > >&& objects ) noexcept;
+    map_data( const QSize& map_size ) noexcept;
+
+    void set_map_size( const QSize& size ) noexcept;
+    void add_object( std::unique_ptr< base_map_object >&& object );
 
     int get_rows_count() const noexcept;
     int get_columns_count() const noexcept;
     const QSize& get_map_size() const noexcept;
 
     template< object_type type >
-    auto get_objects_of_type() const ->
-    QList< object_ptr< type > >
+    QList< object_ptr< type > > get_objects_of_type() const
     {
         using obj_ptr_type = object_ptr< type >;
         QList< obj_ptr_type > result_objects;
 
-        for( const auto& object : m_map_objects )
+        auto eq_range = m_map_objects.equal_range( type );
+        for( auto it = eq_range.first; it != eq_range.second; ++it )
         {
-            if( object->get_type() == type )
-            {
-                result_objects << dynamic_cast< obj_ptr_type >( object.get() );
-            }
+            result_objects << dynamic_cast< obj_ptr_type >( it->second.get() );
         }
 
         return result_objects;
@@ -61,7 +78,7 @@ public:
 
 private:
     QSize m_map_size{};
-    std::list< std::unique_ptr< base_map_object > > m_map_objects;
+    std::unordered_multimap< object_type, std::unique_ptr< base_map_object > > m_map_objects;
 };
 
 class game_settings;

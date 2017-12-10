@@ -20,7 +20,7 @@ void controller::init()
     load_next_level();
 
     // create systems
-    std::unique_ptr< ecs::system > move_system{ new systems::movement_system{ m_world } };
+    std::unique_ptr< ecs::system > move_system{ new system::movement_system{ m_world } };
     m_world.add_system( *move_system );
 
     m_systems.emplace_back( std::move( move_system ) );
@@ -73,6 +73,11 @@ QList< tile_map_object* > controller::get_tiles() const
 QList< graphics_map_object* > controller::get_player_bases() const
 {
     return m_map_data.get_objects_of_type< object_type::player_base >();
+}
+
+QList< tank_map_object* > controller::get_player_tanks() const
+{
+    return m_map_data.get_objects_of_type< object_type::player_tank >();
 }
 
 void controller::tick()

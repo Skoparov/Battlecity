@@ -42,4 +42,10 @@ QQmlListProperty< graphics_map_object > qml_map_interface::get_player_bases()
     return QQmlListProperty< graphics_map_object >{ this, m_player_bases };
 }
 
+QQmlListProperty< tank_map_object > qml_map_interface::get_player_tanks()
+{
+    m_player_tanks = m_controller.get_player_tanks();
+    return QQmlListProperty< tank_map_object >{ this, m_player_tanks };
+}
+
 }// game

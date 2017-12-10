@@ -28,6 +28,7 @@ public:
 
     QList< tile_map_object* > get_tiles() const;
     QList< graphics_map_object* > get_player_bases() const;
+    QList< tank_map_object* > get_player_tanks() const;
 
 private:
     void load_next_level();

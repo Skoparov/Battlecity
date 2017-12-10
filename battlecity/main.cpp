@@ -14,7 +14,7 @@ int main(int argc, char *argv[])
     int exit_code{ 0 };
 
     try
-    {               
+    {
         game::game_settings settings{ game::read_game_settings( ":/settings/settings.xml" ) };
         ecs::world world;
 
@@ -23,6 +23,7 @@ int main(int argc, char *argv[])
 
         qmlRegisterType< game::tile_map_object >();
         qmlRegisterType< game::graphics_map_object >();
+        qmlRegisterType< game::tank_map_object >();
 
         game::qml_map_interface map_interface{ controller };
 

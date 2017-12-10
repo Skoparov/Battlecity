@@ -19,7 +19,7 @@ class entity final
     friend class world;
 
 public:
-    ~entity() = default;        
+    ~entity() = default;
 
     template< typename component_type, typename... constructor_args >
     void add_component( constructor_args&&... args )
@@ -77,14 +77,18 @@ private:
     explicit entity( entity_id get_id ) noexcept;
 
     template< typename component_type, typename function_type >
-    void apply_to( function_type&& func )
+    bool apply_to( function_type&& func )
     {
+        bool need_to_continue{ true };
+
         auto it = m_components.find( get_type_id< component_type >() );
         if( it != m_components.end() )
         {
             component_wrapper& ch = it->second;
-            func( *this, ch.get< component_type >() );
+            need_to_continue = func( *this, ch.get< component_type >() );
         }
+
+        return need_to_continue;
     }
 
 private:

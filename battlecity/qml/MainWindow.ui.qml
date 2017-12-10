@@ -33,6 +33,12 @@ Rectangle
                     model: map_interface.player_bases
                     PlayerBase{}
                 }
+
+                Repeater
+                {
+                    model: map_interface.player_tanks
+                    PlayerTank{}
+                }
             }
         }
     }

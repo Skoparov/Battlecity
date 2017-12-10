@@ -1,12 +1,12 @@
 #ifndef MOVABLE_MAP_OBJECT_H
 #define MOVABLE_MAP_OBJECT_H
 
-#include "base_map_object.h"
+#include "graphics_map_object.h"
 
 namespace game
 {
 
-class movable_map_object : public base_map_object
+class movable_map_object : public graphics_map_object
 {
     Q_OBJECT
 

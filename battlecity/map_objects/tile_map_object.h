@@ -20,6 +20,6 @@ public:
     Q_PROPERTY( tile_type type READ get_tile_type CONSTANT )
 };
 
-}
+}// game
 
 #endif

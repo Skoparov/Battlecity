@@ -10,14 +10,20 @@
 static constexpr auto tile_char_empty = 'e';
 static constexpr auto tile_char_wall = 'w';
 static constexpr auto tile_char_player_base = 'b';
+static constexpr auto tile_char_player_start_position = 'p';
 
 namespace game
 {
 
-map_data::map_data( const QSize& map_size,
-                    std::list< std::unique_ptr< base_map_object > >&& objects ) noexcept:
-    m_map_size( map_size ),
-    m_map_objects( std::move( objects ) ){}
+void map_data::set_map_size( const QSize& size ) noexcept
+{
+    m_map_size = size;
+}
+
+void map_data::add_object( std::unique_ptr< base_map_object >&& object )
+{
+    m_map_objects.emplace( object->get_type(), std::move( object ) );
+}
 
 int map_data::get_rows_count() const noexcept
 {
@@ -34,28 +40,88 @@ const QSize& map_data::get_map_size() const noexcept
     return m_map_size;
 }
 
-std::pair< tile_type, bool > char_to_tile_info( char c )
+std::pair< tile_type, object_type > char_to_tile_info( char c )
 {
-    tile_type type;
-    bool is_player_base{ false };
+    tile_type ground;
+    object_type obj_located_on_ground;
 
     switch( c )
     {
-    case tile_char_empty : type = tile_type::empty; break;
-    case tile_char_wall : type = tile_type::wall; break;
+    case tile_char_empty :
+        ground = tile_type::empty;
+        obj_located_on_ground = object_type::tile;
+        break;
+    case tile_char_wall :
+        ground = tile_type::wall;
+        obj_located_on_ground = object_type::tile;
+        break;
     case tile_char_player_base :
-        type = tile_type::wall;
-        is_player_base = true;
+        ground = tile_type::empty;
+        obj_located_on_ground = object_type::player_base;
+        break;
+    case tile_char_player_start_position :
+        ground = tile_type::empty;
+        obj_located_on_ground = object_type::player_tank;
         break;
     default: throw std::invalid_argument{ std::string{ "Unknown map character: " } + c }; break;
     }
 
-    return { type, is_player_base };
+    return { ground, obj_located_on_ground };
 }
 
 QRect obj_rect( int row, int col, const QSize& tile_size, const QSize& size ) noexcept
 {
     return QRect{ QPoint{ col * tile_size.width(), row * tile_size.height() }, size };
+}
+
+std::unique_ptr< base_map_object >
+create_player_base( bool& player_base_found, int row, int col, const game_settings& settings, ecs::world& world )
+{
+    if( player_base_found )
+    {
+        throw std::logic_error{ "More than one player bases found" };
+    }
+
+    player_base_found = true;
+
+    QRect base_rect{ obj_rect( row, col, settings.get_tile_size(), settings.get_player_base_size() ) };
+    ecs::entity& base_entity = create_entity_player_base( base_rect, settings.get_player_base_health(), world );
+
+    return std::unique_ptr< base_map_object >{ new graphics_map_object{ &base_entity, object_type::player_base } };
+}
+
+std::unique_ptr< base_map_object >
+create_tank( bool& player_start_pos_found, int row, int col, const game_settings& settings, ecs::world& world )
+{
+    if( player_start_pos_found )
+    {
+        throw std::logic_error{ "More than one player start position found" };
+    }
+
+    player_start_pos_found = true;
+
+    QRect player_tank_rect{ obj_rect( row, col, settings.get_tile_size(), settings.get_tank_size() ) };
+    ecs::entity& player_tank_entity = create_entity_tank( player_tank_rect,
+                                                          tank_type::player,
+                                                          settings.get_tank_movement_speed(),
+                                                          settings.get_tank_health(),
+                                                          world );
+
+    std::unique_ptr< base_map_object > player_tank{ new tank_map_object{ &player_tank_entity, object_type::player_tank } };
+    world.subscribe( *player_tank );
+
+    return player_tank;
+}
+
+std::unique_ptr< base_map_object >
+create_tile( const tile_type& type, int row, int col, const game_settings& settings, ecs::world& world )
+{
+    const QSize& tile_size{ settings.get_tile_size() };
+    ecs::entity& tile_entity = create_entity_tile( type,
+                                                   obj_rect( row, col, tile_size, tile_size ),
+                                                   world );
+
+    return std::unique_ptr< base_map_object >{ new tile_map_object{ &tile_entity } };
 }
 
 map_data read_map_file( const QString& file, const game_settings& settings, ecs::world& world )
@@ -77,10 +143,10 @@ map_data read_map_file( const QString& file, const game_settings& settings, ecs:
 
     char tile_char;
     int curr_column{ 0 };
+    bool player_start_pos_found{ false };
     bool player_base_found{ false };
-    std::list< std::unique_ptr< base_map_object > > objects;
 
-    const QSize& tile_size{ settings.get_tile_size() };
+    map_data data;
 
     while( !text_stream.atEnd() )
     {
@@ -88,31 +154,19 @@ map_data read_map_file( const QString& file, const game_settings& settings, ecs:
 
         if( tile_char != '\n' )
         {
-            std::pair< tile_type, bool > tile_info{ char_to_tile_info( tile_char ) };
+            std::pair< tile_type, object_type > tile_info{ char_to_tile_info( tile_char ) };
             const tile_type& type{ tile_info.first };
 
-            if( tile_info.second ) // is player base?
+            if( tile_info.second == object_type::player_base )
             {
-                if( player_base_found )
-                {
-                    throw std::logic_error{ "More than one player bases found" };
-                }
-
-                player_base_found = true;
-
-                QRect base_rect{ obj_rect( rows_count, curr_column, tile_size, settings.get_player_base_size() ) };
-                ecs::entity& base_entity = create_entity_player_base( base_rect, world );
-
-                std::unique_ptr< base_map_object > player_base{ new graphics_map_object{ &base_entity, object_type::player_base } };
-                objects.emplace_back( std::move( player_base ) );
+                data.add_object( create_player_base( player_base_found, rows_count, curr_column, settings, world ) );
+            }
+            else if( tile_info.second == object_type::player_tank )
+            {
+                data.add_object( create_tank( player_start_pos_found, rows_count, curr_column, settings, world ) );
             }
 
-            ecs::entity& tile_entity = create_entity_tile( type,
-                                                           obj_rect( rows_count, curr_column, tile_size, tile_size ),
-                                                           world );
-
-            std::unique_ptr< base_map_object > tile{ new tile_map_object{ &tile_entity } };
-            objects.emplace_back( std::move( tile ) );
+            data.add_object( create_tile( type, rows_count, curr_column, settings, world ) );
             ++curr_column;
         }
         else
@@ -135,17 +189,20 @@ map_data read_map_file( const QString& file, const game_settings& settings, ecs:
     {
         throw std::logic_error{ "Player base not found" };
     }
+    else if( !player_start_pos_found )
+    {
+        throw std::logic_error{ "Player start position not found" };
+    }
 
     QSize map_size{ columns_count, rows_count };
+    data.set_map_size( map_size );
 
     // add map entity
-    QRect map_rect{ 0, 0,
-                    tile_size.width() * map_size.width(),
-                            tile_size.height() * map_size.height() };
-
+    const QSize& tile_size{ settings.get_tile_size() };
+    QRect map_rect{ 0, 0, tile_size.width() * map_size.width(), tile_size.height() * map_size.height() };
     create_entity_map( map_rect, world );
 
-    return map_data{ map_size, std::move( objects ) };
+    return data;
 }
 
 }// game

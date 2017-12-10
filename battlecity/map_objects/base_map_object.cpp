@@ -8,17 +8,22 @@ namespace game
 base_map_object::base_map_object( ecs::entity* entity, const object_type& type, QObject* parent ):
     QObject( parent ),
     m_entity( entity ),
-    m_object_type( type ){}
+    m_object_type( type )
+{
+    if( !m_entity )
+    {
+        throw std::invalid_argument{ "Map object entity is null" };
+    }
+}
 
 ecs::entity_id base_map_object::get_id() const noexcept
 {
     return m_entity->get_id();
 }
 
-void base_map_object::set_position_x( int x ) noexcept
+void base_map_object::set_position_x( int /*x*/ ) noexcept
 {
-    assert(false);
-    emit pos_x_changed( x );
+    assert( false );
 }
 
 int base_map_object::get_position_x() const noexcept
@@ -27,10 +32,9 @@ int base_map_object::get_position_x() const noexcept
     return g.get_pos().x();
 }
 
-void base_map_object::set_position_y( int y ) noexcept
+void base_map_object::set_position_y( int /*y*/ ) noexcept
 {
-    assert(false);
-    emit pos_y_changed( y );
+    assert( false );
 }
 
 int base_map_object::get_position_y() const noexcept
@@ -53,7 +57,7 @@ int base_map_object::get_height() const noexcept
 
 void base_map_object::set_rotation( int /*rotation*/ ) noexcept
 {
-    assert(false);
+    assert( false );
 }
 
 int base_map_object::get_rotation() const noexcept
@@ -67,9 +71,22 @@ bool base_map_object::get_traversible() const noexcept
     return !m_entity->has_component< component::non_traversible >();
 }
 
-const object_type &base_map_object::get_type() const noexcept
+const object_type& base_map_object::get_type() const noexcept
 {
     return m_object_type;
+}
+
+void base_map_object::on_event( const event::geometry_changed& event )
+{
+    if( event.entity_present( m_entity->get_id() ) )
+    {
+        const component::geometry& g = m_entity->get_component_unsafe< component::geometry >();
+        QPoint pos{ g.get_pos() };
+
+        emit pos_x_changed( pos.x() );
+        emit pos_y_changed( pos.y() );
+        emit rotation_changed( g.get_rotation() );
+    }
 }
 
 }// game

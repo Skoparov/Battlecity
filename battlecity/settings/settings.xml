@@ -2,9 +2,11 @@
 <Settings>
     <Fps>30</Fps>
     <TileSize>32</TileSize>
-    <PlayerHealth>5</PlayerHealth>
-    <PlayerBaseHealth>5</PlayerBaseHealth>
+    <TankSize>64</TankSize>
     <PlayerBaseSize>64</PlayerBaseSize>
+    <TankHealth>1</TankHealth>
+    <PlayerBaseHealth>5</PlayerBaseHealth>
+    <PlayerLives>5</PlayerLives>
     <BaseKillsToWin>10</BaseKillsToWin>
     <TankMoveSpeed>8</TankMoveSpeed>
 </Settings>

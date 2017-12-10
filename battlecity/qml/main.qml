@@ -1,12 +1,15 @@
 import QtQuick 2.3
 import QtQuick.Window 2.0
 
-Window {
+Window
+{
     visible: true
-    width: 1024
-    height: 960
+    width: main_window.width
+    height: main_window.height
 
-    MainWindow {
-        anchors.fill: parent
+    MainWindow
+    {
+        id: main_window
+        anchors.centerIn: parent
     }
 }

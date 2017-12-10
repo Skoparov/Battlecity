@@ -74,14 +74,16 @@ public:
         return entities;
     }
 
+    // func should be of signature bool< entity&, component_type& >
+    // where bool indicates whether for_each loop should continue execution upon function return
     template< typename component_type, typename func_type >
     void for_each( func_type&& func )
     {
         for( auto& entity : m_entities )
         {
-            if( entity.second.has_component< component_type >() )
+            if( !entity.second.apply_to< component_type >( std::forward< func_type >( func ) ) )
             {
-                entity.second.apply_to< component_type >( std::forward< func_type >( func ) );
+                break;
             }
         }
     }

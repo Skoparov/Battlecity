@@ -6,11 +6,12 @@ static constexpr auto str_move_direction_up = "Up";
 static constexpr auto str_move_direction_down = "Down";
 static constexpr auto str_move_direction_left = "Left";
 static constexpr auto str_move_direction_right = "Right";
+static constexpr auto str_move_direction_none = "None";
 
 namespace game
 {
 
-movement_direction str_to_move_direction( const QString& direction_str ) noexcept
+movement_direction str_to_move_direction( const QString& direction_str )
 {
     movement_direction direction{ movement_direction::none };
 
@@ -30,29 +31,26 @@ movement_direction str_to_move_direction( const QString& direction_str ) noexcep
     {
         direction = movement_direction::right;
     }
+    else if( direction_str != str_move_direction_none )
+    {
+        throw std::invalid_argument{ "Invalid movement string" };
+    }
 
     return direction;
 }
 
 QString move_direction_to_str( const movement_direction& direction )
 {
-    QString direction_str{ "None" };
+    QString direction_str{ str_move_direction_none };
 
-    if( direction == movement_direction::up )
+    switch( direction )
     {
-        direction_str = str_move_direction_up;
-    }
-    else if( direction == movement_direction::down )
-    {
-        direction_str = str_move_direction_down;
-    }
-    else if( direction == movement_direction::left )
-    {
-        direction_str = str_move_direction_left;
-    }
-    else if( direction == movement_direction::right )
-    {
-        direction_str = str_move_direction_right;
+    case movement_direction::up: direction_str = str_move_direction_up; break;
+    case movement_direction::down: direction_str = str_move_direction_down; break;
+    case movement_direction::left: direction_str = str_move_direction_left; break;
+    case movement_direction::right: direction_str = str_move_direction_right; break;
+    case movement_direction::none: direction_str = str_move_direction_none; break;
+    default: throw std::invalid_argument{ "Unimplemented movement_direction" }; break;
     }
 
     return direction_str;
@@ -61,7 +59,7 @@ QString move_direction_to_str( const movement_direction& direction )
 movable_map_object::movable_map_object( ecs::entity* entity,
                                         const object_type& type,
                                         QObject* parent ):
-    base_map_object( entity, type, parent ){}
+    graphics_map_object( entity, type, parent ){}
 
 void movable_map_object::set_move_direction( const QString& direction )
 {

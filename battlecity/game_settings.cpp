@@ -7,7 +7,9 @@
 
 static constexpr auto tag_fps = "Fps";
 static constexpr auto tag_tile_size = "TileSize";
-static constexpr auto tag_player_health = "PlayerHealth";
+static constexpr auto tag_tank_size = "TankSize";
+static constexpr auto tag_tank_health = "TankHealth";
+static constexpr auto tag_player_lives = "PlayerLives";
 static constexpr auto tag_player_base_health = "PlayerBaseHealth";
 static constexpr auto tag_player_base_size = "PlayerBaseSize";
 static constexpr auto tag_base_kills_to_win = "BaseKillsToWin";
@@ -36,6 +38,36 @@ const QSize& game_settings::get_tile_size() const noexcept
     return m_tile_size;
 }
 
+void game_settings::set_tank_size( const QSize& size ) noexcept
+{
+    m_tank_size = size;
+}
+
+const QSize& game_settings::get_tank_size() const noexcept
+{
+    return m_tank_size;
+}
+
+void game_settings::set_player_base_size( const QSize& size ) noexcept
+{
+    m_player_base_size = size;
+}
+
+const QSize& game_settings::get_player_base_size() const noexcept
+{
+    return m_player_base_size;
+}
+
+void game_settings::set_tank_health( const uint32_t health ) noexcept
+{
+    m_tank_health = health;
+}
+
+uint32_t game_settings::get_tank_health() const noexcept
+{
+    return m_tank_health;
+}
+
 void game_settings::set_player_base_health( const uint32_t health ) noexcept
 {
     m_base_health = health;
@@ -46,24 +78,14 @@ uint32_t game_settings::get_player_base_health() const noexcept
     return m_base_health;
 }
 
-void game_settings::set_player_base_size( const QSize& size ) noexcept
+void game_settings::set_player_lives( const uint32_t lives ) noexcept
 {
-    m_player_base_size = size;
+    m_player_lives = lives;
 }
 
-const QSize &game_settings::get_player_base_size() const noexcept
+uint32_t game_settings::get_player_lives() const noexcept
 {
-    return m_player_base_size;
-}
-
-void game_settings::set_player_health( const uint32_t health ) noexcept
-{
-    m_player_health = health;
-}
-
-uint32_t game_settings::get_player_health() const noexcept
-{
-    return m_player_health;
+    return m_player_lives;
 }
 
 void game_settings::set_base_kills_to_win( const uint32_t kills ) noexcept
@@ -115,18 +137,27 @@ game_settings read_game_settings( const QString& file )
                 uint32_t tile_size{ xml_reader.readElementText().toUInt() };
                 settings.set_tile_size( QSize( tile_size, tile_size ) );
             }
-            else if( name == tag_player_health )
+            else if( name == tag_tank_size )
             {
-                settings.set_player_health( xml_reader.readElementText().toUInt() );
-            }
-            else if( name == tag_player_base_health )
-            {
-                settings.set_player_base_health( xml_reader.readElementText().toUInt() );
+                uint32_t tank_size{ xml_reader.readElementText().toUInt() };
+                settings.set_tank_size( QSize( tank_size, tank_size ) );
             }
             else if( name == tag_player_base_size )
             {
                 uint32_t base_size{ xml_reader.readElementText().toUInt() };
                 settings.set_player_base_size( QSize( base_size, base_size ) );
+            }
+            else if( name == tag_tank_health )
+            {
+                settings.set_tank_health( xml_reader.readElementText().toUInt() );
+            }
+            else if( name == tag_player_base_health )
+            {
+                settings.set_player_base_health( xml_reader.readElementText().toUInt() );
+            }
+            else if( name == tag_player_lives )
+            {
+                settings.set_player_lives( xml_reader.readElementText().toUInt() );
             }
             else if( name == tag_base_kills_to_win )
             {

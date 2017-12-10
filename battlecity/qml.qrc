@@ -3,7 +3,8 @@
         <file>qml/main.qml</file>
         <file>qml/MainWindow.ui.qml</file>
         <file>qml/Tile.qml</file>
-	 <file>qml/PlayerBase.qml</file>
+		<file>qml/PlayerBase.qml</file>
+		<file>qml/PlayerTank.qml</file>
 
         <file>maps/map_1</file>
         <file>settings/settings.xml</file>
@@ -11,5 +12,6 @@
         <file>graphics/tile_empty.png</file>
         <file>graphics/tile_wall.png</file>
         <file>graphics/player_base.png</file>
+		<file>graphics/player_tank.png</file>
     </qresource>
 </RCC>

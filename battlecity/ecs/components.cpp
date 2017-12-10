@@ -52,7 +52,7 @@ bool geometry::intersects_with( const QRect& rect ) const noexcept
 
 void geometry::set_pos(const QPoint& point ) noexcept
 {
-    m_rect.setTopLeft( point );
+    m_rect.moveTo( point );
 }
 
 QPoint geometry::get_pos() const noexcept

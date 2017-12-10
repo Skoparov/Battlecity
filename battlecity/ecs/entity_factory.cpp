@@ -3,36 +3,15 @@
 static constexpr auto image_tile_empty = "tile_empty";
 static constexpr auto image_tile_wall = "tile_wall";
 static constexpr auto image_player_base = "player_base";
+static constexpr auto image_player_tank = "player_tank";
 
 namespace game
 {
-
-ecs::entity& create_entity_map( const QRect& rect, ecs::world& world )
-{
-    ecs::entity& entity = world.create_entity();
-
-    entity.add_component< component::map_object >();
-    entity.add_component< component::geometry >( rect );
-
-    return entity;
-}
 
 QString get_image_path( const QString& image_name )
 {
     return QString( "qrc:/graphics/%1.png" ).arg( image_name );
 }
-
-ecs::entity& create_entity_player_base( const QRect& rect, ecs::world& world )
-{
-    ecs::entity& entity = world.create_entity();
-
-    entity.add_component< component::player_base >();
-    entity.add_component< component::geometry >( rect );
-    entity.add_component< component::graphics >( get_image_path( image_player_base ) );
-
-    return entity;
-}
-
 
 bool tile_traversible( const tile_type& type )
 {
@@ -62,6 +41,42 @@ QString tile_image_path( const tile_type& type )
     return get_image_path( image_name );
 }
 
+QString tank_image_path( const tank_type& type )
+{
+    QString image_name;
+
+    switch( type )
+    {
+    case tank_type::player : image_name = image_player_tank; break;
+    default: throw std::invalid_argument{ "Unimplemented tank type" };
+    }
+
+    return get_image_path( image_name );
+}
+
+ecs::entity& create_entity_map( const QRect& rect, ecs::world& world )
+{
+    ecs::entity& entity = world.create_entity();
+
+    entity.add_component< component::map_object >();
+    entity.add_component< component::geometry >( rect );
+
+    return entity;
+}
+
+ecs::entity& create_entity_player_base( const QRect& rect, uint32_t health, ecs::world& world )
+{
+    ecs::entity& entity = world.create_entity();
+
+    entity.add_component< component::player_base >();
+    entity.add_component< component::geometry >( rect );
+    entity.add_component< component::health >( health );
+    entity.add_component< component::non_traversible >();
+    entity.add_component< component::graphics >( get_image_path( image_player_base ) );
+
+    return entity;
+}
+
 ecs::entity& create_entity_tile( const tile_type& type, const QRect& rect, ecs::world& world )
 {
     ecs::entity& entity = world.create_entity();
@@ -83,7 +98,32 @@ ecs::entity& create_entity_tile( const tile_type& type, const QRect& rect, ecs::
     }
 
     return entity;
+}
 
+ecs::entity& create_entity_tank( const QRect& rect,
+                                 const tank_type& type,
+                                 uint32_t speed,
+                                 uint32_t health,
+                                 ecs::world& world )
+{
+    ecs::entity& entity = world.create_entity();
+
+    try
+    {
+        entity.add_component< component::tank_object >( type );
+        entity.add_component< component::geometry >( rect );
+        entity.add_component< component::health >( health );
+        entity.add_component< component::non_traversible >();
+        entity.add_component< component::movement >( speed );
+        entity.add_component< component::graphics >( tank_image_path( type ) );
+    }
+    catch( ... )
+    {
+        world.remove_entity( entity );
+        throw;
+    }
+
+    return entity;
 }
 
 // factory
