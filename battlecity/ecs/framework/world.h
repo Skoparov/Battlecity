@@ -2,8 +2,7 @@
 #define WORLD_H
 
 #include <list>
-#include <typeinfo>
-#include <typeindex>
+#include <algorithm>
 #include <type_traits>
 #include <unordered_set>
 
@@ -48,27 +47,46 @@ protected:
 class world final
 {
     using event_id = type_id;
-    using event_wrapper = helpers::polymorph;
+    using component_info = std::pair< entity::component_wrapper*, entity* >;
+
+    friend class entity;
 
 public:
     world() = default;
 
     void tick(); // tick() of each system
 
-    void reset(); // remove all entities, preserve systems
+    void reset(); // remove all entities, clean() systems
     void clean(); // remove all entities and systems
 
+    entity& create_entity();
+    void remove_entity( entity& e );
+    void schedule_remove_entity( entity& e );
+
     template< typename component_type >
-    std::list< entity* > entities_with_component()
+    std::list< component_type* > get_components()
+    {
+        std::list< component_type* > components;
+
+        auto eq_range = m_components.equal_range( get_type_id< component_type >() );
+        for( auto it = eq_range.first; it != eq_range.second; ++it )
+        {
+            entity::component_wrapper* w{ it->second.first };
+            components.emplace_back( &w->get< component_type >() );
+        }
+
+        return components;
+    }
+
+    template< typename component_type >
+    std::list< entity* > get_entities_with_component()
     {
         std::list< entity* > entities;
 
-        for( auto& entity : m_entities )
+        auto eq_range = m_components.equal_range( get_type_id< component_type >() );
+        for( auto it = eq_range.first; it != eq_range.second; ++it )
         {
-            if( entity.second.has_component< component_type >() )
-            {
-                entities.emplace_back( &entity.second );
-            }
+            entities.emplace_back( it->second.second );
         }
 
         return entities;
@@ -79,18 +97,18 @@ public:
     template< typename component_type, typename func_type >
     void for_each( func_type&& func )
     {
-        for( auto& entity : m_entities )
+        auto eq_range = m_components.equal_range( get_type_id< component_type >() );
+        for( auto it = eq_range.first; it != eq_range.second; ++it )
         {
-            if( !entity.second.apply_to< component_type >( std::forward< func_type >( func ) ) )
+            entity::component_wrapper* w{ it->second.first };
+            entity& e = *it->second.second;
+
+            if( !func( e, w->get< component_type >() ) )
             {
                 break;
             }
         }
     }
-
-    entity& create_entity();
-    void remove_entity( entity& e );
-    void schedule_remove_entity( entity& e );
 
     void add_system( system& system );
     void remove_system( system& s );
@@ -123,11 +141,14 @@ public:
     }
 
 private:
+    void add_component( entity& e, const entity::component_id& id, entity::component_wrapper& w );
+    void remove_component( entity& e, const entity::component_id& c_id );
     void cleanup();
 
 private:
     std::unordered_set< system* > m_systems;
     std::unordered_map< entity_id, entity > m_entities;
+    std::unordered_multimap< entity::component_id, component_info > m_components;
 
     std::list< system* > m_systems_to_remove;
     std::list< entity_id > m_entities_to_remove;

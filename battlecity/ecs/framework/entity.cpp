@@ -3,12 +3,9 @@
 namespace ecs
 {
 
-entity::entity( entity_id id ) noexcept: m_id( id ){}
-
-bool entity::has_component( const component_id& id ) const
-{
-    return m_components.count( id ) != 0;
-}
+entity::entity( world* world, entity_id id ) noexcept:
+    m_world( world ),
+    m_id( id ){}
 
 entity_id entity::get_id() const noexcept
 {

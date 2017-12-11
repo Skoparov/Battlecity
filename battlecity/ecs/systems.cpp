@@ -82,16 +82,21 @@ void movement_system::tick()
 {
     using namespace component;
 
-    ecs::entity* map_entity{ m_world.entities_with_component< map_object >().front() };
-    geometry& map_geom = map_entity->get_component_unsafe< geometry >();
+    geometry* map_geom{ nullptr };
 
     m_world.for_each< movement >( [ & ]( ecs::entity& curr_entity, movement& move )
     {
         if( move.get_move_direction() != movement_direction::none )
         {
+            if( !map_geom )
+            {
+                ecs::entity* map_entity{ m_world.get_entities_with_component< map_object >().front() };
+                map_geom = &map_entity->get_component_unsafe< geometry >();
+            }
+
             geometry& curr_geom = curr_entity.get_component_unsafe< geometry >();
             int prev_rotation{ curr_geom.get_rotation() };
-            QRect rect_after_move{ calc_move( move, curr_geom, map_geom ) };
+            QRect rect_after_move{ calc_move( move, curr_geom, *map_geom ) };
             bool movement_valid{ true };
 
             m_world.for_each< non_traversible >( [ & ]( ecs::entity& other_entity, non_traversible& )

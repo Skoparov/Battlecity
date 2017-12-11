@@ -1,14 +1,11 @@
-#ifndef _HELPERS_POLYMORPH_TEMPLATE_IMPL_
-#define _HELPERS_POLYMORPH_TEMPLATE_IMPL_
+#ifndef _POLYMORPH_IMPL_
+#define _POLYMORPH_IMPL_
 
 #include "polymorph.h"
 
-namespace helpers
-{
+class any_empty : public std::exception{};
 
-class polymorph_empty : public std::exception{};
-
-namespace _details
+namespace _detail
 {
 
 class base_type_storage
@@ -32,7 +29,7 @@ class type_storage final : public base_type_storage
 {
     using base_type = T;
     using base_unref_type = typename std::remove_reference< T >::type;
-    friend class helpers::polymorph;
+    friend class polymorph;
 
 public:
     type_storage() = delete;
@@ -68,11 +65,9 @@ private:
 };
 
 template< typename T >
-std::shared_ptr< _details::type_storage< T > > try_cast( const std::shared_ptr< _details::base_type_storage >& data )
+type_storage< T >* try_cast( const std::unique_ptr< _detail::base_type_storage >& data )
 {
-    auto data_casted = std::dynamic_pointer_cast< type_storage< T > >
-            ( std::const_pointer_cast< _details::base_type_storage >( data ) );
-
+    auto data_casted = dynamic_cast< type_storage< T >* >( data.get() );
     if( !data_casted )
     {
         throw std::bad_cast{};
@@ -82,18 +77,17 @@ std::shared_ptr< _details::type_storage< T > > try_cast( const std::shared_ptr< 
 }
 
 template< typename T >
-using type_storage_t = _details::type_storage< typename std::decay< T >::type >;
+using type_storage_t = _detail::type_storage< typename std::decay< T >::type >;
 
-}// details
-
+}// detail
 
 template< typename T, typename >
-polymorph::polymorph( T&& t ) : m_data( _details::type_storage_t< T >::create( std::forward< T >( t ) ) ){}
+polymorph::polymorph( T&& t ) : m_data( _detail::type_storage_t< T >::create( std::forward< T >( t ) ) ){}
 
 template< typename T, typename >
 polymorph& polymorph::operator=( T&& t )
 {
-    m_data = _details::type_storage_t< T >::create( std::forward< T >( t ) );
+    m_data = _detail::type_storage_t< T >::create( std::forward< T >( t ) );
     return *this;
 }
 
@@ -102,10 +96,10 @@ T& polymorph::get()
 {
     if( empty() )
     {
-        throw polymorph_empty{};
+        throw any_empty{};
     }
 
-    return _details::try_cast< T >( m_data )->get();
+    return _detail::try_cast< T >( m_data )->get();
 }
 
 template< class T >
@@ -113,22 +107,22 @@ const T& polymorph::get() const
 {
     if( empty() )
     {
-        throw polymorph_empty{};
+        throw any_empty{};
     }
 
-    return _details::try_cast< T >( m_data )->get();
+    return _detail::try_cast< T >( m_data )->get();
 }
 
 template< class T >
 T& polymorph::get_unsafe() noexcept
 {
-    return std::static_pointer_cast< _details::type_storage< T > >( m_data )->get();
+    return static_cast< _detail::type_storage< T >* >( m_data.get() )->get();
 }
 
 template< class T >
 const T& polymorph::get_unsafe() const noexcept
 {
-    return std::static_pointer_cast< _details::type_storage< T > >( m_data )->get();
+    return static_cast< _detail::type_storage< T >* >( m_data.get() )->get();
 }
 
 template< typename T >
@@ -136,14 +130,5 @@ bool polymorph::check_type() const noexcept
 {
     return empty()? false : ( typeid( T ) == m_data->type_info() );
 }
-
-template< class T >
-polymorph& polymorph::deep_copy( const polymorph& source )
-{
-    m_data = _details::type_storage_t< T >::create( source.get< T >() );
-    return *this;
-}
-
-}// helpers
 
 #endif
