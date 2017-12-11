@@ -39,6 +39,12 @@ Rectangle
                     model: map_interface.player_tanks
                     PlayerTank{}
                 }
+
+                Repeater
+                {
+                    model: map_interface.projectiles
+                    Projectile{}
+                }
             }
         }
     }

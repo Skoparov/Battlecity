@@ -18,6 +18,13 @@ public:
     void tick() override;
 };
 
+class projectile_system : public ecs::system
+{
+public:
+    explicit projectile_system( ecs::world& world );
+    void tick() override;
+};
+
 //class health_system : public ecs::system
 //{
 //public:

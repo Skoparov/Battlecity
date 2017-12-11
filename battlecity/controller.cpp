@@ -15,15 +15,27 @@ controller::controller( const game_settings& settings, ecs::world& world ) :
     connect( m_tick_timer, SIGNAL( timeout() ), this, SLOT( tick() ) );
 }
 
+controller::~controller()
+{
+    m_world.subscribe< event::projectile_fired >( *this );
+    m_world.subscribe< event::entities_removed >( *this );
+}
+
 void controller::init()
 {
     load_next_level();
 
     // create systems
     std::unique_ptr< ecs::system > move_system{ new system::movement_system{ m_world } };
+    std::unique_ptr< ecs::system > proj_system{ new system::projectile_system{ m_world } };
     m_world.add_system( *move_system );
+    m_world.add_system( *proj_system );
 
     m_systems.emplace_back( std::move( move_system ) );
+    m_systems.emplace_back( std::move( proj_system ) );
+
+    m_world.subscribe< event::projectile_fired >( *this );
+    m_world.subscribe< event::entities_removed >( *this );
 }
 
 void controller::load_next_level()
@@ -80,8 +92,31 @@ QList< tank_map_object* > controller::get_player_tanks() const
     return m_map_data.get_objects_of_type< object_type::player_tank >();
 }
 
+QList< movable_map_object* > controller::get_projectiles() const
+{
+    return m_map_data.get_objects_of_type< object_type::projectile >();
+}
+
+void controller::on_event( const event::projectile_fired& event )
+{
+    std::unique_ptr< base_map_object > projectile{
+        new movable_map_object{ &event.get_projectile(), object_type::projectile } };
+
+    m_world.subscribe< event::geometry_changed >( *projectile );
+    m_map_data.add_object( std::move( projectile ) );
+
+    emit projectile_fired();
+}
+
+void controller::on_event( const event::entities_removed& event )
+{
+    auto removed_object_types = m_map_data.remove_objects_from_active( event.get_entities() );
+    emit objects_removed( std::move( removed_object_types ) );
+}
+
 void controller::tick()
 {
+    m_map_data.clear_inactive_objects();
     m_world.tick();
 }
 

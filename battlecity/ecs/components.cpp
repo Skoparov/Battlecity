@@ -21,6 +21,18 @@ const tile_type& tile_object::get_tile_type() const noexcept
 
 //
 
+void turret_object::set_fire_status( bool fired ) noexcept
+{
+    m_fired = fired;
+}
+
+bool turret_object::has_fired() const noexcept
+{
+    return m_fired;
+}
+
+//
+
 tank_object::tank_object( const tank_type& type ) noexcept :
     m_tank_type( type ){}
 
@@ -32,6 +44,27 @@ void tank_object::set_tank_type( const tank_type& type ) noexcept
 const tank_type& tank_object::get_tank_type() const noexcept
 {
     return m_tank_type;
+}
+
+//
+
+projectile::projectile( uint32_t damage, ecs::entity_id owner ) noexcept :
+    m_damage( damage ),
+    m_owner( owner ){}
+
+void projectile::set_damage( uint32_t damage ) noexcept
+{
+    m_damage = damage;
+}
+
+uint32_t projectile::get_damage() const noexcept
+{
+    return m_damage;
+}
+
+ecs::entity_id projectile::get_owner() const noexcept
+{
+    return m_owner;
 }
 
 //
@@ -87,7 +120,10 @@ const QRect &geometry::get_rect() const noexcept
 
 //
 
-movement::movement( uint32_t speed ) noexcept : m_speed( speed ){}
+movement::movement( uint32_t speed,
+                    const movement_direction& direction ) noexcept:
+    m_speed( speed ),
+    m_move_direction( direction ){}
 
 void movement::set_speed( uint32_t speed ) noexcept
 {
@@ -163,6 +199,6 @@ bool health::alive() const noexcept
     return m_health != 0;
 }
 
-}// components
+}// component
 
 }// ecs

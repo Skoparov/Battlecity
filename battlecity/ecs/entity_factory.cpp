@@ -4,6 +4,7 @@ static constexpr auto image_tile_empty = "tile_empty";
 static constexpr auto image_tile_wall = "tile_wall";
 static constexpr auto image_player_base = "player_base";
 static constexpr auto image_player_tank = "player_tank";
+static constexpr auto image_projectile = "projectile";
 
 namespace game
 {
@@ -58,7 +59,7 @@ ecs::entity& create_entity_map( const QRect& rect, ecs::world& world )
 {
     ecs::entity& entity = world.create_entity();
 
-    entity.add_component< component::map_object >();
+    entity.add_component< component::game_map >();
     entity.add_component< component::geometry >( rect );
 
     return entity;
@@ -84,11 +85,14 @@ ecs::entity& create_entity_tile( const tile_type& type, const QRect& rect, ecs::
     try
     {
         entity.add_component< component::geometry >( rect );
+        entity.add_component< component::tile_object >( type );
         entity.add_component< component::graphics >( tile_image_path( type ) );
 
         if( !tile_traversible( type ) )
         {
             entity.add_component< component::non_traversible >();
+            uint32_t health = 1;
+            entity.add_component< component::health >( health ); // TODO!!!!!!!!
         }
     }
     catch( ... )
@@ -122,6 +126,23 @@ ecs::entity& create_entity_tank( const QRect& rect,
         world.remove_entity( entity );
         throw;
     }
+
+    return entity;
+}
+
+ecs::entity& create_entity_projectile( const QRect& rect,
+                                       uint32_t damage,
+                                       uint32_t speed,
+                                       const movement_direction& direction,
+                                       ecs::entity_id owner,
+                                       ecs::world& world )
+{
+    ecs::entity& entity = world.create_entity();
+
+    entity.add_component< component::projectile >( damage, owner );
+    entity.add_component< component::geometry >( rect );
+    entity.add_component< component::movement >( speed, direction );
+    entity.add_component< component::graphics >( get_image_path( image_projectile ) );
 
     return entity;
 }

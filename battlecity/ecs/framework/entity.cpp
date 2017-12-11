@@ -12,6 +12,11 @@ entity_id entity::get_id() const noexcept
     return m_id;
 }
 
+world& entity::get_world() noexcept
+{
+    return *m_world;
+}
+
 bool operator==( const entity& l, const entity& r ) noexcept
 {
     return l.get_id() == r.get_id();

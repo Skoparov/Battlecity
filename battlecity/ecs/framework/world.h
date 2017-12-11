@@ -123,7 +123,11 @@ public:
     template< typename event_type >
     void unsubscribe( event_callback< event_type >& callback )
     {
-        m_subscribers.at( get_type_id< event_type > ).erase( &callback );
+        auto it = m_subscribers.find( get_type_id< event_type >() );
+        if( it != m_subscribers.end() )
+        {
+            it->second.erase( &callback );
+        }
     }
 
     template< typename event_type >

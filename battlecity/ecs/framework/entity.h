@@ -40,7 +40,7 @@ public:
     {
         component_id id{ get_type_id< component_type >() };
         m_components.erase( id );
-        m_world.remove_component( *this, id );
+        m_world->remove_component( *this, id );
     }
 
     template< typename component_type >
@@ -79,6 +79,7 @@ public:
     }
 
     entity_id get_id() const noexcept;
+    world& get_world() noexcept;
 
 private:
     entity( world* world, entity_id id ) noexcept;

@@ -59,7 +59,17 @@ QString move_direction_to_str( const movement_direction& direction )
 movable_map_object::movable_map_object( ecs::entity* entity,
                                         const object_type& type,
                                         QObject* parent ):
-    graphics_map_object( entity, type, parent ){}
+    graphics_map_object( entity, type, parent )
+{
+    ecs::world& world = m_entity->get_world();
+    world.subscribe< event::geometry_changed >( *this );
+}
+
+movable_map_object::~movable_map_object()
+{
+    ecs::world& world = m_entity->get_world();
+    world.unsubscribe< event::geometry_changed >( *this );
+}
 
 void movable_map_object::set_move_direction( const QString& direction )
 {

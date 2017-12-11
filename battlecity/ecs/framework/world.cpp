@@ -94,13 +94,14 @@ void world::remove_component( entity& e, const entity::component_id& c_id )
     using value_type = std::unordered_multimap< entity::component_id, component_info >::value_type;
 
     auto eq_range = m_components.equal_range( c_id );
-    for( auto it = eq_range.first ; it != eq_range.second; )
+    for( auto it = eq_range.first; it != eq_range.second; )
     {
         const component_info& info = it->second;
         if ( info.second->get_id() == e.get_id() )
         {
             m_components.erase( it++ );
-        } else
+        }
+        else
         {
             ++it;
         }

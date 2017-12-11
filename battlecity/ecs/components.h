@@ -4,6 +4,8 @@
 #include <QRect>
 #include <QString>
 
+#include "ecs/framework/entity.h"
+
 namespace game
 {
 
@@ -18,7 +20,7 @@ class tile_object final
 {
 public:
     tile_object() = default;
-    tile_object( const tile_type& type ) noexcept;
+    explicit tile_object( const tile_type& type ) noexcept;
 
     void set_tile_type( const tile_type& type ) noexcept;
     const tile_type& get_tile_type() const noexcept;
@@ -29,11 +31,23 @@ private:
 
 //
 
-class tank_object final
+class turret_object
+{
+public:
+    void set_fire_status( bool fired ) noexcept;
+    bool has_fired() const noexcept;
+
+private:
+    bool m_fired{ false };
+};
+
+//
+
+class tank_object final : public turret_object
 {
 public:
     tank_object() = default;
-    tank_object( const tank_type& type ) noexcept;
+    explicit tank_object( const tank_type& type ) noexcept;
 
     void set_tank_type( const tank_type& type ) noexcept;
     const tank_type& get_tank_type() const noexcept;
@@ -42,10 +56,10 @@ private:
     tank_type m_tank_type{ tank_type::enemy };
 };
 
+
 //
 
-
-class map_object final{};
+class game_map final{};
 
 //
 
@@ -53,7 +67,21 @@ class player_base final{};
 
 //
 
-class projectile final{};
+class projectile final
+{
+public:
+    projectile() = default;
+    projectile( uint32_t damage, ecs::entity_id owner ) noexcept;
+
+    void set_damage( uint32_t damage ) noexcept;
+    uint32_t get_damage() const noexcept;
+
+    ecs::entity_id get_owner() const noexcept;
+
+private:
+    uint32_t m_damage{ 1 };
+    ecs::entity_id m_owner{ INVALID_NUMERIC_ID };
+};
 
 //
 
@@ -88,7 +116,7 @@ class movement final
 {
 public:
     movement() = default;
-    movement( uint32_t step ) noexcept;
+    movement( uint32_t step, const movement_direction& direction = movement_direction::none ) noexcept;
 
     void set_speed( uint32_t speed ) noexcept;
     uint32_t get_speed() const noexcept;

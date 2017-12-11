@@ -1,5 +1,6 @@
 #include "map_data.h"
 
+#include <QSet>
 #include <QFile>
 #include <QTextStream>
 
@@ -22,7 +23,30 @@ void map_data::set_map_size( const QSize& size ) noexcept
 
 void map_data::add_object( std::unique_ptr< base_map_object >&& object )
 {
-    m_map_objects.emplace( object->get_type(), std::move( object ) );
+    m_active_map_objects.emplace( object->get_type(), std::move( object ) );
+}
+
+QSet< object_type >
+map_data::remove_objects_from_active( const std::unordered_set< ecs::entity_id >& entities )
+{
+    QSet< object_type > removed_object_types;
+
+    for( auto it = m_active_map_objects.begin(); it != m_active_map_objects.end(); )
+    {
+        if ( entities.count( it->second->get_id() ) )
+        {
+            object_type type{ it->second->get_type() };
+            removed_object_types.insert( type );
+            m_inactive_objects.emplace_back( std::move( it->second ) );
+            m_active_map_objects.erase( it++ );
+        }
+        else
+        {
+            ++it;
+        }
+    }
+
+    return removed_object_types;
 }
 
 int map_data::get_rows_count() const noexcept
@@ -108,8 +132,6 @@ create_tank( bool& player_start_pos_found, int row, int col, const game_settings
                                                           world );
 
     std::unique_ptr< base_map_object > player_tank{ new tank_map_object{ &player_tank_entity, object_type::player_tank } };
-    world.subscribe( *player_tank );
-
     return player_tank;
 }
 

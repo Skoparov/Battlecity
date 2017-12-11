@@ -13,6 +13,7 @@ namespace game
 
 enum class object_type{ tile, player_base, player_tank, enemy_tank, projectile };
 
+
 class base_map_object : public QObject,
                         public ecs::event_callback< event::geometry_changed >
 {

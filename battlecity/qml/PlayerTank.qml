@@ -39,6 +39,11 @@ Item
             modelData.move_direction = "Down"
             event.accepted = true;
         }
+        else if( event.key === Qt.Key_Space )
+        {
+            modelData.fired = true
+            event.accepted = true;
+        }
     }
 
     Keys.onReleased:

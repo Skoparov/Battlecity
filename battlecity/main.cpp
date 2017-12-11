@@ -24,6 +24,7 @@ int main(int argc, char *argv[])
         qmlRegisterType< game::tile_map_object >();
         qmlRegisterType< game::graphics_map_object >();
         qmlRegisterType< game::tank_map_object >();
+        qmlRegisterType< game::movable_map_object >();
 
         game::qml_map_interface map_interface{ controller };
 

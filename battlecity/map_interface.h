@@ -27,19 +27,26 @@ public:
     QQmlListProperty< tile_map_object > get_tiles();
     QQmlListProperty< graphics_map_object > get_player_bases();
     QQmlListProperty< tank_map_object > get_player_tanks();
+    QQmlListProperty< movable_map_object > get_projectiles();
 
     Q_PROPERTY( QQmlListProperty< game::tile_map_object > tiles READ get_tiles NOTIFY tiles_changed )
     Q_PROPERTY( QQmlListProperty< game::graphics_map_object > player_bases READ get_player_bases NOTIFY player_bases_changed )
     Q_PROPERTY( QQmlListProperty< game::tank_map_object > player_tanks READ get_player_tanks NOTIFY player_tanks_changed )
+    Q_PROPERTY( QQmlListProperty< game::movable_map_object > projectiles READ get_projectiles NOTIFY projectiles_changed )
     Q_PROPERTY( int rows_num READ get_rows_count CONSTANT )
     Q_PROPERTY( int columns_num READ get_columns_count CONSTANT )
     Q_PROPERTY( int tile_width READ get_tile_width CONSTANT )
     Q_PROPERTY( int tile_height READ get_tile_height CONSTANT )
 
+public slots:
+    void on_projectile_changed();
+    void on_objects_removed( QSet< object_type > );
+
 signals:
     void tiles_changed( QQmlListProperty< tile_map_object > );
     void player_bases_changed( QQmlListProperty< tile_map_object > );
     void player_tanks_changed( QQmlListProperty< tank_map_object > );
+    void projectiles_changed( QQmlListProperty< movable_map_object > );
 
 private:
     controller& m_controller;
@@ -48,6 +55,7 @@ private:
     QList< tile_map_object* > m_tiles;
     QList< graphics_map_object* > m_player_bases;
     QList< tank_map_object* > m_player_tanks;
+    QList< movable_map_object* > m_projectiles;
 };
 
 }// game
