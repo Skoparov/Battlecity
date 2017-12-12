@@ -163,9 +163,73 @@ movement_direction get_direction_by_rotation( int rotation )
     return direction;
 }
 
-projectile_system::projectile_system( ecs::world& world ): ecs::system( world ){}
+projectile_system::projectile_system( const QSize& projectile_size,
+                                      uint32_t projectile_damage,
+                                      uint32_t projectile_speed,
+                                      ecs::world& world ) noexcept:
+    ecs::system( world ),
+    m_projectile_size( projectile_size ),
+    m_damage( projectile_damage ),
+    m_speed( projectile_speed ){}
+
+QRect get_projectile_rect( const QRect& tank_rect, const QSize& proj_size )
+{
+    QPoint projectile_top_left{ tank_rect.center() };
+    projectile_top_left.setX( projectile_top_left.x() - proj_size.width() / 2 );
+    projectile_top_left.setY( projectile_top_left.y() - proj_size.height() / 2 );
+    return QRect{ projectile_top_left, proj_size };
+}
 
 void projectile_system::tick()
+{
+    handle_existing_projectiles();
+    create_new_projectiles();
+}
+
+void projectile_system::handle_obstacle( ecs::entity& obstacle,
+                                         const component::projectile& projectile_component,
+                                         event::entities_removed& event )
+{
+    using namespace component;
+
+    if( obstacle.has_component< health >() )
+    {
+        health& obstacle_health = obstacle.get_component< health >();
+        obstacle_health.decrease( projectile_component.get_damage() );
+
+        if( !obstacle_health.alive() )
+        {
+            if( obstacle.has_component< tile_object >() )
+            {
+                obstacle.remove_component< health >();
+                obstacle.remove_component< non_traversible >();
+                obstacle.get_component< tile_object >().set_tile_type( tile_type::empty );
+                obstacle.get_component< graphics >().set_image_path(
+                            tile_image_path( tile_type::empty ) );
+            }
+            else if( obstacle.has_component< tank_object >() )
+            {
+                event.add_entity( obstacle.get_id() );
+                tank_object& tank_info = obstacle.get_component< tank_object >();
+
+                if( tank_info.get_tank_type() == tank_type::player )
+                {
+                    m_world.emit_event( event::player_killed{} );
+                }
+                else if( tank_info.get_tank_type() == tank_type::player )
+                {
+                    m_world.emit_event( event::enemy_killed{} );
+                }
+            }
+            else if( obstacle.has_component< player_base >() )
+            {
+                m_world.emit_event( event::player_base_killed{} );
+            }
+        }
+    }
+}
+
+void projectile_system::handle_existing_projectiles()
 {
     using namespace component;
 
@@ -197,28 +261,7 @@ void projectile_system::tick()
                     geometry& obstacle_geom = obstacle.get_component_unsafe< geometry >();
                     if( obstacle_geom.intersects_with( projectile_geom ) )
                     {
-                        if( obstacle.has_component< health >() )
-                        {
-                            health& obstacle_health = obstacle.get_component< health >();
-                            obstacle_health.decrease( projectile_component.get_damage() );
-
-                            if( !obstacle_health.alive() )
-                            {
-                                if( obstacle.has_component< tile_object >() )
-                                {
-                                    obstacle.remove_component< health >();
-                                    obstacle.remove_component< non_traversible >();
-                                    obstacle.get_component< tile_object >().set_tile_type( tile_type::empty );;
-                                    obstacle.get_component< graphics >().set_image_path(
-                                                tile_image_path( tile_type::empty ) );
-                                }
-                                else if( obstacle.has_component< tank_object >() )
-                                {
-                                    entities_removed_event.add_entity( obstacle.get_id() );
-                                }
-                            }
-                        }
-
+                        handle_obstacle( obstacle, projectile_component, entities_removed_event );
                         entities_removed_event.add_entity( projectile_entity.get_id() );
 
                         m_world.schedule_remove_entity( projectile_entity );
@@ -237,6 +280,11 @@ void projectile_system::tick()
     {
         m_world.emit_event( entities_removed_event );
     }
+}
+
+void projectile_system::create_new_projectiles()
+{
+    using namespace component;
 
     // Create new projectiles
     m_world.for_each< tank_object >( [ & ]( ecs::entity& tank_entity, tank_object& tank_info )
@@ -244,12 +292,12 @@ void projectile_system::tick()
         if( tank_info.has_fired() )
         {
             geometry& tank_geom = tank_entity.get_component< geometry >();
-            movement& tank_move = tank_entity.get_component< movement >();
+            QRect projectile_rect{ get_projectile_rect( tank_geom.get_rect(), m_projectile_size ) };
 
             movement_direction direction{ get_direction_by_rotation( tank_geom.get_rotation() ) };
-            ecs::entity& proj_entity = create_entity_projectile( tank_geom.get_rect(),
-                                                                 1,
-                                                                 tank_move.get_speed() * 2, //TODO!
+            ecs::entity& proj_entity = create_entity_projectile( projectile_rect,
+                                                                 m_damage,
+                                                                 m_speed,
                                                                  direction,
                                                                  tank_entity.get_id(),
                                                                  m_world );
@@ -261,6 +309,95 @@ void projectile_system::tick()
 
         return true;
     } );
+}
+
+//
+
+respawn_system::respawn_system(ecs::world& world ) noexcept: ecs::system( world ){}
+
+void respawn_system::tick()
+{
+    if( m_player_needs_respawn )
+    {
+
+    }
+
+    if( m_enemy_needs_respawn )
+    {
+
+    }
+}
+
+void respawn_system::clean()
+{
+    m_player_needs_respawn = false;
+    m_enemy_needs_respawn = false;
+}
+
+void respawn_system::on_event(const event::player_killed &)
+{
+    m_player_needs_respawn = true;
+}
+
+void respawn_system::on_event(const event::enemy_killed &)
+{
+    m_enemy_needs_respawn = true;
+}
+
+win_defeat_system::win_defeat_system( uint32_t kills_to_win,
+                                      uint32_t player_lifes,
+                                      ecs::world& world ) noexcept:
+    ecs::system( world ),
+    m_kills_to_win( kills_to_win ),
+    m_player_lifes( player_lifes )
+{
+    m_world.subscribe< event::enemy_killed >( *this );
+    m_world.subscribe< event::player_killed >( *this );
+    m_world.subscribe< event::player_base_killed >( *this );
+}
+
+win_defeat_system::~win_defeat_system()
+{
+    m_world.unsubscribe< event::enemy_killed >( *this );
+    m_world.unsubscribe< event::player_killed >( *this );
+    m_world.unsubscribe< event::player_base_killed >( *this );
+}
+
+void win_defeat_system::tick()
+{
+    if( m_player_base_killed || !m_player_lifes_left )
+    {
+        m_world.emit_event( event::level_completed{ level_result::defeat } );
+    }
+    else if( m_player_kills == m_kills_to_win )
+    {
+        m_world.emit_event( event::level_completed{ level_result::victory } );
+    }
+}
+
+void win_defeat_system::clean()
+{
+    m_player_kills = 0;
+    m_player_base_killed = false;
+    m_player_lifes_left = m_player_lifes;
+}
+
+void win_defeat_system::on_event( const event::enemy_killed& )
+{
+    ++m_player_kills;
+}
+
+void win_defeat_system::on_event( const event::player_killed& )
+{
+    if( m_player_lifes_left )
+    {
+        --m_player_lifes_left;
+    }
+}
+
+void win_defeat_system::on_event( const event::player_base_killed& )
+{
+    m_player_base_killed = true;
 }
 
 }// system

@@ -19,6 +19,11 @@ qml_map_interface::qml_map_interface( controller& controller,
              SIGNAL( objects_removed( QSet< object_type > ) ),
              this,
              SLOT( on_objects_removed( QSet< object_type > ) ) );
+
+    connect( &m_controller,
+             SIGNAL( level_updated() ),
+             this,
+             SLOT( on_level_updated() ) );
 }
 
 int qml_map_interface::get_rows_count() const noexcept
@@ -65,17 +70,30 @@ QQmlListProperty<movable_map_object> qml_map_interface::get_projectiles()
     return QQmlListProperty< movable_map_object >{ this, m_projectiles };
 }
 
+void qml_map_interface::on_level_updated()
+{
+    emit tiles_changed( get_tiles() );
+    emit player_bases_changed( get_player_bases() );
+    emit player_tanks_changed( get_player_tanks() );
+    emit projectiles_changed( get_projectiles() );
+}
+
 void qml_map_interface::on_projectile_changed()
 {
     emit projectiles_changed( get_projectiles() );
 }
 
-void qml_map_interface::on_objects_removed( QSet<object_type> objects )
+void qml_map_interface::on_objects_removed( QSet< object_type > objects )
 {
-    if( objects.contains( object_type::projectile ) )
+     if( objects.contains( object_type::projectile ) )
     {
         on_projectile_changed();
         tiles_changed( get_tiles() );
+    }
+
+    if( objects.contains( object_type::player_base ) )
+    {
+        emit player_bases_changed( get_player_bases() );
     }
 }
 

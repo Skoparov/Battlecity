@@ -85,25 +85,18 @@ void world::schedule_remove_system( system& system )
 
 void world::add_component( entity& e, const entity::component_id& id, entity::component_wrapper& w )
 {
-    component_info info{ &w, &e };
-    m_components.emplace( std::make_pair( id, info ) );
+    m_components[ id ].emplace( &e, &w );
 }
 
 void world::remove_component( entity& e, const entity::component_id& c_id )
 {
-    using value_type = std::unordered_multimap< entity::component_id, component_info >::value_type;
-
-    auto eq_range = m_components.equal_range( c_id );
-    for( auto it = eq_range.first; it != eq_range.second; )
+    auto it = m_components.find( c_id );
+    if( it !=  m_components.end() )
     {
-        const component_info& info = it->second;
-        if ( info.second->get_id() == e.get_id() )
+        it->second.erase( &e );
+        if( it->second.empty() )
         {
-            m_components.erase( it++ );
-        }
-        else
-        {
-            ++it;
+            m_components.erase( it );
         }
     }
 }

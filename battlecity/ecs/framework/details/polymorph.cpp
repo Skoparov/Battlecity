@@ -1,9 +1,9 @@
 #include "polymorph.h"
 
-polymorph::polymorph( polymorph&& other ) noexcept : m_data( std::move( other.m_data ) )
+namespace ecs
 {
 
-}
+polymorph::polymorph( polymorph&& other ) noexcept : m_data( std::move( other.m_data ) ){}
 
 polymorph& polymorph::operator=( polymorph&& other ) noexcept
 {
@@ -20,3 +20,5 @@ bool polymorph::empty() const noexcept
 {
     return ( m_data == nullptr );
 }
+
+}// ecs

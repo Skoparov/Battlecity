@@ -19,6 +19,9 @@ public:
     void set_tank_size( const QSize& size ) noexcept;
     const QSize& get_tank_size() const noexcept;
 
+    void set_projectile_size( const QSize& size ) noexcept;
+    const QSize& get_projectile_size() const noexcept;
+
     void set_player_base_size( const QSize& size ) noexcept;
     const QSize& get_player_base_size() const noexcept;
 
@@ -34,19 +37,28 @@ public:
     void set_base_kills_to_win( const uint32_t kills ) noexcept;
     uint32_t get_base_kills_to_win() const noexcept;
 
-    void set_tank_movement_speed( uint32_t speed ) noexcept;
-    uint32_t get_tank_movement_speed() const noexcept;
+    void set_tank_speed( uint32_t speed ) noexcept;
+    uint32_t get_tank_speed() const noexcept;
+
+    void set_projectile_speed( uint32_t speed ) noexcept;
+    uint32_t get_projectile_speed() const noexcept;
+
+    void set_projectile_damage( uint32_t damage ) noexcept;
+    uint32_t get_projectile_damage() const noexcept;
 
 private:
     uint32_t m_fps{ 0 };
     QSize m_tile_size{};
     QSize m_tank_size{};
+    QSize m_projectile_size{};
     QSize m_player_base_size{};
     uint32_t m_tank_health{ 0 };
     uint32_t m_base_health{ 0 };
     uint32_t m_player_lives{ 0 };
     uint32_t m_base_kills_to_win{ 0 };
-    uint32_t m_tank_movement_speed{ 0 };
+    uint32_t m_tank_speed{ 0 };
+    uint32_t m_projectile_speed{ 0 };
+    uint32_t m_projectile_damage{ 0 };
 };
 
 game_settings read_game_settings( const QString& file );

@@ -31,14 +31,14 @@ template<> struct hash< game::object_type >
 
 }// std
 
-inline uint qHash( const game::object_type& arg, uint seed )
-{
-    using underlying_type = std::underlying_type< game::object_type >::type;
-    return qHash( static_cast< underlying_type >( arg ), seed );
-}
-
 namespace game
 {
+
+inline uint qHash( const game::object_type& arg, uint seed = 0 )
+{
+    using underlying_type = typename std::underlying_type< game::object_type >::type;
+    return ::qHash( static_cast< underlying_type >( arg ), seed );
+}
 
 namespace detail
 {
@@ -68,6 +68,8 @@ public:
     QSet< object_type > remove_objects_from_active(
             const std::unordered_set< ecs::entity_id >& entities );
 
+    void remove_all_objects_from_active();
+
     int get_rows_count() const noexcept;
     int get_columns_count() const noexcept;
     const QSize& get_map_size() const noexcept;
@@ -78,10 +80,13 @@ public:
         using obj_ptr_type = object_ptr< type >;
         QList< obj_ptr_type > result_objects;
 
-        auto eq_range = m_active_map_objects.equal_range( type );
-        for( auto it = eq_range.first; it != eq_range.second; ++it )
+        auto it = m_active_map_objects.find( type );
+        if( it != m_active_map_objects.end() )
         {
-            result_objects << dynamic_cast< obj_ptr_type >( it->second.get() );
+            for( const auto& value : it->second )
+            {
+                result_objects.append( dynamic_cast< obj_ptr_type >( value.get() ) );
+            }
         }
 
         return result_objects;
@@ -91,12 +96,12 @@ public:
 
 private:
     QSize m_map_size{};
-    std::unordered_multimap< object_type, std::unique_ptr< base_map_object > > m_active_map_objects;
-    std::list< std::unique_ptr< base_map_object > > m_inactive_objects;
+    std::unordered_map< object_type, std::list< std::unique_ptr< base_map_object > > > m_active_map_objects;
+    std::unordered_map< object_type, std::list< std::unique_ptr< base_map_object > > > m_inactive_objects;
 };
 
 class game_settings;
-map_data read_map_file(const QString& file, const game_settings& settings, ecs::world& world );
+void read_map_file( map_data& data, const QString& file, const game_settings& settings, ecs::world& world );
 
 }// game
 

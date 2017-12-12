@@ -3,10 +3,13 @@
     <Fps>30</Fps>
     <TileSize>32</TileSize>
     <TankSize>64</TankSize>
+    <ProjectileSize>10</ProjectileSize>
     <PlayerBaseSize>64</PlayerBaseSize>
     <TankHealth>1</TankHealth>
     <PlayerBaseHealth>5</PlayerBaseHealth>
     <PlayerLives>5</PlayerLives>
     <BaseKillsToWin>10</BaseKillsToWin>
-    <TankMoveSpeed>8</TankMoveSpeed>
+    <TankSpeed>8</TankSpeed>
+    <ProjectileSpeed>16</ProjectileSpeed>
+    <ProjectileDamage>1</ProjectileDamage>
 </Settings>

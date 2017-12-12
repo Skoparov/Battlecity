@@ -11,6 +11,7 @@ namespace ecs
 {
 
 using entity_id = numeric_id;
+class world;
 
 class entity final
 {
@@ -32,7 +33,7 @@ public:
         component_id id{ get_type_id< component_type >() };
 
         auto result = m_components.emplace( id, std::move( component ) );
-        m_world->add_component( *this, id, result.first->second );
+        add_component_to_world( id, result.first->second );
     }
 
     template< typename component_type >
@@ -40,7 +41,7 @@ public:
     {
         component_id id{ get_type_id< component_type >() };
         m_components.erase( id );
-        m_world->remove_component( *this, id );
+        remove_component_from_world( id );
     }
 
     template< typename component_type >
@@ -83,6 +84,8 @@ public:
 
 private:
     entity( world* world, entity_id id ) noexcept;
+    void add_component_to_world( const component_id& id, component_wrapper& w );
+    void remove_component_from_world( const component_id& id );
 
 private:
     world* m_world{ nullptr };

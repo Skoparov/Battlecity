@@ -3,7 +3,10 @@
 
 #include "polymorph.h"
 
-class any_empty : public std::exception{};
+namespace ecs
+{
+
+class polymorph_empty : public std::exception{};
 
 namespace _detail
 {
@@ -27,9 +30,9 @@ public:
 template< typename T >
 class type_storage final : public base_type_storage
 {
+    friend class ecs::polymorph;
     using base_type = T;
     using base_unref_type = typename std::remove_reference< T >::type;
-    friend class polymorph;
 
 public:
     type_storage() = delete;
@@ -96,7 +99,7 @@ T& polymorph::get()
 {
     if( empty() )
     {
-        throw any_empty{};
+        throw polymorph_empty{};
     }
 
     return _detail::try_cast< T >( m_data )->get();
@@ -107,7 +110,7 @@ const T& polymorph::get() const
 {
     if( empty() )
     {
-        throw any_empty{};
+        throw polymorph_empty{};
     }
 
     return _detail::try_cast< T >( m_data )->get();
@@ -130,5 +133,7 @@ bool polymorph::check_type() const noexcept
 {
     return empty()? false : ( typeid( T ) == m_data->type_info() );
 }
+
+}// ecs
 
 #endif

@@ -23,7 +23,7 @@ void map_data::set_map_size( const QSize& size ) noexcept
 
 void map_data::add_object( std::unique_ptr< base_map_object >&& object )
 {
-    m_active_map_objects.emplace( object->get_type(), std::move( object ) );
+    m_active_map_objects[ object->get_type() ].emplace_back( std::move( object ) );
 }
 
 QSet< object_type >
@@ -31,22 +31,33 @@ map_data::remove_objects_from_active( const std::unordered_set< ecs::entity_id >
 {
     QSet< object_type > removed_object_types;
 
-    for( auto it = m_active_map_objects.begin(); it != m_active_map_objects.end(); )
+    for( auto it = m_active_map_objects.begin(); it != m_active_map_objects.end(); ++it )
     {
-        if ( entities.count( it->second->get_id() ) )
+        auto& objects_list = it->second;
+
+        auto object_it = objects_list.begin();
+        while( object_it != objects_list.end() )
         {
-            object_type type{ it->second->get_type() };
-            removed_object_types.insert( type );
-            m_inactive_objects.emplace_back( std::move( it->second ) );
-            m_active_map_objects.erase( it++ );
-        }
-        else
-        {
-            ++it;
+            if( entities.count( ( *object_it )->get_id() ) )
+            {
+                object_type type{ ( *object_it )->get_type() };
+                removed_object_types.insert( type );
+                m_inactive_objects[ type ].emplace_back( std::move( *object_it ) );
+                objects_list.erase( object_it++ );
+            }
+            else
+            {
+                ++object_it;
+            }
         }
     }
 
     return removed_object_types;
+}
+
+void map_data::remove_all_objects_from_active()
+{
+    m_inactive_objects = std::move( m_active_map_objects );
 }
 
 int map_data::get_rows_count() const noexcept
@@ -127,7 +138,7 @@ create_tank( bool& player_start_pos_found, int row, int col, const game_settings
     QRect player_tank_rect{ obj_rect( row, col, settings.get_tile_size(), settings.get_tank_size() ) };
     ecs::entity& player_tank_entity = create_entity_tank( player_tank_rect,
                                                           tank_type::player,
-                                                          settings.get_tank_movement_speed(),
+                                                          settings.get_tank_speed(),
                                                           settings.get_tank_health(),
                                                           world );
 
@@ -146,7 +157,7 @@ create_tile( const tile_type& type, int row, int col, const game_settings& setti
     return std::unique_ptr< base_map_object >{ new tile_map_object{ &tile_entity } };
 }
 
-map_data read_map_file( const QString& file, const game_settings& settings, ecs::world& world )
+void read_map_file( map_data& data, const QString& file, const game_settings& settings, ecs::world& world )
 {
     QFile map_file{ file };
     if ( !map_file.open( QIODevice::ReadOnly | QIODevice::Text ) )
@@ -167,8 +178,6 @@ map_data read_map_file( const QString& file, const game_settings& settings, ecs:
     int curr_column{ 0 };
     bool player_start_pos_found{ false };
     bool player_base_found{ false };
-
-    map_data data;
 
     while( !text_stream.atEnd() )
     {
@@ -223,8 +232,6 @@ map_data read_map_file( const QString& file, const game_settings& settings, ecs:
     const QSize& tile_size{ settings.get_tile_size() };
     QRect map_rect{ 0, 0, tile_size.width() * map_size.width(), tile_size.height() * map_size.height() };
     create_entity_map( map_rect, world );
-
-    return data;
 }
 
 }// game

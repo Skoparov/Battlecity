@@ -8,6 +8,8 @@
 namespace game
 {
 
+enum class level_result{ victory, defeat };
+
 namespace event
 {
 
@@ -28,6 +30,8 @@ private:
 
 }// detail
 
+//
+
 class geometry_changed final : public detail::causes
 {
 public:
@@ -43,7 +47,35 @@ private:
     bool m_rotation_changed{ false };
 };
 
+//
+
+class player_killed final{};
+
+//
+
+class enemy_killed final{};
+
+//
+
+class player_base_killed final{};
+
+//
+
 class entities_removed final : public detail::causes{};
+
+//
+
+class level_completed final
+{
+public:
+    explicit level_completed( const level_result& result ) noexcept;
+    const level_result& get_result() const noexcept;
+
+private:
+    level_result m_level_result;
+};
+
+//
 
 class projectile_fired final : public detail::causes
 {

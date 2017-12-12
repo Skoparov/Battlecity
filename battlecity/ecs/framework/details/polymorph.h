@@ -4,6 +4,9 @@
 #include <memory>
 #include <typeinfo>
 
+namespace ecs
+{
+
 namespace _detail{ class base_type_storage; }
 
 class polymorph
@@ -49,6 +52,8 @@ public:
 private:
     std::unique_ptr< _detail::base_type_storage > m_data;
 };
+
+}// ecs
 
 #include "polymorph.impl"
 

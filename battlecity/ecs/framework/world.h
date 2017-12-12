@@ -64,15 +64,18 @@ public:
     void schedule_remove_entity( entity& e );
 
     template< typename component_type >
-    std::list< component_type* > get_components()
+    std::list< component_type* > get_components() const
     {
         std::list< component_type* > components;
 
-        auto eq_range = m_components.equal_range( get_type_id< component_type >() );
-        for( auto it = eq_range.first; it != eq_range.second; ++it )
+        auto it = m_components.find( get_type_id< component_type >() );
+        if( it !=  m_components.end() )
         {
-            entity::component_wrapper* w{ it->second.first };
-            components.emplace_back( &w->get< component_type >() );
+            for( auto& value_pair : it->second )
+            {
+                entity::component_wrapper* w{ value_pair.second };
+                components.emplace_back( &w->get< component_type >() );
+            }
         }
 
         return components;
@@ -83,10 +86,13 @@ public:
     {
         std::list< entity* > entities;
 
-        auto eq_range = m_components.equal_range( get_type_id< component_type >() );
-        for( auto it = eq_range.first; it != eq_range.second; ++it )
+        auto it = m_components.find( get_type_id< component_type >() );
+        if( it !=  m_components.end() )
         {
-            entities.emplace_back( it->second.second );
+            for( auto& value_pair : it->second )
+            {
+                entities.emplace_back( value_pair.first );
+            }
         }
 
         return entities;
@@ -97,15 +103,18 @@ public:
     template< typename component_type, typename func_type >
     void for_each( func_type&& func )
     {
-        auto eq_range = m_components.equal_range( get_type_id< component_type >() );
-        for( auto it = eq_range.first; it != eq_range.second; ++it )
+        auto it = m_components.find( get_type_id< component_type >() );
+        if( it !=  m_components.end() )
         {
-            entity::component_wrapper* w{ it->second.first };
-            entity& e = *it->second.second;
-
-            if( !func( e, w->get< component_type >() ) )
+            for( auto value_pair : it->second )
             {
-                break;
+                entity& e = *value_pair.first;
+                entity::component_wrapper* w{ value_pair.second };
+
+                if( !func( e, w->get< component_type >() ) )
+                {
+                    break;
+                }
             }
         }
     }
@@ -152,7 +161,8 @@ private:
 private:
     std::unordered_set< system* > m_systems;
     std::unordered_map< entity_id, entity > m_entities;
-    std::unordered_multimap< entity::component_id, component_info > m_components;
+    std::unordered_map< entity::component_id,
+    std::unordered_map< entity*, entity::component_wrapper* > > m_components;
 
     std::list< system* > m_systems_to_remove;
     std::list< entity_id > m_entities_to_remove;

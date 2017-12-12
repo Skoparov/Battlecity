@@ -13,6 +13,7 @@ Rectangle
     {
         id: mouseArea
         anchors.fill: parent
+
         Item
         {
             Grid

@@ -39,12 +39,13 @@ public:
     Q_PROPERTY( int tile_height READ get_tile_height CONSTANT )
 
 public slots:
+    void on_level_updated();
     void on_projectile_changed();
     void on_objects_removed( QSet< object_type > );
 
 signals:
     void tiles_changed( QQmlListProperty< tile_map_object > );
-    void player_bases_changed( QQmlListProperty< tile_map_object > );
+    void player_bases_changed( QQmlListProperty< graphics_map_object > );
     void player_tanks_changed( QQmlListProperty< tank_map_object > );
     void projectiles_changed( QQmlListProperty< movable_map_object > );
 

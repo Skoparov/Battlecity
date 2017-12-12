@@ -8,12 +8,15 @@
 static constexpr auto tag_fps = "Fps";
 static constexpr auto tag_tile_size = "TileSize";
 static constexpr auto tag_tank_size = "TankSize";
-static constexpr auto tag_tank_health = "TankHealth";
-static constexpr auto tag_player_lives = "PlayerLives";
-static constexpr auto tag_player_base_health = "PlayerBaseHealth";
+static constexpr auto tag_projectile_size = "ProjectileSize";
 static constexpr auto tag_player_base_size = "PlayerBaseSize";
+static constexpr auto tag_tank_health = "TankHealth";
+static constexpr auto tag_player_base_health = "PlayerBaseHealth";
+static constexpr auto tag_player_lives = "PlayerLives";
 static constexpr auto tag_base_kills_to_win = "BaseKillsToWin";
-static constexpr auto tag_tank_movement_speed = "TankMoveSpeed";
+static constexpr auto tag_tank_speed = "TankSpeed";
+static constexpr auto tag_projectile_speed = "ProjectileSpeed";
+static constexpr auto tag_projectile_damage = "ProjectileDamage";
 
 namespace game
 {
@@ -46,6 +49,16 @@ void game_settings::set_tank_size( const QSize& size ) noexcept
 const QSize& game_settings::get_tank_size() const noexcept
 {
     return m_tank_size;
+}
+
+void game_settings::set_projectile_size( const QSize& size ) noexcept
+{
+    m_projectile_size = size;
+}
+
+const QSize& game_settings::get_projectile_size() const noexcept
+{
+    return m_projectile_size;
 }
 
 void game_settings::set_player_base_size( const QSize& size ) noexcept
@@ -98,14 +111,34 @@ uint32_t game_settings::get_base_kills_to_win() const noexcept
     return m_base_kills_to_win;
 }
 
-void game_settings::set_tank_movement_speed( uint32_t speed ) noexcept
+void game_settings::set_tank_speed( uint32_t speed ) noexcept
 {
-    m_tank_movement_speed = speed;
+    m_tank_speed = speed;
 }
 
-uint32_t game_settings::get_tank_movement_speed() const noexcept
+uint32_t game_settings::get_tank_speed() const noexcept
 {
-    return m_tank_movement_speed;
+    return m_tank_speed;
+}
+
+void game_settings::set_projectile_speed( uint32_t speed ) noexcept
+{
+    m_projectile_speed = speed;
+}
+
+uint32_t game_settings::get_projectile_speed() const noexcept
+{
+    return m_projectile_speed;
+}
+
+void game_settings::set_projectile_damage( uint32_t damage ) noexcept
+{
+    m_projectile_damage = damage;
+}
+
+uint32_t game_settings::get_projectile_damage() const noexcept
+{
+    return m_projectile_damage;
 }
 
 game_settings read_game_settings( const QString& file )
@@ -142,6 +175,11 @@ game_settings read_game_settings( const QString& file )
                 uint32_t tank_size{ xml_reader.readElementText().toUInt() };
                 settings.set_tank_size( QSize( tank_size, tank_size ) );
             }
+            else if( name == tag_projectile_size )
+            {
+                uint32_t projectile_size{ xml_reader.readElementText().toUInt() };
+                settings.set_projectile_size( QSize( projectile_size, projectile_size ) );
+            }
             else if( name == tag_player_base_size )
             {
                 uint32_t base_size{ xml_reader.readElementText().toUInt() };
@@ -163,9 +201,17 @@ game_settings read_game_settings( const QString& file )
             {
                 settings.set_base_kills_to_win( xml_reader.readElementText().toUInt() );
             }
-            else if( name == tag_tank_movement_speed )
+            else if( name == tag_tank_speed )
             {
-                settings.set_tank_movement_speed( xml_reader.readElementText().toUInt() );
+                settings.set_tank_speed( xml_reader.readElementText().toUInt() );
+            }
+            else if( name == tag_projectile_speed )
+            {
+                settings.set_projectile_speed( xml_reader.readElementText().toUInt() );
+            }
+            else if( name == tag_projectile_damage )
+            {
+                settings.set_projectile_damage( xml_reader.readElementText().toUInt() );
             }
         }
     }

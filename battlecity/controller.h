@@ -12,7 +12,8 @@ namespace game
 
 class controller : public QObject,
                    public ecs::event_callback< event::projectile_fired >,
-                   public ecs::event_callback< event::entities_removed >
+                   public ecs::event_callback< event::entities_removed >,
+                   public ecs::event_callback< event::level_completed >
 {
     Q_OBJECT
 
@@ -38,13 +39,17 @@ public:
 
     virtual void on_event( const event::projectile_fired& event );
     virtual void on_event( const event::entities_removed& event );
+    virtual void on_event( const event::level_completed& event );
 
 signals:
+    void level_updated();
     void projectile_fired();
     void objects_removed( QSet< object_type > );
 
 private:
-    void load_next_level();
+    void load_level( uint32_t level );
+    void victory();
+    void defeat();
 
 public slots:
     void tick();
@@ -55,6 +60,7 @@ private:
 
     map_data m_map_data;
     uint32_t m_level{ 0 };
+    bool m_need_to_load_level{ true };
     QTimer* m_tick_timer{ nullptr };
     std::list< std::unique_ptr< ecs::system > > m_systems;
 };

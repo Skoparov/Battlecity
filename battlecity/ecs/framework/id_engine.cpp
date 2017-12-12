@@ -1,4 +1,5 @@
 #include "id_engine.h"
+#include <random>
 
 namespace ecs
 {
@@ -10,7 +11,7 @@ numeric_id generate_numeric_id()
                 std::numeric_limits< numeric_id >::min(),
                 std::numeric_limits< numeric_id >::max() };
 
-    numeric_id id{ dist( rng ) };
+    numeric_id id = dist( rng );
     while( id == INVALID_NUMERIC_ID )
     {
         id = dist( rng );

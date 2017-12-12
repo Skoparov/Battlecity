@@ -3,7 +3,7 @@
 
 #include <typeinfo>
 #include <typeindex>
-#include <random>
+#include <cstdint>
 
 namespace ecs
 {

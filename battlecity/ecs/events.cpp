@@ -48,6 +48,18 @@ bool geometry_changed::rotation_is_changed() const noexcept
     return m_rotation_changed;
 }
 
+//
+
+level_completed::level_completed( const level_result& result ) noexcept :
+    m_level_result( result ){}
+
+const level_result& level_completed::get_result() const noexcept
+{
+    return m_level_result;
+}
+
+//
+
 projectile_fired::projectile_fired( ecs::entity& shooter, ecs::entity& projectile ) noexcept :
     m_shooter( shooter ),
     m_projectile( projectile ){}
