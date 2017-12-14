@@ -33,21 +33,6 @@ bool turret_object::has_fired() const noexcept
 
 //
 
-tank_object::tank_object( const tank_type& type ) noexcept :
-    m_tank_type( type ){}
-
-void tank_object::set_tank_type( const tank_type& type ) noexcept
-{
-    m_tank_type = type;
-}
-
-const tank_type& tank_object::get_tank_type() const noexcept
-{
-    return m_tank_type;
-}
-
-//
-
 projectile::projectile( uint32_t damage, ecs::entity_id owner ) noexcept :
     m_damage( damage ),
     m_owner( owner ){}
@@ -111,6 +96,11 @@ void geometry::set_rotation( int rotation ) noexcept
 int geometry::get_rotation() const noexcept
 {
     return m_rotation;
+}
+
+void geometry::set_rect( const QRect& rect ) noexcept
+{
+    m_rect = rect;
 }
 
 const QRect &geometry::get_rect() const noexcept

@@ -19,14 +19,14 @@ int main(int argc, char *argv[])
         ecs::world world;
 
         game::controller controller{ settings, world };
+        game::qml_map_interface map_interface{ controller };
+
+        controller.set_map_mediator( &map_interface );
         controller.init();
 
-        qmlRegisterType< game::tile_map_object >();
         qmlRegisterType< game::graphics_map_object >();
         qmlRegisterType< game::tank_map_object >();
         qmlRegisterType< game::movable_map_object >();
-
-        game::qml_map_interface map_interface{ controller };
 
         QGuiApplication app{ argc, argv };
         QQmlApplicationEngine engine;

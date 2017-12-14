@@ -4,7 +4,7 @@
 #include "graphics_map_object.h"
 #include "movable_map_object.h"
 
-#include "ecs/components.h"
+#include "ecs/general_enums.h"
 
 namespace game
 {
@@ -19,8 +19,6 @@ public:
 
     void set_fired( bool fired ) noexcept;
     bool get_fired() const noexcept;
-
-    const tank_type& get_tank_type() const noexcept;
 
     Q_PROPERTY( bool fired READ get_fired WRITE set_fired )
 };

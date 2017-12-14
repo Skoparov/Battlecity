@@ -1,8 +1,10 @@
 #include "controller.h"
 
-#include <QFileInfo>
+#include <thread>
 
 #include "ecs/systems.h"
+
+#include <QFileInfo>
 
 static constexpr auto map_name_pattern = ":/maps/map_%1";
 
@@ -10,17 +12,11 @@ namespace game
 {
 
 controller::controller( const game_settings& settings, ecs::world& world ) :
-    m_settings( settings ),
-    m_world( world )
+    m_world( world ),
+    m_settings( settings )
 {
     m_tick_timer = new QTimer{ this };
     connect( m_tick_timer, SIGNAL( timeout() ), this, SLOT( tick() ) );
-}
-
-controller::~controller()
-{
-    m_world.subscribe< event::projectile_fired >( *this );
-    m_world.subscribe< event::entities_removed >( *this );
 }
 
 void controller::init()
@@ -42,37 +38,61 @@ void controller::init()
                                        m_settings.get_projectile_speed(),
                                        m_world } };
 
+    std::unique_ptr< ecs::system > respawn_system{
+        new system::respawn_system{ m_settings.get_enemies_number(), m_world } };
+
+    std::unique_ptr< ecs::system > tank_ai_system{ new system::tank_ai_system{ m_world } };
+
     m_world.add_system( *move_system );
     m_world.add_system( *vic_def_system );
     m_world.add_system( *proj_system );
+    m_world.add_system( *respawn_system );
+    m_world.add_system( *tank_ai_system );
 
     m_systems.emplace_back( std::move( move_system ) );
     m_systems.emplace_back( std::move( vic_def_system ) );
     m_systems.emplace_back( std::move( proj_system ) );
+    m_systems.emplace_back( std::move( respawn_system ) );
+    m_systems.emplace_back( std::move( tank_ai_system ) );
 
-    m_world.subscribe< event::projectile_fired >( *this );
-    m_world.subscribe< event::entities_removed >( *this );
     m_world.subscribe< event::level_completed >( *this );
 }
 
-void controller::load_level( uint32_t level )
+bool controller::load_level( uint32_t level )
 {
-    read_map_file( m_map_data,
-                   QString{ map_name_pattern }.arg( level ) ,
-                   m_settings,
-                   m_world );
+    QString map_path{ QString{ map_name_pattern }.arg( level ) };
+    QFileInfo map_file{ map_path };
+    bool map_valid{ map_file.exists() && map_file.isFile() };
+
+    if( map_valid )
+    {
+        read_map_file( m_map_data,
+                       QString{ map_name_pattern }.arg( level ),
+                       m_settings,
+                       m_world,
+                       m_mediator );
+    }
+
+    return map_valid;
 }
 
 void controller::start()
 {
     m_tick_timer->start( 1000 / m_settings.get_fps() );
+    if( m_mediator )
+    {
+        m_mediator->level_started( m_level );
+    }
 }
 
 void controller::stop()
 {
     m_tick_timer->stop();
-    m_map_data = {};
-    m_level = 0;
+}
+
+void controller::set_map_mediator( map_data_mediator* mediator ) noexcept
+{
+    m_mediator = mediator;
 }
 
 int controller::get_rows_count() const noexcept
@@ -95,51 +115,23 @@ int controller::get_tile_height() const noexcept
     return m_settings.get_tile_size().height();
 }
 
-QList< tile_map_object* > controller::get_tiles() const
+uint32_t controller::get_level() const noexcept
 {
-    return m_map_data.get_objects_of_type< object_type::tile >();
-}
-
-QList< graphics_map_object* > controller::get_player_bases() const
-{
-    return m_map_data.get_objects_of_type< object_type::player_base >();
-}
-
-QList< tank_map_object* > controller::get_player_tanks() const
-{
-    return m_map_data.get_objects_of_type< object_type::player_tank >();
-}
-
-QList< movable_map_object* > controller::get_projectiles() const
-{
-    return m_map_data.get_objects_of_type< object_type::projectile >();
-}
-
-void controller::on_event( const event::projectile_fired& event )
-{
-    std::unique_ptr< base_map_object > projectile{
-        new movable_map_object{ &event.get_projectile(), object_type::projectile } };
-
-    m_world.subscribe< event::geometry_changed >( *projectile );
-    m_map_data.add_object( std::move( projectile ) );
-
-    emit projectile_fired();
-}
-
-void controller::on_event( const event::entities_removed& event )
-{
-    auto removed_object_types = m_map_data.remove_objects_from_active( event.get_entities() );
-    emit objects_removed( std::move( removed_object_types ) );
+    return m_level;
 }
 
 void controller::on_event( const event::level_completed& event )
 {
     // TODO: check if level is present
      m_need_to_load_level = true;
-
-    if( event.get_result() == level_result::victory )
+    if( event.get_result() == level_game_result::victory )
     {
         ++m_level;
+    }
+
+    if( m_mediator )
+    {
+        m_mediator->level_ended( event.get_result() );
     }
 }
 
@@ -147,21 +139,32 @@ void controller::tick()
 {
     if( m_need_to_load_level )
     {
-        m_map_data.remove_all_objects_from_active();
+        std::this_thread::sleep_for( std::chrono::seconds{ 2 } );
 
-        emit level_updated();
+        if( m_mediator )
+        {
+            m_mediator->remove_all();
+        }
 
-        m_map_data.clear_inactive_objects();
         m_world.reset();
+        if( load_level( m_level ) )
+        {
+            if( m_mediator )
+            {
+                m_mediator->level_started( m_level );
+            }
 
-        load_level( m_level );
-        m_need_to_load_level = false;
-
-        emit level_updated();
-    }
-    else
-    {
-        m_map_data.clear_inactive_objects();
+            m_need_to_load_level = false;
+        }
+        else // all maps have been beaten
+        {
+            if( m_mediator )
+            {
+                m_mediator->game_ended( level_game_result::victory );
+                stop();
+                return;
+            }
+        }
     }
 
     m_world.tick();

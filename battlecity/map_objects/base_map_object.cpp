@@ -76,17 +76,4 @@ const object_type& base_map_object::get_type() const noexcept
     return m_object_type;
 }
 
-void base_map_object::on_event( const event::geometry_changed& event )
-{
-    if( event.entity_present( m_entity->get_id() ) )
-    {
-        const component::geometry& g = m_entity->get_component_unsafe< component::geometry >();
-        QPoint pos{ g.get_pos() };
-
-        emit pos_x_changed( pos.x() );
-        emit pos_y_changed( pos.y() );
-        emit rotation_changed( g.get_rotation() );
-    }
-}
-
 }// game

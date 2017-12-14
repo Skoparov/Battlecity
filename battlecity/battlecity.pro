@@ -13,11 +13,11 @@ HEADERS += \
         ecs/events.h \
         ecs/systems.h \
         ecs/entity_factory.h \
+        ecs/general_enums.h \
 # game stuff
         map_objects/base_map_object.h \
         map_objects/graphics_map_object.h \
         map_objects/movable_map_object.h \
-        map_objects/tile_map_object.h \
         map_objects/tank_map_object.h \
         map_interface.h \
         controller.h \
@@ -42,7 +42,6 @@ SOURCES += \
         map_objects/base_map_object.cpp \
         map_objects/graphics_map_object.cpp \
         map_objects/movable_map_object.cpp \
-        map_objects/tile_map_object.cpp \
         map_objects/tank_map_object.cpp \
         map_interface.cpp \
         controller.cpp \

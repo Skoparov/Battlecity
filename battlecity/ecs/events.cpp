@@ -50,10 +50,26 @@ bool geometry_changed::rotation_is_changed() const noexcept
 
 //
 
-level_completed::level_completed( const level_result& result ) noexcept :
+graphics_changed::graphics_changed( bool image_changed, bool visibility_changed ) noexcept:
+    m_image_changed( image_changed ),
+    m_visibility_changed( visibility_changed ){}
+
+bool graphics_changed::image_changed() const noexcept
+{
+    return m_image_changed;
+}
+
+bool graphics_changed::visibility_changed() const noexcept
+{
+    return m_visibility_changed;
+}
+
+//
+
+level_completed::level_completed( const level_game_result& result ) noexcept :
     m_level_result( result ){}
 
-const level_result& level_completed::get_result() const noexcept
+const level_game_result& level_completed::get_result() const noexcept
 {
     return m_level_result;
 }

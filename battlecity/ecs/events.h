@@ -8,7 +8,7 @@
 namespace game
 {
 
-enum class level_result{ victory, defeat };
+enum class level_game_result{ victory, defeat };
 
 namespace event
 {
@@ -49,11 +49,26 @@ private:
 
 //
 
+class graphics_changed final : public detail::causes
+{
+public:
+    graphics_changed( bool image_changed, bool visibility_changed ) noexcept;
+
+    bool image_changed() const noexcept;
+    bool visibility_changed() const noexcept;
+
+private:
+    bool m_image_changed{ false };
+    bool m_visibility_changed{ false };
+};
+
+//
+
 class player_killed final{};
 
 //
 
-class enemy_killed final{};
+class enemy_killed final : public detail::causes{};
 
 //
 
@@ -68,11 +83,11 @@ class entities_removed final : public detail::causes{};
 class level_completed final
 {
 public:
-    explicit level_completed( const level_result& result ) noexcept;
-    const level_result& get_result() const noexcept;
+    explicit level_completed( const level_game_result& result ) noexcept;
+    const level_game_result& get_result() const noexcept;
 
 private:
-    level_result m_level_result;
+    level_game_result m_level_result;
 };
 
 //
