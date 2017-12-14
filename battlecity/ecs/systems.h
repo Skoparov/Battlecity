@@ -11,14 +11,14 @@ namespace game
 namespace system
 {
 
-class movement_system : public ecs::system
+class movement_system final : public ecs::system
 {
 public:
     explicit movement_system( ecs::world& world );
     void tick() override;
 };
 
-class projectile_system : public ecs::system
+class projectile_system final : public ecs::system
 {
 public:
     projectile_system( const QSize& projectile_size,
@@ -43,9 +43,9 @@ private:
     uint32_t m_speed{ 0 };
 };
 
-class respawn_system : public ecs::system,
-        public ecs::event_callback< event::enemy_killed >,
-        public ecs::event_callback< event::player_killed >
+class respawn_system final : public ecs::system,
+                             public ecs::event_callback< event::enemy_killed >,
+                             public ecs::event_callback< event::player_killed >
 
 {
 public:
@@ -59,6 +59,7 @@ public:
     void on_event( const event::enemy_killed& );
 
 private:
+    void respawn_entity( ecs::entity& entity, const component::geometry& respawn );
     std::vector< const component::geometry* > get_free_respawns();
 
 private:
@@ -69,10 +70,10 @@ private:
     uint32_t m_max_enemies{ 0 };
 };
 
-class win_defeat_system : public ecs::system,
-                          public ecs::event_callback< event::enemy_killed >,
-                          public ecs::event_callback< event::player_killed >,
-                          public ecs::event_callback< event::player_base_killed >
+class win_defeat_system final : public ecs::system,
+                                public ecs::event_callback< event::enemy_killed >,
+                                public ecs::event_callback< event::player_killed >,
+                                public ecs::event_callback< event::player_base_killed >
 
 {
 public:
@@ -93,6 +94,17 @@ private:
     bool m_player_base_killed{ false };
     uint32_t m_player_kills{ 0 };
     uint32_t m_player_lifes_left{ 0 };
+};
+
+class tank_ai_system final : public ecs::system
+{
+public:
+    explicit tank_ai_system( ecs::world& world ) noexcept;
+    void tick() override;
+    void clean() override;
+
+private:
+    std::list< ecs::entity* > m_enemies;
 };
 
 }// system

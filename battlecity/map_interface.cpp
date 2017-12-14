@@ -15,8 +15,8 @@ qml_map_interface::qml_map_interface( controller& controller,
     m_controller.subscribe< event::projectile_fired >( *this );
     m_controller.subscribe< event::entities_removed >( *this );
 
-    m_text_timer = new QTimer{ this };
-    connect( m_text_timer, SIGNAL( timeout() ), this, SLOT( switch_text_visibility() ) );
+    m_announcement_timer = new QTimer{ this };
+    connect( m_announcement_timer, SIGNAL( timeout() ), this, SLOT( switch_announcement_visibility() ) );
 }
 
 qml_map_interface::~qml_map_interface()
@@ -75,33 +75,33 @@ void qml_map_interface::remove_all()
 void qml_map_interface::level_started( uint32_t level )
 {
     update_all();
-    m_text = QString{ "Level %1" }.arg( level + 1 );
-    m_text_visible = true;
-    m_text_timer->start( 2000 );
+    m_announcement = QString{ "Level %1" }.arg( level + 1 );
+    m_announcement_visible = true;
+    m_announcement_timer->start( 2000 );
 
-    emit text_changed( m_text );
-    emit text_visibility_changed( m_text_visible );
+    emit announcement_changed( m_announcement );
+    emit announcement_visibility_changed( m_announcement_visible );
 }
 
 void qml_map_interface::level_ended( const level_game_result& result )
 {
-    m_text = QString{ "%1" }.arg( result == level_game_result::victory? "Victory" : "Defeat" );
-    m_text_visible = true;
-    m_text_timer->start( 3000 );
+    m_announcement = QString{ "%1" }.arg( result == level_game_result::victory? "Victory" : "Defeat" );
+    m_announcement_visible = true;
+    m_announcement_timer->start( 3000 );
 
-    emit text_changed( m_text );
-    emit text_visibility_changed( m_text_visible );
+    emit announcement_changed( m_announcement );
+    emit announcement_visibility_changed( m_announcement_visible );
 }
 
 void qml_map_interface::game_ended( const level_game_result& result )
 {
-    m_text = QString{ "Game %1" }.arg( result == level_game_result::victory?
+    m_announcement = QString{ "Game %1" }.arg( result == level_game_result::victory?
                                       "completed" : "lost" );
-    m_text_visible = true;
-    m_text_timer->start( 3000 );
+    m_announcement_visible = true;
+    m_announcement_timer->start( 3000 );
 
-    emit text_changed( m_text );
-    emit text_visibility_changed( m_text_visible );
+    emit announcement_changed( m_announcement );
+    emit announcement_visibility_changed( m_announcement_visible );
 }
 
 int qml_map_interface::get_rows_count() const noexcept
@@ -193,21 +193,21 @@ void qml_map_interface::on_event( const event::entities_removed& event )
     }
 }
 
-void qml_map_interface::switch_text_visibility()
+void qml_map_interface::switch_announcement_visibility()
 {
-    m_text_visible = !m_text_visible;
-    emit text_visibility_changed( m_text_visible );
-    m_text_timer->stop();
+    m_announcement_visible = !m_announcement_visible;
+    emit announcement_visibility_changed( m_announcement_visible );
+    m_announcement_timer->stop();
 }
 
 QString qml_map_interface::get_text() const
 {
-    return m_text;
+    return m_announcement;
 }
 
 bool qml_map_interface::get_text_visible() const noexcept
 {
-    return m_text_visible;
+    return m_announcement_visible;
 }
 
 void qml_map_interface::objects_of_type_changed( const object_type& type )

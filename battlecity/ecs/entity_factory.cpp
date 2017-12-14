@@ -6,6 +6,7 @@ static constexpr auto image_tile_empty = "tile_empty";
 static constexpr auto image_tile_wall = "tile_wall";
 static constexpr auto image_player_base = "player_base";
 static constexpr auto image_player_tank = "player_tank";
+static constexpr auto image_enemy_tank = "enemy_tank";
 static constexpr auto image_projectile = "projectile";
 
 namespace game
@@ -51,7 +52,7 @@ QString tank_image_path( const alignment& align )
     switch( align )
     {
     case alignment::player : image_name = image_player_tank; break;
-    case alignment::enemy : image_name = image_player_tank; break;
+    case alignment::enemy : image_name = image_enemy_tank; break;
     default: throw std::invalid_argument{ "Unimplemented tank type" };
     }
 

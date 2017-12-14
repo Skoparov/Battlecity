@@ -57,11 +57,11 @@ Rectangle
 
         Text
         {
-            text: map_interface.text
+            text: map_interface.announcement
             font.family: "Comic Sans"
             font.pointSize: 24
             color: "red"
-            visible: map_interface.text_visible
+            visible: map_interface.announcement_visible
             anchors.centerIn: parent
         }
     }

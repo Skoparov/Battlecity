@@ -41,15 +41,19 @@ void controller::init()
     std::unique_ptr< ecs::system > respawn_system{
         new system::respawn_system{ m_settings.get_enemies_number(), m_world } };
 
+    std::unique_ptr< ecs::system > tank_ai_system{ new system::tank_ai_system{ m_world } };
+
     m_world.add_system( *move_system );
     m_world.add_system( *vic_def_system );
     m_world.add_system( *proj_system );
     m_world.add_system( *respawn_system );
+    m_world.add_system( *tank_ai_system );
 
     m_systems.emplace_back( std::move( move_system ) );
     m_systems.emplace_back( std::move( vic_def_system ) );
     m_systems.emplace_back( std::move( proj_system ) );
     m_systems.emplace_back( std::move( respawn_system ) );
+    m_systems.emplace_back( std::move( tank_ai_system ) );
 
     m_world.subscribe< event::level_completed >( *this );
 }

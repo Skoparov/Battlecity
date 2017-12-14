@@ -68,8 +68,8 @@ public:
     Q_PROPERTY( int columns_num READ get_columns_count CONSTANT )
     Q_PROPERTY( int tile_width READ get_tile_width CONSTANT )
     Q_PROPERTY( int tile_height READ get_tile_height CONSTANT )
-    Q_PROPERTY( QString text READ get_text NOTIFY text_changed )
-    Q_PROPERTY( bool text_visible READ get_text_visible NOTIFY text_visibility_changed )
+    Q_PROPERTY( QString announcement READ get_text NOTIFY announcement_changed )
+    Q_PROPERTY( bool announcement_visible READ get_text_visible NOTIFY announcement_visibility_changed )
 
     void on_event( const event::projectile_fired& event ) override;
     void on_event( const event::entities_removed& event ) override;
@@ -80,11 +80,11 @@ signals:
     void player_tanks_changed( QQmlListProperty< game::tank_map_object > );
     void enemy_tanks_changed( QQmlListProperty< game::tank_map_object > );
     void projectiles_changed( QQmlListProperty< game::movable_map_object > );
-    void text_changed( QString );
-    void text_visibility_changed( bool );
+    void announcement_changed( QString );
+    void announcement_visibility_changed( bool );
 
 public slots:
-    void switch_text_visibility();
+    void switch_announcement_visibility();
 
 private:
     void objects_of_type_changed( const object_type& type );
@@ -104,9 +104,9 @@ private:
     using object_list = std::list< std::unique_ptr< base_map_object > >;
     std::unordered_map< object_type, object_list > m_map_objects;
 
-    QString m_text;
-    bool m_text_visible{ false };
-    QTimer* m_text_timer{ nullptr };
+    QString m_announcement;
+    bool m_announcement_visible{ false };
+    QTimer* m_announcement_timer{ nullptr };
 };
 
 }// game

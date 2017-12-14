@@ -94,17 +94,17 @@ ecs::entity&
 add_tank( int row, int col, const alignment& align, const game_settings& settings, ecs::world& world )
 {
     QRect tank_rect{ obj_rect( row, col, settings.get_tile_size(), settings.get_tank_size() ) };
-    uint32_t health{ align == alignment::player? settings.get_tank_health() : 0 };
 
     ecs::entity& e = create_entity_tank( tank_rect,
                                align,
                                settings.get_tank_speed(),
-                               health,
+                               settings.get_tank_health(),
                                world );
 
     if( align == alignment::enemy )
     {
         e.get_component< component::graphics >().set_visible( false );
+        e.get_component< component::health >().decrease( settings.get_tank_health() );
     }
 
     return e;

@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Settings>
     <Fps>30</Fps>
-    <TileSize>32</TileSize>
-    <TankSize>64</TankSize>
+    <TileSize>64</TileSize>
+    <TankSize>60</TankSize>
     <ProjectileSize>10</ProjectileSize>
     <PlayerBaseSize>64</PlayerBaseSize>
     <TankHealth>1</TankHealth>
     <PlayerBaseHealth>5</PlayerBaseHealth>
     <PlayerLives>5</PlayerLives>
-    <EnemiesNum>5</EnemiesNum>
+    <EnemiesNum>2</EnemiesNum>
     <BaseKillsToWin>10</BaseKillsToWin>
     <TankSpeed>8</TankSpeed>
     <ProjectileSpeed>16</ProjectileSpeed>

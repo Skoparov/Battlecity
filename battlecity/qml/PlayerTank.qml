@@ -49,7 +49,13 @@ Item
 
     Keys.onReleased:
     {
-        modelData.move_direction = "None"
-        event.accepted = true;
+        if( event.key === Qt.Key_Left ||
+            event.key === Qt.Key_Right ||
+            event.key === Qt.Key_Up ||
+            event.key === Qt.Key_Down )
+        {
+            modelData.move_direction = "None"
+            event.accepted = true;
+        }
     }
 }

@@ -16,6 +16,7 @@
         <file>graphics/tile_wall.png</file>
         <file>graphics/player_base.png</file>
 		<file>graphics/player_tank.png</file>
+		<file>graphics/enemy_tank.png</file>
 		<file>graphics/projectile.png</file>
     </qresource>
 </RCC>
