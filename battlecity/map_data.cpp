@@ -1,9 +1,9 @@
 #include "map_data.h"
 
-#include <QSet>
 #include <QFile>
 #include <QTextStream>
 
+#include "ecs/framework/world.h"
 #include "ecs/entity_factory.h"
 
 #include "game_settings.h"
@@ -19,45 +19,6 @@ namespace game
 void map_data::set_map_size( const QSize& size ) noexcept
 {
     m_map_size = size;
-}
-
-void map_data::add_object( std::unique_ptr< base_map_object >&& object )
-{
-    m_active_map_objects[ object->get_type() ].emplace_back( std::move( object ) );
-}
-
-QSet< object_type >
-map_data::remove_objects_from_active( const std::unordered_set< ecs::entity_id >& entities )
-{
-    QSet< object_type > removed_object_types;
-
-    for( auto it = m_active_map_objects.begin(); it != m_active_map_objects.end(); ++it )
-    {
-        auto& objects_list = it->second;
-
-        auto object_it = objects_list.begin();
-        while( object_it != objects_list.end() )
-        {
-            if( entities.count( ( *object_it )->get_id() ) )
-            {
-                object_type type{ ( *object_it )->get_type() };
-                removed_object_types.insert( type );
-                m_inactive_objects[ type ].emplace_back( std::move( *object_it ) );
-                objects_list.erase( object_it++ );
-            }
-            else
-            {
-                ++object_it;
-            }
-        }
-    }
-
-    return removed_object_types;
-}
-
-void map_data::remove_all_objects_from_active()
-{
-    m_inactive_objects = std::move( m_active_map_objects );
 }
 
 int map_data::get_rows_count() const noexcept
@@ -109,8 +70,8 @@ QRect obj_rect( int row, int col, const QSize& tile_size, const QSize& size ) no
     return QRect{ QPoint{ col * tile_size.width(), row * tile_size.height() }, size };
 }
 
-std::unique_ptr< base_map_object >
-create_player_base( bool& player_base_found, int row, int col, const game_settings& settings, ecs::world& world )
+ecs::entity&
+add_player_base( bool& player_base_found, int row, int col, const game_settings& settings, ecs::world& world )
 {
     if( player_base_found )
     {
@@ -120,13 +81,11 @@ create_player_base( bool& player_base_found, int row, int col, const game_settin
     player_base_found = true;
 
     QRect base_rect{ obj_rect( row, col, settings.get_tile_size(), settings.get_player_base_size() ) };
-    ecs::entity& base_entity = create_entity_player_base( base_rect, settings.get_player_base_health(), world );
-
-    return std::unique_ptr< base_map_object >{ new graphics_map_object{ &base_entity, object_type::player_base } };
+    return create_entity_player_base( base_rect, settings.get_player_base_health(), world );
 }
 
-std::unique_ptr< base_map_object >
-create_tank( bool& player_start_pos_found, int row, int col, const game_settings& settings, ecs::world& world )
+ecs::entity&
+add_tank( bool& player_start_pos_found, int row, int col, const game_settings& settings, ecs::world& world )
 {
     if( player_start_pos_found )
     {
@@ -136,28 +95,27 @@ create_tank( bool& player_start_pos_found, int row, int col, const game_settings
     player_start_pos_found = true;
 
     QRect player_tank_rect{ obj_rect( row, col, settings.get_tile_size(), settings.get_tank_size() ) };
-    ecs::entity& player_tank_entity = create_entity_tank( player_tank_rect,
-                                                          tank_type::player,
-                                                          settings.get_tank_speed(),
-                                                          settings.get_tank_health(),
-                                                          world );
-
-    std::unique_ptr< base_map_object > player_tank{ new tank_map_object{ &player_tank_entity, object_type::player_tank } };
-    return player_tank;
+    return create_entity_tank( player_tank_rect,
+                               tank_type::player,
+                               settings.get_tank_speed(),
+                               settings.get_tank_health(),
+                               world );
 }
 
-std::unique_ptr< base_map_object >
-create_tile( const tile_type& type, int row, int col, const game_settings& settings, ecs::world& world )
+ecs::entity&
+add_tile( const tile_type& type, int row, int col, const game_settings& settings, ecs::world& world )
 {
     const QSize& tile_size{ settings.get_tile_size() };
-    ecs::entity& tile_entity = create_entity_tile( type,
-                                                   obj_rect( row, col, tile_size, tile_size ),
-                                                   world );
-
-    return std::unique_ptr< base_map_object >{ new tile_map_object{ &tile_entity } };
+    return create_entity_tile( type,
+                        obj_rect( row, col, tile_size, tile_size ),
+                        world );
 }
 
-void read_map_file( map_data& data, const QString& file, const game_settings& settings, ecs::world& world )
+void read_map_file( map_data& data,
+                    const QString& file,
+                    const game_settings& settings,
+                    ecs::world& world,
+                    map_data_mediator* mediator )
 {
     QFile map_file{ file };
     if ( !map_file.open( QIODevice::ReadOnly | QIODevice::Text ) )
@@ -188,16 +146,28 @@ void read_map_file( map_data& data, const QString& file, const game_settings& se
             std::pair< tile_type, object_type > tile_info{ char_to_tile_info( tile_char ) };
             const tile_type& type{ tile_info.first };
 
+            ecs::entity* entity{ nullptr };
             if( tile_info.second == object_type::player_base )
             {
-                data.add_object( create_player_base( player_base_found, rows_count, curr_column, settings, world ) );
+                entity = &add_player_base( player_base_found, rows_count, curr_column, settings, world );
             }
             else if( tile_info.second == object_type::player_tank )
             {
-                data.add_object( create_tank( player_start_pos_found, rows_count, curr_column, settings, world ) );
+                entity = &add_tank( player_start_pos_found, rows_count, curr_column, settings, world );
             }
 
-            data.add_object( create_tile( type, rows_count, curr_column, settings, world ) );
+            ecs::entity& tile_entity = add_tile( type, rows_count, curr_column, settings, world );
+
+            if( mediator )
+            {
+                if( entity )
+                {
+                    mediator->add_object( tile_info.second, *entity );
+                }
+
+                mediator->add_object( object_type::tile, tile_entity );
+            }
+
             ++curr_column;
         }
         else
@@ -231,7 +201,7 @@ void read_map_file( map_data& data, const QString& file, const game_settings& se
     // add map entity
     const QSize& tile_size{ settings.get_tile_size() };
     QRect map_rect{ 0, 0, tile_size.width() * map_size.width(), tile_size.height() * map_size.height() };
-    create_entity_map( map_rect, world );
+    add_map_entity( map_rect, world );
 }
 
 }// game

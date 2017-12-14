@@ -4,7 +4,7 @@
 #include "graphics_map_object.h"
 #include "movable_map_object.h"
 
-#include "ecs/components.h"
+#include "ecs/general_enums.h"
 
 namespace game
 {

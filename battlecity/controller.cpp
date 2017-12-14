@@ -1,7 +1,5 @@
 #include "controller.h"
 
-#include <QFileInfo>
-
 #include "ecs/systems.h"
 
 static constexpr auto map_name_pattern = ":/maps/map_%1";
@@ -10,17 +8,11 @@ namespace game
 {
 
 controller::controller( const game_settings& settings, ecs::world& world ) :
-    m_settings( settings ),
-    m_world( world )
+    m_world( world ),
+    m_settings( settings )
 {
     m_tick_timer = new QTimer{ this };
     connect( m_tick_timer, SIGNAL( timeout() ), this, SLOT( tick() ) );
-}
-
-controller::~controller()
-{
-    m_world.subscribe< event::projectile_fired >( *this );
-    m_world.subscribe< event::entities_removed >( *this );
 }
 
 void controller::init()
@@ -50,8 +42,6 @@ void controller::init()
     m_systems.emplace_back( std::move( vic_def_system ) );
     m_systems.emplace_back( std::move( proj_system ) );
 
-    m_world.subscribe< event::projectile_fired >( *this );
-    m_world.subscribe< event::entities_removed >( *this );
     m_world.subscribe< event::level_completed >( *this );
 }
 
@@ -60,7 +50,8 @@ void controller::load_level( uint32_t level )
     read_map_file( m_map_data,
                    QString{ map_name_pattern }.arg( level ) ,
                    m_settings,
-                   m_world );
+                   m_world,
+                   m_mediator );
 }
 
 void controller::start()
@@ -71,8 +62,11 @@ void controller::start()
 void controller::stop()
 {
     m_tick_timer->stop();
-    m_map_data = {};
-    m_level = 0;
+}
+
+void controller::set_map_mediator( map_data_mediator* mediator ) noexcept
+{
+    m_mediator = mediator;
 }
 
 int controller::get_rows_count() const noexcept
@@ -95,48 +89,10 @@ int controller::get_tile_height() const noexcept
     return m_settings.get_tile_size().height();
 }
 
-QList< tile_map_object* > controller::get_tiles() const
-{
-    return m_map_data.get_objects_of_type< object_type::tile >();
-}
-
-QList< graphics_map_object* > controller::get_player_bases() const
-{
-    return m_map_data.get_objects_of_type< object_type::player_base >();
-}
-
-QList< tank_map_object* > controller::get_player_tanks() const
-{
-    return m_map_data.get_objects_of_type< object_type::player_tank >();
-}
-
-QList< movable_map_object* > controller::get_projectiles() const
-{
-    return m_map_data.get_objects_of_type< object_type::projectile >();
-}
-
-void controller::on_event( const event::projectile_fired& event )
-{
-    std::unique_ptr< base_map_object > projectile{
-        new movable_map_object{ &event.get_projectile(), object_type::projectile } };
-
-    m_world.subscribe< event::geometry_changed >( *projectile );
-    m_map_data.add_object( std::move( projectile ) );
-
-    emit projectile_fired();
-}
-
-void controller::on_event( const event::entities_removed& event )
-{
-    auto removed_object_types = m_map_data.remove_objects_from_active( event.get_entities() );
-    emit objects_removed( std::move( removed_object_types ) );
-}
-
 void controller::on_event( const event::level_completed& event )
 {
     // TODO: check if level is present
      m_need_to_load_level = true;
-
     if( event.get_result() == level_result::victory )
     {
         ++m_level;
@@ -147,21 +103,20 @@ void controller::tick()
 {
     if( m_need_to_load_level )
     {
-        m_map_data.remove_all_objects_from_active();
+        if( m_mediator )
+        {
+            m_mediator->remove_all();
+        }
 
-        emit level_updated();
-
-        m_map_data.clear_inactive_objects();
         m_world.reset();
-
         load_level( m_level );
-        m_need_to_load_level = false;
 
-        emit level_updated();
-    }
-    else
-    {
-        m_map_data.clear_inactive_objects();
+        if( m_mediator )
+        {
+            m_mediator->level_changed();
+        }
+
+        m_need_to_load_level = false;
     }
 
     m_world.tick();

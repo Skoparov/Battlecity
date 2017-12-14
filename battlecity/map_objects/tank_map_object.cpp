@@ -1,5 +1,7 @@
 #include "tank_map_object.h"
 
+#include "ecs/components.h"
+
 namespace game
 {
 

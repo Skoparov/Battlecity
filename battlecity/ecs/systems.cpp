@@ -349,7 +349,8 @@ win_defeat_system::win_defeat_system( uint32_t kills_to_win,
                                       ecs::world& world ) noexcept:
     ecs::system( world ),
     m_kills_to_win( kills_to_win ),
-    m_player_lifes( player_lifes )
+    m_player_lifes( player_lifes ),
+    m_player_lifes_left( player_lifes )
 {
     m_world.subscribe< event::enemy_killed >( *this );
     m_world.subscribe< event::player_killed >( *this );

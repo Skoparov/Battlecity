@@ -1,5 +1,7 @@
 #include "entity_factory.h"
 
+#include "components.h"
+
 static constexpr auto image_tile_empty = "tile_empty";
 static constexpr auto image_tile_wall = "tile_wall";
 static constexpr auto image_player_base = "player_base";
@@ -55,7 +57,7 @@ QString tank_image_path( const tank_type& type )
     return get_image_path( image_name );
 }
 
-ecs::entity& create_entity_map( const QRect& rect, ecs::world& world )
+ecs::entity& add_map_entity( const QRect& rect, ecs::world& world )
 {
     ecs::entity& entity = world.create_entity();
 

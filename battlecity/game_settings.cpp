@@ -1,7 +1,5 @@
 #include "game_settings.h"
 
-#include <iostream>
-
 #include <QFile>
 #include <QXmlStreamReader>
 

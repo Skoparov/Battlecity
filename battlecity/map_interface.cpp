@@ -1,5 +1,7 @@
 #include "map_interface.h"
 
+#include <unordered_set>
+
 #include "controller.h"
 
 namespace game
@@ -10,20 +12,63 @@ qml_map_interface::qml_map_interface( controller& controller,
     QObject( parent ),
     m_controller( controller )
 {
-    connect( &m_controller,
-             SIGNAL( projectile_fired() ),
-             this,
-             SLOT( on_projectile_changed() ) );
+    m_controller.subscribe< event::projectile_fired >( *this );
+    m_controller.subscribe< event::entities_removed >( *this );
+}
 
-    connect( &m_controller,
-             SIGNAL( objects_removed( QSet< object_type > ) ),
-             this,
-             SLOT( on_objects_removed( QSet< object_type > ) ) );
+qml_map_interface::~qml_map_interface()
+{
+    m_controller.unsubscribe< event::projectile_fired >( *this );
+    m_controller.unsubscribe< event::entities_removed >( *this );
+}
 
-    connect( &m_controller,
-             SIGNAL( level_updated() ),
-             this,
-             SLOT( on_level_updated() ) );
+void qml_map_interface::add_object( const object_type& type, ecs::entity& entity )
+{
+    std::unique_ptr< base_map_object > map_object;
+
+    switch( type )
+    {
+    case object_type::tile:
+        map_object.reset( new graphics_map_object{ &entity, object_type::tile } );
+        m_tiles.append( dynamic_cast< graphics_map_object* >( map_object.get() ) );
+        break;
+    case object_type::player_tank:
+        map_object.reset( new tank_map_object{ &entity, object_type::player_tank } );
+        m_player_tanks.append( dynamic_cast< tank_map_object* >( map_object.get() ) );
+        break;
+    case object_type::player_base:
+        map_object.reset( new graphics_map_object{ &entity, object_type::player_base } );
+        m_player_bases.append( dynamic_cast< graphics_map_object* >( map_object.get() ) );
+        break;
+    case object_type::projectile:
+        map_object.reset( new movable_map_object{ &entity, object_type::projectile } );
+        m_projectiles.append( dynamic_cast< movable_map_object* >( map_object.get() ) );
+        break;
+    default:
+        assert( false );
+    }
+
+    m_map_objects[ type ].emplace_back( std::move( map_object ) );
+}
+
+void qml_map_interface::level_changed()
+{
+    emit tiles_changed( get_tiles() );
+    emit player_bases_changed( get_player_bases() );
+    emit player_tanks_changed( get_player_tanks() );
+    emit projectiles_changed( get_projectiles() );
+}
+
+void qml_map_interface::remove_all()
+{
+    m_tiles.clear();
+    m_player_tanks.clear();
+    m_player_bases.clear();
+    m_projectiles.clear();
+
+    level_changed();
+
+    m_map_objects.clear();
 }
 
 int qml_map_interface::get_rows_count() const noexcept
@@ -46,54 +91,98 @@ int qml_map_interface::get_tile_height() const noexcept
     return m_controller.get_tile_height();
 }
 
-QQmlListProperty< tile_map_object > qml_map_interface::get_tiles()
+QQmlListProperty< graphics_map_object > qml_map_interface::get_tiles()
 {
-    m_tiles = m_controller.get_tiles();
-    return QQmlListProperty< tile_map_object >{ this, m_tiles };
+    return QQmlListProperty< graphics_map_object >{ this, m_tiles };
 }
 
 QQmlListProperty< graphics_map_object > qml_map_interface::get_player_bases()
 {
-    m_player_bases = m_controller.get_player_bases();
     return QQmlListProperty< graphics_map_object >{ this, m_player_bases };
 }
 
 QQmlListProperty< tank_map_object > qml_map_interface::get_player_tanks()
 {
-    m_player_tanks = m_controller.get_player_tanks();
     return QQmlListProperty< tank_map_object >{ this, m_player_tanks };
 }
 
 QQmlListProperty<movable_map_object> qml_map_interface::get_projectiles()
 {
-    m_projectiles = m_controller.get_projectiles();
     return QQmlListProperty< movable_map_object >{ this, m_projectiles };
 }
 
-void qml_map_interface::on_level_updated()
+void qml_map_interface::on_event( const event::projectile_fired& event )
 {
-    emit tiles_changed( get_tiles() );
-    emit player_bases_changed( get_player_bases() );
-    emit player_tanks_changed( get_player_tanks() );
-    emit projectiles_changed( get_projectiles() );
+    add_object( object_type::projectile, event.get_projectile() );
+    objects_of_type_changed( object_type::projectile );
 }
 
-void qml_map_interface::on_projectile_changed()
+void qml_map_interface::on_event( const event::entities_removed& event )
 {
-    emit projectiles_changed( get_projectiles() );
-}
+    const auto& entities = event.get_entities();
+    std::unordered_map< object_type, object_list > objects_to_remove;
 
-void qml_map_interface::on_objects_removed( QSet< object_type > objects )
-{
-     if( objects.contains( object_type::projectile ) )
+    for( auto it = m_map_objects.begin(); it != m_map_objects.end(); ++it )
     {
-        on_projectile_changed();
-        tiles_changed( get_tiles() );
+        const object_type& type = it->first;
+        auto& objects_list = it->second;
+
+        auto object_it = objects_list.begin();
+        while( object_it != objects_list.end() )
+        {
+            if( entities.count( ( *object_it )->get_id() ) )
+            {
+                objects_to_remove[ type ].emplace_back( std::move( *object_it ) );
+                objects_list.erase( object_it++ );
+            }
+            else
+            {
+                ++object_it;
+            }
+        }
     }
 
-    if( objects.contains( object_type::player_base ) )
+    for( const auto& pair_data : objects_to_remove )
     {
+        const object_type& type = pair_data.first;
+
+        for( const auto& obj : pair_data.second )
+        {
+            remove_object_from_model( type, obj.get() );
+        }
+
+        objects_of_type_changed( type );
+    }
+}
+
+void qml_map_interface::objects_of_type_changed( const object_type& type )
+{
+    switch( type )
+    {
+    case object_type::tile:
+        emit tiles_changed( get_tiles() );
+        break;
+    case object_type::player_tank:
+        emit player_tanks_changed( get_player_tanks() );
+        break;
+    case object_type::player_base:
         emit player_bases_changed( get_player_bases() );
+        break;
+    case object_type::projectile:
+        emit projectiles_changed( get_projectiles() );
+        emit tiles_changed( get_tiles() );
+        break;
+    default:
+        assert( false );
+    }
+}
+
+void qml_map_interface::remove_object_from_model( const object_type& type, base_map_object* obj )
+{
+    if( type == object_type::projectile )
+    {
+        m_projectiles.erase( std::remove( m_projectiles.begin(), m_projectiles.end(), obj ),
+                             m_projectiles.end() );
     }
 }
 
