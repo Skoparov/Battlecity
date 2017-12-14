@@ -34,6 +34,9 @@ public:
     void set_player_lives( const uint32_t lives ) noexcept;
     uint32_t get_player_lives() const noexcept;
 
+    void set_enemies_number( const uint32_t number ) noexcept;
+    uint32_t get_enemies_number() const noexcept;
+
     void set_base_kills_to_win( const uint32_t kills ) noexcept;
     uint32_t get_base_kills_to_win() const noexcept;
 
@@ -55,6 +58,7 @@ private:
     uint32_t m_tank_health{ 0 };
     uint32_t m_base_health{ 0 };
     uint32_t m_player_lives{ 0 };
+    uint32_t m_enemies_number{ 0 };
     uint32_t m_base_kills_to_win{ 0 };
     uint32_t m_tank_speed{ 0 };
     uint32_t m_projectile_speed{ 0 };

@@ -22,8 +22,10 @@ class map_data_mediator
 public:
     virtual ~map_data_mediator() = default;
     virtual void add_object( const object_type& type, ecs::entity& entity ) = 0;
-    virtual void level_changed() = 0;
     virtual void remove_all() = 0;
+    virtual void level_started( uint32_t level ) = 0;
+    virtual void level_ended( const level_game_result& result ) = 0;
+    virtual void game_ended( const level_game_result& result ) = 0;
 };
 
 class map_data final

@@ -12,8 +12,7 @@
 namespace game
 {
 
-class base_map_object : public QObject,
-                        public ecs::event_callback< event::geometry_changed >
+class base_map_object : public QObject
 {
     Q_OBJECT
 
@@ -46,9 +45,6 @@ public:
     Q_PROPERTY( int height READ get_height CONSTANT )
     Q_PROPERTY( int rotation READ get_rotation WRITE set_rotation NOTIFY rotation_changed )
     Q_PROPERTY( bool traversible READ get_traversible CONSTANT )
-
-    // Event callbacks
-    void on_event( const event::geometry_changed& event ) override;
 
 signals:
     void pos_x_changed( int );

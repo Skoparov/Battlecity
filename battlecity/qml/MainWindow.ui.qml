@@ -37,6 +37,12 @@ Rectangle
 
                 Repeater
                 {
+                    model: map_interface.enemy_tanks
+                    EnemyTank{}
+                }
+
+                Repeater
+                {
                     model: map_interface.player_tanks
                     PlayerTank{}
                 }
@@ -47,6 +53,16 @@ Rectangle
                     Projectile{}
                 }
             }
+        }
+
+        Text
+        {
+            text: map_interface.text
+            font.family: "Comic Sans"
+            font.pointSize: 24
+            color: "red"
+            visible: map_interface.text_visible
+            anchors.centerIn: parent
         }
     }
 }

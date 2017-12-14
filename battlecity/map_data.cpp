@@ -5,6 +5,7 @@
 
 #include "ecs/framework/world.h"
 #include "ecs/entity_factory.h"
+#include "ecs/components.h"
 
 #include "game_settings.h"
 
@@ -12,6 +13,7 @@ static constexpr auto tile_char_empty = 'e';
 static constexpr auto tile_char_wall = 'w';
 static constexpr auto tile_char_player_base = 'b';
 static constexpr auto tile_char_player_start_position = 'p';
+static constexpr auto tile_char_respawn_point = 'r';
 
 namespace game
 {
@@ -59,6 +61,10 @@ std::pair< tile_type, object_type > char_to_tile_info( char c )
         ground = tile_type::empty;
         obj_located_on_ground = object_type::player_tank;
         break;
+    case tile_char_respawn_point :
+        ground = tile_type::empty;
+        obj_located_on_ground = object_type::respawn_point;
+        break;
     default: throw std::invalid_argument{ std::string{ "Unknown map character: " } + c }; break;
     }
 
@@ -85,21 +91,23 @@ add_player_base( bool& player_base_found, int row, int col, const game_settings&
 }
 
 ecs::entity&
-add_tank( bool& player_start_pos_found, int row, int col, const game_settings& settings, ecs::world& world )
+add_tank( int row, int col, const alignment& align, const game_settings& settings, ecs::world& world )
 {
-    if( player_start_pos_found )
+    QRect tank_rect{ obj_rect( row, col, settings.get_tile_size(), settings.get_tank_size() ) };
+    uint32_t health{ align == alignment::player? settings.get_tank_health() : 0 };
+
+    ecs::entity& e = create_entity_tank( tank_rect,
+                               align,
+                               settings.get_tank_speed(),
+                               health,
+                               world );
+
+    if( align == alignment::enemy )
     {
-        throw std::logic_error{ "More than one player start position found" };
+        e.get_component< component::graphics >().set_visible( false );
     }
 
-    player_start_pos_found = true;
-
-    QRect player_tank_rect{ obj_rect( row, col, settings.get_tile_size(), settings.get_tank_size() ) };
-    return create_entity_tank( player_tank_rect,
-                               tank_type::player,
-                               settings.get_tank_speed(),
-                               settings.get_tank_health(),
-                               world );
+    return e;
 }
 
 ecs::entity&
@@ -109,6 +117,13 @@ add_tile( const tile_type& type, int row, int col, const game_settings& settings
     return create_entity_tile( type,
                         obj_rect( row, col, tile_size, tile_size ),
                         world );
+}
+
+ecs::entity&
+add_respawn_point( int row, int col, const game_settings& settings, ecs::world& world )
+{
+    QRect base_rect{ obj_rect( row, col, settings.get_tile_size(), settings.get_tank_size() ) };
+    return create_respawn_point_entity( base_rect, world );
 }
 
 void read_map_file( map_data& data,
@@ -153,7 +168,17 @@ void read_map_file( map_data& data,
             }
             else if( tile_info.second == object_type::player_tank )
             {
-                entity = &add_tank( player_start_pos_found, rows_count, curr_column, settings, world );
+                if( player_start_pos_found )
+                {
+                    throw std::logic_error{ "More than one player start position found" };
+                }
+
+                player_start_pos_found = true;
+                entity = &add_tank( rows_count, curr_column, alignment::player, settings, world );
+            }
+            else if( tile_info.second == object_type::respawn_point )
+            {
+                add_respawn_point( rows_count, curr_column, settings, world );
             }
 
             ecs::entity& tile_entity = add_tile( type, rows_count, curr_column, settings, world );
@@ -195,13 +220,22 @@ void read_map_file( map_data& data,
         throw std::logic_error{ "Player start position not found" };
     }
 
+    for( uint32_t enemy{ 0 }; enemy < settings.get_enemies_number(); ++enemy )
+    {
+        ecs::entity& entity = add_tank( 0, 0, alignment::enemy, settings, world );
+        if( mediator )
+        {
+            mediator->add_object( object_type::enemy_tank, entity );
+        }
+    }
+
     QSize map_size{ columns_count, rows_count };
     data.set_map_size( map_size );
 
     // add map entity
     const QSize& tile_size{ settings.get_tile_size() };
     QRect map_rect{ 0, 0, tile_size.width() * map_size.width(), tile_size.height() * map_size.height() };
-    add_map_entity( map_rect, world );
+    create_map_entity( map_rect, world );
 }
 
 }// game

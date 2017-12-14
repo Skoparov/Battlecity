@@ -30,8 +30,9 @@ public:
 
 private:
     void handle_obstacle( ecs::entity& obstacle,
-                          const component::projectile& projectile_comp,
-                          event::entities_removed& event );
+                          const component::projectile& projectile_comp );
+
+    void kill_entity( ecs::entity& entity );
 
     void handle_existing_projectiles();
     void create_new_projectiles();
@@ -48,7 +49,8 @@ class respawn_system : public ecs::system,
 
 {
 public:
-    explicit respawn_system( ecs::world& world ) noexcept;
+    explicit respawn_system( uint32_t enemies_to_respawn, ecs::world& world ) noexcept;
+    ~respawn_system();
 
     void tick() override;
     void clean() override;
@@ -57,8 +59,14 @@ public:
     void on_event( const event::enemy_killed& );
 
 private:
+    std::vector< const component::geometry* > get_free_respawns();
+
+private:
     bool m_player_needs_respawn{ false };
-    bool m_enemy_needs_respawn{ false };
+    uint32_t m_enemies_to_respawn{ 0 };
+    std::list< const component::geometry* > m_respawn_points;
+
+    uint32_t m_max_enemies{ 0 };
 };
 
 class win_defeat_system : public ecs::system,

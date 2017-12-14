@@ -40,23 +40,19 @@ private:
 
 //
 
-class tank_object final : public turret_object
-{
-public:
-    tank_object() = default;
-    explicit tank_object( const tank_type& type ) noexcept;
-
-    void set_tank_type( const tank_type& type ) noexcept;
-    const tank_type& get_tank_type() const noexcept;
-
-private:
-    tank_type m_tank_type{ tank_type::enemy };
-};
-
+class tank_object final : public turret_object{};
 
 //
 
 class game_map final{};
+
+//
+
+class player final{};
+
+//
+
+class enemy final{};
 
 //
 
@@ -100,6 +96,7 @@ public:
     void set_rotation( int rotation ) noexcept;
     int get_rotation() const noexcept;
 
+    void set_rect( const QRect& rect ) noexcept;
     const QRect& get_rect() const noexcept;
 
 private:
@@ -168,6 +165,10 @@ private:
     uint32_t m_health{ 0 };
     const uint32_t m_max_health{ 0 };
 };
+
+//
+
+class respawn_point{};
 
 }// components
 

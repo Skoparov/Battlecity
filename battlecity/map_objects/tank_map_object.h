@@ -20,8 +20,6 @@ public:
     void set_fired( bool fired ) noexcept;
     bool get_fired() const noexcept;
 
-    const tank_type& get_tank_type() const noexcept;
-
     Q_PROPERTY( bool fired READ get_fired WRITE set_fired )
 };
 

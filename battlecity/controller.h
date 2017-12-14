@@ -43,12 +43,12 @@ public:
     int get_tile_width() const noexcept;
     int get_tile_height() const noexcept;
 
+    uint32_t get_level() const noexcept;
+
     virtual void on_event( const event::level_completed& event );
 
 private:
-    void load_level( uint32_t level );
-    void victory();
-    void defeat();
+    bool load_level( uint32_t level );
 
 public slots:
     void tick();

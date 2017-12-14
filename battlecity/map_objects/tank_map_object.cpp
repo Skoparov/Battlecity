@@ -26,10 +26,4 @@ bool tank_map_object::get_fired() const noexcept
     return t.has_fired();
 }
 
-const tank_type& tank_map_object::get_tank_type() const noexcept
-{
-    const component::tank_object& t = m_entity->get_component_unsafe< component::tank_object >();
-    return t.get_tank_type();
-}
-
 }// game

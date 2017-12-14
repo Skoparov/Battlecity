@@ -11,6 +11,7 @@ static constexpr auto tag_player_base_size = "PlayerBaseSize";
 static constexpr auto tag_tank_health = "TankHealth";
 static constexpr auto tag_player_base_health = "PlayerBaseHealth";
 static constexpr auto tag_player_lives = "PlayerLives";
+static constexpr auto tag_enemies_number = "EnemiesNum";
 static constexpr auto tag_base_kills_to_win = "BaseKillsToWin";
 static constexpr auto tag_tank_speed = "TankSpeed";
 static constexpr auto tag_projectile_speed = "ProjectileSpeed";
@@ -97,6 +98,16 @@ void game_settings::set_player_lives( const uint32_t lives ) noexcept
 uint32_t game_settings::get_player_lives() const noexcept
 {
     return m_player_lives;
+}
+
+void game_settings::set_enemies_number( const uint32_t number ) noexcept
+{
+    m_enemies_number = number;
+}
+
+uint32_t game_settings::get_enemies_number() const noexcept
+{
+    return m_enemies_number;
 }
 
 void game_settings::set_base_kills_to_win( const uint32_t kills ) noexcept
@@ -194,6 +205,10 @@ game_settings read_game_settings( const QString& file )
             else if( name == tag_player_lives )
             {
                 settings.set_player_lives( xml_reader.readElementText().toUInt() );
+            }
+            else if( name == tag_enemies_number )
+            {
+                settings.set_enemies_number( xml_reader.readElementText().toUInt() );
             }
             else if( name == tag_base_kills_to_win )
             {

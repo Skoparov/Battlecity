@@ -14,6 +14,9 @@ qml_map_interface::qml_map_interface( controller& controller,
 {
     m_controller.subscribe< event::projectile_fired >( *this );
     m_controller.subscribe< event::entities_removed >( *this );
+
+    m_text_timer = new QTimer{ this };
+    connect( m_text_timer, SIGNAL( timeout() ), this, SLOT( switch_text_visibility() ) );
 }
 
 qml_map_interface::~qml_map_interface()
@@ -29,21 +32,26 @@ void qml_map_interface::add_object( const object_type& type, ecs::entity& entity
     switch( type )
     {
     case object_type::tile:
-        map_object.reset( new graphics_map_object{ &entity, object_type::tile } );
+        map_object.reset( new graphics_map_object{ &entity, type } );
         m_tiles.append( dynamic_cast< graphics_map_object* >( map_object.get() ) );
         break;
     case object_type::player_tank:
-        map_object.reset( new tank_map_object{ &entity, object_type::player_tank } );
+        map_object.reset( new tank_map_object{ &entity, type } );
         m_player_tanks.append( dynamic_cast< tank_map_object* >( map_object.get() ) );
         break;
+    case object_type::enemy_tank:
+        map_object.reset( new tank_map_object{ &entity, type } );
+        m_enemy_tanks.append( dynamic_cast< tank_map_object* >( map_object.get() ) );
+        break;
     case object_type::player_base:
-        map_object.reset( new graphics_map_object{ &entity, object_type::player_base } );
+        map_object.reset( new graphics_map_object{ &entity, type } );
         m_player_bases.append( dynamic_cast< graphics_map_object* >( map_object.get() ) );
         break;
     case object_type::projectile:
-        map_object.reset( new movable_map_object{ &entity, object_type::projectile } );
+        map_object.reset( new movable_map_object{ &entity, type } );
         m_projectiles.append( dynamic_cast< movable_map_object* >( map_object.get() ) );
         break;
+    case object_type::respawn_point: break;
     default:
         assert( false );
     }
@@ -51,24 +59,49 @@ void qml_map_interface::add_object( const object_type& type, ecs::entity& entity
     m_map_objects[ type ].emplace_back( std::move( map_object ) );
 }
 
-void qml_map_interface::level_changed()
-{
-    emit tiles_changed( get_tiles() );
-    emit player_bases_changed( get_player_bases() );
-    emit player_tanks_changed( get_player_tanks() );
-    emit projectiles_changed( get_projectiles() );
-}
-
 void qml_map_interface::remove_all()
 {
     m_tiles.clear();
     m_player_tanks.clear();
+    m_enemy_tanks.clear();
     m_player_bases.clear();
     m_projectiles.clear();
 
-    level_changed();
+    update_all();
 
     m_map_objects.clear();
+}
+
+void qml_map_interface::level_started( uint32_t level )
+{
+    update_all();
+    m_text = QString{ "Level %1" }.arg( level + 1 );
+    m_text_visible = true;
+    m_text_timer->start( 2000 );
+
+    emit text_changed( m_text );
+    emit text_visibility_changed( m_text_visible );
+}
+
+void qml_map_interface::level_ended( const level_game_result& result )
+{
+    m_text = QString{ "%1" }.arg( result == level_game_result::victory? "Victory" : "Defeat" );
+    m_text_visible = true;
+    m_text_timer->start( 3000 );
+
+    emit text_changed( m_text );
+    emit text_visibility_changed( m_text_visible );
+}
+
+void qml_map_interface::game_ended( const level_game_result& result )
+{
+    m_text = QString{ "Game %1" }.arg( result == level_game_result::victory?
+                                      "completed" : "lost" );
+    m_text_visible = true;
+    m_text_timer->start( 3000 );
+
+    emit text_changed( m_text );
+    emit text_visibility_changed( m_text_visible );
 }
 
 int qml_map_interface::get_rows_count() const noexcept
@@ -104,6 +137,11 @@ QQmlListProperty< graphics_map_object > qml_map_interface::get_player_bases()
 QQmlListProperty< tank_map_object > qml_map_interface::get_player_tanks()
 {
     return QQmlListProperty< tank_map_object >{ this, m_player_tanks };
+}
+
+QQmlListProperty< tank_map_object > qml_map_interface::get_enemy_tanks()
+{
+    return QQmlListProperty< tank_map_object >{ this, m_enemy_tanks };
 }
 
 QQmlListProperty<movable_map_object> qml_map_interface::get_projectiles()
@@ -155,6 +193,23 @@ void qml_map_interface::on_event( const event::entities_removed& event )
     }
 }
 
+void qml_map_interface::switch_text_visibility()
+{
+    m_text_visible = !m_text_visible;
+    emit text_visibility_changed( m_text_visible );
+    m_text_timer->stop();
+}
+
+QString qml_map_interface::get_text() const
+{
+    return m_text;
+}
+
+bool qml_map_interface::get_text_visible() const noexcept
+{
+    return m_text_visible;
+}
+
 void qml_map_interface::objects_of_type_changed( const object_type& type )
 {
     switch( type )
@@ -164,6 +219,9 @@ void qml_map_interface::objects_of_type_changed( const object_type& type )
         break;
     case object_type::player_tank:
         emit player_tanks_changed( get_player_tanks() );
+        break;
+    case object_type::enemy_tank:
+        emit enemy_tanks_changed( get_enemy_tanks() );
         break;
     case object_type::player_base:
         emit player_bases_changed( get_player_bases() );
@@ -184,6 +242,19 @@ void qml_map_interface::remove_object_from_model( const object_type& type, base_
         m_projectiles.erase( std::remove( m_projectiles.begin(), m_projectiles.end(), obj ),
                              m_projectiles.end() );
     }
+    else
+    {
+        assert( false );
+    }
+}
+
+void qml_map_interface::update_all()
+{
+    emit tiles_changed( get_tiles() );
+    emit player_bases_changed( get_player_bases() );
+    emit player_tanks_changed( get_player_tanks() );
+    emit enemy_tanks_changed( get_player_tanks() );
+    emit projectiles_changed( get_projectiles() );
 }
 
 }// game
