@@ -35,6 +35,8 @@ class system
 public:
     system( world& world ) noexcept;
     virtual ~system() = default;
+
+    virtual void init(){}
     virtual void tick() = 0;
     virtual void clean(){}
 

@@ -211,6 +211,66 @@ bool health::alive() const noexcept
     return m_health != 0;
 }
 
+//
+
+level_info::level_info( uint32_t kills_to_win, uint32_t player_lifes ) noexcept:
+    m_kills_to_win( kills_to_win ),
+    m_player_lifes( player_lifes ),
+    m_player_lifes_left( player_lifes ){}
+
+void level_info::player_killed() noexcept
+{
+    if( m_player_lifes_left )
+    {
+        --m_player_lifes_left;
+    }
+}
+
+void level_info::enemy_killed() noexcept
+{
+    if( m_player_kills != m_kills_to_win )
+    {
+        ++m_player_kills;
+    }
+}
+
+void level_info::player_base_killed() noexcept
+{
+    m_player_base_killed = true;
+}
+
+uint32_t level_info::get_player_lifes_left() const noexcept
+{
+    return m_player_lifes_left;
+}
+
+uint32_t level_info::get_player_kills() const noexcept
+{
+    return m_player_kills;
+}
+
+bool level_info::get_player_base_killed() const noexcept
+{
+    return m_player_base_killed;
+}
+
+uint32_t level_info::get_kills_to_win() const noexcept
+{
+    return m_kills_to_win;
+}
+
+uint32_t level_info::get_player_lifes() const noexcept
+{
+    return m_player_lifes;
+}
+
+void level_info::reset() noexcept
+{
+    m_player_kills = 0;
+    m_player_lifes_left = m_player_lifes;
+    m_player_base_killed = false;
+}
+
 }// component
 
 }// ecs

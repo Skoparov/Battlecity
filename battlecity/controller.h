@@ -39,11 +39,10 @@ public:
 
     int get_rows_count() const noexcept;
     int get_columns_count() const noexcept;
-
     int get_tile_width() const noexcept;
     int get_tile_height() const noexcept;
-
     uint32_t get_level() const noexcept;
+    uint32_t get_remaining_frag_count();
 
     virtual void on_event( const event::level_completed& event );
 

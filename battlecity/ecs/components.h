@@ -68,6 +68,10 @@ class player_base final{};
 
 //
 
+class frag final{};
+
+//
+
 class projectile final
 {
 public:
@@ -172,6 +176,35 @@ public:
 private:
     uint32_t m_health{ 0 };
     const uint32_t m_max_health{ 0 };
+};
+
+//
+
+class level_info final
+{
+public:
+    level_info( uint32_t kills_to_win, uint32_t player_lifes ) noexcept;
+
+    void player_killed() noexcept;
+    void enemy_killed() noexcept;
+    void player_base_killed() noexcept;
+
+    uint32_t get_player_lifes_left() const noexcept;
+    uint32_t get_player_kills() const noexcept;
+    bool get_player_base_killed() const noexcept;
+
+    uint32_t get_kills_to_win() const noexcept;
+    uint32_t get_player_lifes() const noexcept;
+
+    void reset() noexcept;
+
+private:
+    uint32_t m_kills_to_win{ 0 };
+    uint32_t m_player_lifes{ 0 };
+
+    bool m_player_base_killed{ false };
+    uint32_t m_player_kills{ 0 };
+    uint32_t m_player_lifes_left{ 0 };
 };
 
 //

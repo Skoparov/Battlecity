@@ -8,6 +8,7 @@ static constexpr auto image_player_base = "player_base";
 static constexpr auto image_player_tank = "player_tank";
 static constexpr auto image_enemy_tank = "enemy_tank";
 static constexpr auto image_projectile = "projectile";
+static constexpr auto image_frag = "frag";
 
 namespace game
 {
@@ -69,11 +70,15 @@ ecs::entity& create_respawn_point_entity( const QRect& rect, ecs::world& world )
     return entity;
 }
 
-ecs::entity& create_map_entity( const QRect& rect, ecs::world& world )
+ecs::entity& create_level_entity( const QRect& rect,
+                                  uint32_t kills_to_win,
+                                  uint32_t player_lifes,
+                                  ecs::world& world )
 {
     ecs::entity& entity = world.create_entity();
 
     entity.add_component< component::game_map >();
+    entity.add_component< component::level_info >( kills_to_win, player_lifes );
     entity.add_component< component::geometry >( rect );
 
     return entity;
@@ -168,6 +173,17 @@ ecs::entity& create_entity_projectile( const QRect& rect,
     entity.add_component< component::geometry >( rect );
     entity.add_component< component::movement >( speed, direction );
     entity.add_component< component::graphics >( get_image_path( image_projectile ) );
+
+    return entity;
+}
+
+ecs::entity& create_entity_frag( const QRect& rect, ecs::world& world )
+{
+    ecs::entity& entity = world.create_entity();
+
+    entity.add_component< component::frag >();
+    entity.add_component< component::geometry >( rect );
+    entity.add_component< component::graphics >( get_image_path( image_frag ) );
 
     return entity;
 }

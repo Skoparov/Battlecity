@@ -15,7 +15,13 @@ class movement_system final : public ecs::system
 {
 public:
     explicit movement_system( ecs::world& world );
+
+    void init() override;
     void tick() override;
+    void clean() override;
+
+private:
+    component::geometry* m_map_geom{ nullptr };
 };
 
 class projectile_system final : public ecs::system
@@ -26,7 +32,9 @@ public:
                        uint32_t projectile_speed,
                        ecs::world& world ) noexcept;
 
+    void init() override;
     void tick() override;
+    void clean() override;
 
 private:
     void handle_obstacle( ecs::entity& obstacle,
@@ -41,6 +49,8 @@ private:
     QSize m_projectile_size{};
     uint32_t m_damage{ 0 };
     uint32_t m_speed{ 0 };
+
+    component::geometry* m_map_geom{ nullptr };
 };
 
 class respawn_system final : public ecs::system,
@@ -57,10 +67,10 @@ class respawn_system final : public ecs::system,
 
 public:
     respawn_system( const std::chrono::milliseconds respawn_delay, ecs::world& world );
-
-    ~respawn_system();
+    ~respawn_system() override;
 
     void tick() override;
+    void init() override;
     void clean() override;
 
     void on_event( const event::player_killed& );
@@ -87,9 +97,10 @@ class win_defeat_system final : public ecs::system,
 
 {
 public:
-    win_defeat_system( uint32_t kills_to_win, uint32_t player_lifes, ecs::world& world ) noexcept;
+    win_defeat_system( ecs::world& world ) noexcept;
     ~win_defeat_system();
 
+    void init() override;
     void tick() override;
     void clean() override;
 
@@ -98,12 +109,8 @@ public:
     void on_event( const event::player_base_killed& );
 
 private:
-    uint32_t m_kills_to_win{ 0 };
-    uint32_t m_player_lifes{ 0 };
-
-    bool m_player_base_killed{ false };
-    uint32_t m_player_kills{ 0 };
-    uint32_t m_player_lifes_left{ 0 };
+    component::level_info* m_level_info{ nullptr };
+    std::vector< ecs::entity* > m_frag_entities;
 };
 
 class tank_ai_system final : public ecs::system

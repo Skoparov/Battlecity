@@ -14,9 +14,10 @@ qml_map_interface::qml_map_interface( controller& controller,
 {
     m_controller.subscribe< event::projectile_fired >( *this );
     m_controller.subscribe< event::entities_removed >( *this );
+    m_controller.subscribe< event::enemy_killed >( *this );
 
     m_announcement_timer = new QTimer{ this };
-    connect( m_announcement_timer, SIGNAL( timeout() ), this, SLOT( switch_announcement_visibility() ) );
+    connect( m_announcement_timer, SIGNAL( timeout() ), this, SLOT( hide_announcement() ) );
 }
 
 qml_map_interface::~qml_map_interface()
@@ -51,6 +52,10 @@ void qml_map_interface::add_object( const object_type& type, ecs::entity& entity
         map_object.reset( new movable_map_object{ &entity, type } );
         m_projectiles.append( dynamic_cast< movable_map_object* >( map_object.get() ) );
         break;
+    case object_type::frag:
+        map_object.reset( new graphics_map_object{ &entity, type } );
+        m_remaining_frags.append( dynamic_cast< graphics_map_object* >( map_object.get() ) );
+        break;
     case object_type::respawn_point: break;
     default:
         assert( false );
@@ -66,6 +71,7 @@ void qml_map_interface::remove_all()
     m_enemy_tanks.clear();
     m_player_bases.clear();
     m_projectiles.clear();
+    m_remaining_frags.clear();
 
     update_all();
 
@@ -74,20 +80,19 @@ void qml_map_interface::remove_all()
 
 void qml_map_interface::level_started( uint32_t level )
 {
-    update_all();
     m_announcement = QString{ "Level %1" }.arg( level + 1 );
     m_announcement_visible = true;
     m_announcement_timer->start( 2000 );
 
-    emit announcement_changed( m_announcement );
-    emit announcement_visibility_changed( m_announcement_visible );
+    update_all();
 }
 
 void qml_map_interface::level_ended( const level_game_result& result )
 {
-    m_announcement = QString{ "%1" }.arg( result == level_game_result::victory? "Victory" : "Defeat" );
     m_announcement_visible = true;
     m_announcement_timer->start( 3000 );
+    m_announcement = QString{ "%1" }.arg( result == level_game_result::victory?
+                                              "Victory" : "Defeat" );
 
     emit announcement_changed( m_announcement );
     emit announcement_visibility_changed( m_announcement_visible );
@@ -95,10 +100,10 @@ void qml_map_interface::level_ended( const level_game_result& result )
 
 void qml_map_interface::game_ended( const level_game_result& result )
 {
-    m_announcement = QString{ "Game %1" }.arg( result == level_game_result::victory?
-                                      "completed" : "lost" );
     m_announcement_visible = true;
     m_announcement_timer->start( 3000 );
+    m_announcement = QString{ "Game %1" }.arg( result == level_game_result::victory?
+                                      "completed" : "lost" );
 
     emit announcement_changed( m_announcement );
     emit announcement_visibility_changed( m_announcement_visible );
@@ -122,6 +127,21 @@ int qml_map_interface::get_tile_width() const noexcept
 int qml_map_interface::get_tile_height() const noexcept
 {
     return m_controller.get_tile_height();
+}
+
+QString qml_map_interface::get_text() const
+{
+    return m_announcement;
+}
+
+bool qml_map_interface::get_text_visible() const noexcept
+{
+    return m_announcement_visible;
+}
+
+uint32_t qml_map_interface::get_remaining_frags_num() const noexcept
+{
+    return m_remaining_frags.size();
 }
 
 QQmlListProperty< graphics_map_object > qml_map_interface::get_tiles()
@@ -149,10 +169,20 @@ QQmlListProperty<movable_map_object> qml_map_interface::get_projectiles()
     return QQmlListProperty< movable_map_object >{ this, m_projectiles };
 }
 
+QQmlListProperty<graphics_map_object> qml_map_interface::get_remaining_frags()
+{
+    return QQmlListProperty< graphics_map_object >{ this, m_remaining_frags };
+}
+
 void qml_map_interface::on_event( const event::projectile_fired& event )
 {
     add_object( object_type::projectile, event.get_projectile() );
     objects_of_type_changed( object_type::projectile );
+}
+
+void qml_map_interface::on_event( const event::enemy_killed& )
+{
+    objects_of_type_changed( object_type::frag );
 }
 
 void qml_map_interface::on_event( const event::entities_removed& event )
@@ -193,21 +223,11 @@ void qml_map_interface::on_event( const event::entities_removed& event )
     }
 }
 
-void qml_map_interface::switch_announcement_visibility()
+void qml_map_interface::hide_announcement()
 {
-    m_announcement_visible = !m_announcement_visible;
-    emit announcement_visibility_changed( m_announcement_visible );
     m_announcement_timer->stop();
-}
-
-QString qml_map_interface::get_text() const
-{
-    return m_announcement;
-}
-
-bool qml_map_interface::get_text_visible() const noexcept
-{
-    return m_announcement_visible;
+    m_announcement_visible = false;
+    emit announcement_visibility_changed( m_announcement_visible );
 }
 
 void qml_map_interface::objects_of_type_changed( const object_type& type )
@@ -230,6 +250,9 @@ void qml_map_interface::objects_of_type_changed( const object_type& type )
         emit projectiles_changed( get_projectiles() );
         emit tiles_changed( get_tiles() );
         break;
+    case object_type::frag:
+        emit remaining_frags_changed( get_remaining_frags() );
+        break;
     default:
         assert( false );
     }
@@ -237,13 +260,12 @@ void qml_map_interface::objects_of_type_changed( const object_type& type )
 
 void qml_map_interface::remove_object_from_model( const object_type& type, base_map_object* obj )
 {
-    if( type == object_type::projectile )
-    {
+    switch (type) {
+    case object_type::projectile:
         m_projectiles.erase( std::remove( m_projectiles.begin(), m_projectiles.end(), obj ),
                              m_projectiles.end() );
-    }
-    else
-    {
+        break;
+    default:
         assert( false );
     }
 }
@@ -255,6 +277,9 @@ void qml_map_interface::update_all()
     emit player_tanks_changed( get_player_tanks() );
     emit enemy_tanks_changed( get_player_tanks() );
     emit projectiles_changed( get_projectiles() );
+    emit announcement_changed( m_announcement );
+    emit announcement_visibility_changed( m_announcement_visible );
+    emit remaining_frags_changed( get_remaining_frags() );
 }
 
 }// game

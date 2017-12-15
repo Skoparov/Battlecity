@@ -3,15 +3,15 @@ import QtQuick.Dialogs 1.1
 
 Rectangle
 {
-    property alias mouseArea: mouseArea
+    property alias mouseArea: mouse_area
 
-    width: game_map.width
+    width: game_map.width + side_bar.width
     height: game_map.height
     color: "gray"
 
     MouseArea
     {
-        id: mouseArea
+        id: mouse_area
         anchors.fill: parent
 
         Item
@@ -64,6 +64,15 @@ Rectangle
             visible: map_interface.announcement_visible
             anchors.centerIn: parent
         }
+    }
+
+    SideBar
+    {
+        id: side_bar
+        x: game_map.width + 16
+        y: 96
+        height: parent.height
+        width: 96
     }
 }
 

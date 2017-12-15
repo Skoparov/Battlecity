@@ -230,13 +230,25 @@ void read_map_file( map_data& data,
         }
     }
 
+    for( uint32_t frag{ 0 }; frag < settings.get_base_kills_to_win(); ++ frag )
+    {
+        ecs::entity& entity = create_entity_frag( QRect{ 0, 0, 32, 32 }, world );
+        if( mediator )
+        {
+            mediator->add_object( object_type::frag, entity );
+        }
+    }
+
     QSize map_size{ columns_count, rows_count };
     data.set_map_size( map_size );
 
     // add map entity
     const QSize& tile_size{ settings.get_tile_size() };
     QRect map_rect{ 0, 0, tile_size.width() * map_size.width(), tile_size.height() * map_size.height() };
-    create_map_entity( map_rect, world );
+    create_level_entity( map_rect,
+                         settings.get_base_kills_to_win(),
+                         settings.get_player_lives(),
+                         world );
 }
 
 }// game

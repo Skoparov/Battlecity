@@ -7,6 +7,8 @@
 		<file>qml/PlayerTank.qml</file>
         <file>qml/EnemyTank.qml</file>
 		<file>qml/Projectile.qml</file>
+        <file>qml/SideBar.qml</file>
+        <file>qml/Frag.qml</file>
 
         <file>maps/map_0</file>
         <file>maps/map_1</file>
@@ -18,5 +20,6 @@
 		<file>graphics/player_tank.png</file>
 		<file>graphics/enemy_tank.png</file>
 		<file>graphics/projectile.png</file>
+        <file>graphics/frag.png</file>
     </qresource>
 </RCC>

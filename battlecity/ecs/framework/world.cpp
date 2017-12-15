@@ -70,6 +70,7 @@ void world::schedule_remove_entity( entity& e )
 
 void world::add_system( system& system )
 {
+    system.init();
     m_systems.emplace( &system );
 }
 

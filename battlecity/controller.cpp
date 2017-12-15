@@ -21,16 +21,11 @@ controller::controller( const game_settings& settings, ecs::world& world ) :
 
 void controller::init()
 {
-    load_level( m_level );
-    m_need_to_load_level = false;
-
     // create systems
     std::unique_ptr< ecs::system > move_system{ new system::movement_system{ m_world } };
 
     std::unique_ptr< ecs::system > vic_def_system{
-        new system::win_defeat_system{ m_settings.get_base_kills_to_win(),
-                                       m_settings.get_player_lives(),
-                                       m_world } };
+        new system::win_defeat_system{ m_world } };
 
     std::unique_ptr< ecs::system > proj_system{
         new system::projectile_system{ m_settings.get_projectile_size(),
@@ -44,6 +39,9 @@ void controller::init()
 
     std::unique_ptr< ecs::system > tank_ai_system{
         new system::tank_ai_system{ m_settings.get_ai_chance_to_fire(), m_world } };
+
+    load_level( m_level );
+    m_need_to_load_level = false;
 
     m_world.add_system( *move_system );
     m_world.add_system( *vic_def_system );
@@ -73,6 +71,11 @@ bool controller::load_level( uint32_t level )
                        m_settings,
                        m_world,
                        m_mediator );
+
+        for( auto& system : m_systems )
+        {
+            system->init();
+        }
     }
 
     return map_valid;
@@ -122,6 +125,12 @@ uint32_t controller::get_level() const noexcept
     return m_level;
 }
 
+uint32_t controller::get_remaining_frag_count()
+{
+     component::level_info* l = m_world.get_components< component::level_info >().front();
+     return l->get_kills_to_win() - l->get_player_kills();
+}
+
 void controller::on_event( const event::level_completed& event )
 {
     // TODO: check if level is present
@@ -141,8 +150,6 @@ void controller::tick()
 {
     if( m_need_to_load_level )
     {
-        std::this_thread::sleep_for( std::chrono::seconds{ 2 } );
-
         if( m_mediator )
         {
             m_mediator->remove_all();

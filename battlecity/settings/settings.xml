@@ -10,7 +10,7 @@
     <PlayerLives>5</PlayerLives>
     <EnemiesNum>2</EnemiesNum>
     <RespawnDelayMs>1000</RespawnDelayMs>
-    <BaseKillsToWin>10</BaseKillsToWin>
+    <BaseKillsToWin>1</BaseKillsToWin>
     <TankSpeed>8</TankSpeed>
     <ProjectileSpeed>16</ProjectileSpeed>
     <ProjectileDamage>1</ProjectileDamage>

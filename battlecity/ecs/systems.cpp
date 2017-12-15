@@ -17,6 +17,18 @@ namespace system
 
 movement_system::movement_system( ecs::world& world ): ecs::system( world ){}
 
+void movement_system::init()
+{
+    auto map_entities = m_world.get_entities_with_component< component::game_map >();
+    if( map_entities.size() != 1 )
+    {
+        throw std::logic_error{ "Exactly one map entity should exist" };
+    }
+
+    ecs::entity* map_entity{ map_entities.front() };
+    m_map_geom = &map_entity->get_component_unsafe< component::geometry >();
+}
+
 bool can_pass_through_non_traversible( ecs::entity& e )
 {
     return e.has_component< component::projectile >();
@@ -100,24 +112,16 @@ void movement_system::tick()
 {
     using namespace component;
 
-    geometry* map_geom{ nullptr };
-
     m_world.for_each< movement >( [ & ]( ecs::entity& curr_entity, movement& move )
     {
         if( move.get_move_direction() != movement_direction::none )
         {
-            if( !map_geom )
-            {
-                ecs::entity* map_entity{ m_world.get_entities_with_component< game_map >().front() };
-                map_geom = &map_entity->get_component_unsafe< geometry >();
-            }
-
             geometry& curr_geom = curr_entity.get_component_unsafe< geometry >();
             int prev_rotation{ curr_geom.get_rotation() };
             bool can_pass_though_everything{ can_pass_through_non_traversible( curr_entity ) };
             bool movement_valid{ true };
 
-            QRect rect_after_move{ calc_move( move, curr_geom, *map_geom, can_pass_though_everything ) };
+            QRect rect_after_move{ calc_move( move, curr_geom, *m_map_geom, can_pass_though_everything ) };
 
             if( !can_pass_though_everything )
             {
@@ -163,6 +167,11 @@ void movement_system::tick()
     } );
 }
 
+void movement_system::clean()
+{
+    m_map_geom = nullptr;
+}
+
 movement_direction get_direction_by_rotation( int rotation )
 {
     movement_direction direction{ movement_direction::none };
@@ -188,6 +197,18 @@ projectile_system::projectile_system( const QSize& projectile_size,
     m_damage( projectile_damage ),
     m_speed( projectile_speed ){}
 
+void projectile_system::init()
+{
+    auto map_entities = m_world.get_entities_with_component< component::game_map >();
+    if( map_entities.size() != 1 )
+    {
+        throw std::logic_error{ "Exactly one map entity should exist" };
+    }
+
+    ecs::entity* map_entity{ map_entities.front() };
+    m_map_geom = &map_entity->get_component_unsafe< component::geometry >();
+}
+
 QRect get_projectile_rect( const QRect& tank_rect, const QSize& proj_size )
 {
     QPoint projectile_top_left{ tank_rect.center() };
@@ -200,6 +221,11 @@ void projectile_system::tick()
 {
     handle_existing_projectiles();
     create_new_projectiles();
+}
+
+void projectile_system::clean()
+{
+    m_map_geom = nullptr;
 }
 
 void projectile_system::kill_entity( ecs::entity& entity )
@@ -263,21 +289,14 @@ void projectile_system::handle_existing_projectiles()
     using namespace component;
 
     // Calc existing projectiles
-    geometry* map_geom{ nullptr };
     event::entities_removed entities_removed_event;
 
     m_world.for_each< projectile >( [ & ]( ecs::entity& projectile_entity, projectile& projectile_component )
     {
-        if( !map_geom )
-        {
-            ecs::entity* map_entity{ m_world.get_entities_with_component< game_map >().front() };
-            map_geom = &map_entity->get_component_unsafe< geometry >();
-        }
-
         geometry& projectile_geom = projectile_entity.get_component_unsafe< geometry >();
         bool projectile_destroyed{ false };
 
-        if( !map_geom->intersects_with( projectile_geom ) )
+        if( !m_map_geom->intersects_with( projectile_geom ) )
         {
             projectile_destroyed = true;
         }
@@ -353,20 +372,6 @@ respawn_system::respawn_system( const std::chrono::milliseconds respawn_delay,
 {
     m_world.subscribe< event::enemy_killed >( *this );
     m_world.subscribe< event::player_killed >( *this );
-
-    std::list< ecs::entity* > respawn_point_entities{
-        m_world.get_entities_with_component< component::respawn_point >() };
-
-    for( const ecs::entity* e : respawn_point_entities )
-    {
-        m_respawn_points.emplace_back( &e->get_component< component::geometry >() );
-    }
-
-    auto enemies = m_world.get_entities_with_component< component::enemy >();
-    for( ecs::entity* enemy : enemies )
-    {
-        m_enemies_death_info.emplace_back( death_info{ enemy, {} } );
-    }
 }
 
 respawn_system::~respawn_system()
@@ -447,6 +452,23 @@ void respawn_system::tick()
     }
 }
 
+void respawn_system::init()
+{
+    std::list< ecs::entity* > respawn_point_entities{
+        m_world.get_entities_with_component< component::respawn_point >() };
+
+    for( const ecs::entity* e : respawn_point_entities )
+    {
+        m_respawn_points.emplace_back( &e->get_component< component::geometry >() );
+    }
+
+    auto enemies = m_world.get_entities_with_component< component::enemy >();
+    for( ecs::entity* enemy : enemies )
+    {
+        m_enemies_death_info.emplace_back( death_info{ enemy, {} } );
+    }
+}
+
 void respawn_system::clean()
 {
     m_respawn_points.clear();
@@ -479,7 +501,7 @@ std::list< const component::geometry* > respawn_system::get_free_respawns()
     using namespace component;
 
     size_t free_respawns_needed{ m_players_death_info.size() +
-                                   m_enemies_death_info.size() };
+                m_enemies_death_info.size() };
 
     std::list< const geometry* > free_respawns;
 
@@ -490,7 +512,7 @@ std::list< const component::geometry* > respawn_system::get_free_respawns()
         m_world.for_each< tank_object >( [ & ]( ecs::entity& e, tank_object& )
         {
             if( e.has_component< non_traversible >() &&
-                e.get_component< geometry >().intersects_with( *curr_geom ) )
+                    e.get_component< geometry >().intersects_with( *curr_geom ) )
             {
                 respawn_free = false;
             }
@@ -512,13 +534,10 @@ std::list< const component::geometry* > respawn_system::get_free_respawns()
     return free_respawns;
 }
 
-win_defeat_system::win_defeat_system( uint32_t kills_to_win,
-                                      uint32_t player_lifes,
-                                      ecs::world& world ) noexcept:
-    ecs::system( world ),
-    m_kills_to_win( kills_to_win ),
-    m_player_lifes( player_lifes ),
-    m_player_lifes_left( player_lifes )
+//
+
+win_defeat_system::win_defeat_system( ecs::world& world ) noexcept:
+    ecs::system( world )
 {
     m_world.subscribe< event::enemy_killed >( *this );
     m_world.subscribe< event::player_killed >( *this );
@@ -532,13 +551,30 @@ win_defeat_system::~win_defeat_system()
     m_world.unsubscribe< event::player_base_killed >( *this );
 }
 
+void win_defeat_system::init()
+{
+    auto entities = m_world.get_entities_with_component< component::frag >();
+    std::copy( entities.begin(), entities.end(), std::back_inserter( m_frag_entities ) );
+
+    auto level_info_components = m_world.get_components< component::level_info >();
+    if( level_info_components.size() != 1 )
+    {
+        throw std::logic_error{ "Exactly one level info entity should exist" };
+    }
+
+    m_level_info = level_info_components.front();
+
+}
+
 void win_defeat_system::tick()
 {
-    if( m_player_base_killed || !m_player_lifes_left )
+
+
+    if( m_level_info->get_player_base_killed() || !m_level_info->get_player_lifes_left() )
     {
         m_world.emit_event( event::level_completed{ level_game_result::defeat } );
     }
-    else if( m_player_kills == m_kills_to_win )
+    else if( m_level_info->get_player_kills() == m_level_info->get_kills_to_win() )
     {
         m_world.emit_event( event::level_completed{ level_game_result::victory } );
     }
@@ -546,28 +582,34 @@ void win_defeat_system::tick()
 
 void win_defeat_system::clean()
 {
-    m_player_kills = 0;
-    m_player_base_killed = false;
-    m_player_lifes_left = m_player_lifes;
+    m_level_info->reset();
+    m_frag_entities.clear();
 }
 
 void win_defeat_system::on_event( const event::enemy_killed& )
 {
-    ++m_player_kills;
+    m_level_info->enemy_killed();
+
+    uint32_t player_kills{ m_level_info->get_player_kills() };
+    ecs::entity* frag_entity{  m_frag_entities[ player_kills - 1 ] };
+
+    frag_entity->get_component< component::graphics >().set_visible( false );
+    event::graphics_changed event{ false, true };
+    event.add_entity( *frag_entity );
+    m_world.emit_event( event );
 }
 
 void win_defeat_system::on_event( const event::player_killed& )
 {
-    if( m_player_lifes_left )
-    {
-        --m_player_lifes_left;
-    }
+    m_level_info->player_killed();
 }
 
 void win_defeat_system::on_event( const event::player_base_killed& )
 {
-    m_player_base_killed = true;
+    m_level_info->player_base_killed();
 }
+
+//
 
 tank_ai_system::tank_ai_system( float chance_to_fire, ecs::world& world ) noexcept :
     ecs::system( world ),
