@@ -122,6 +122,7 @@ ecs::entity& create_entity_tank( const QRect& rect,
                                  const alignment& align,
                                  uint32_t speed,
                                  uint32_t health,
+                                 uint32_t turret_cooldown_msec,
                                  ecs::world& world )
 {
     ecs::entity& entity = world.create_entity();
@@ -129,6 +130,7 @@ ecs::entity& create_entity_tank( const QRect& rect,
     try
     {
         entity.add_component< component::tank_object >();
+        entity.add_component< component::turret >( std::chrono::milliseconds{ turret_cooldown_msec } );
         entity.add_component< component::geometry >( rect );
         entity.add_component< component::health >( health );
         entity.add_component< component::non_traversible >();

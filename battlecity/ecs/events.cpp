@@ -9,9 +9,9 @@ namespace event
 namespace detail
 {
 
-void causes::add_entity( ecs::entity_id id )
+void causes::add_entity( ecs::entity& entity )
 {
-    m_entities.emplace( id );
+    m_entities[ entity.get_id() ] = &entity;
 }
 
 bool causes::entity_present( ecs::entity_id id ) const
@@ -19,7 +19,7 @@ bool causes::entity_present( ecs::entity_id id ) const
     return ( m_entities.count( id )!= 0 );
 }
 
-const std::unordered_set< ecs::entity_id >& causes::get_entities() const noexcept
+const std::unordered_map< ecs::entity_id, ecs::entity* >& causes::get_entities() const noexcept
 {
     return m_entities;
 }

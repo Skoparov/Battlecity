@@ -1,6 +1,8 @@
 #ifndef COMPONENTS_H
 #define COMPONENTS_H
 
+#include <chrono>
+
 #include <QRect>
 #include <QString>
 
@@ -28,19 +30,25 @@ private:
 
 //
 
-class turret_object
+class turret final
 {
+    using clock = std::chrono::high_resolution_clock;
+
 public:
-    void set_fire_status( bool fired ) noexcept;
+    turret( const std::chrono::milliseconds& cooldown ) noexcept;
+
+    bool set_fire_status( bool fired ) noexcept;
     bool has_fired() const noexcept;
 
 private:
     bool m_fired{ false };
+    clock::time_point m_last_fired{};
+    std::chrono::milliseconds m_cooldown{ 0 };
 };
 
 //
 
-class tank_object final : public turret_object{};
+class tank_object final{};
 
 //
 

@@ -48,8 +48,16 @@ class respawn_system final : public ecs::system,
                              public ecs::event_callback< event::player_killed >
 
 {
+    using clock = std::chrono::high_resolution_clock;
+    struct death_info final
+    {
+        ecs::entity* entity;
+        clock::time_point death_time;
+    };
+
 public:
-    explicit respawn_system( uint32_t enemies_to_respawn, ecs::world& world ) noexcept;
+    respawn_system( const std::chrono::milliseconds respawn_delay, ecs::world& world );
+
     ~respawn_system();
 
     void tick() override;
@@ -59,15 +67,17 @@ public:
     void on_event( const event::enemy_killed& );
 
 private:
+    void respawn_list( std::list< death_info >& list,
+                       std::list< const component::geometry* > free_respawns );
     void respawn_entity( ecs::entity& entity, const component::geometry& respawn );
-    std::vector< const component::geometry* > get_free_respawns();
+    std::list< const component::geometry* > get_free_respawns();
 
 private:
-    bool m_player_needs_respawn{ false };
-    uint32_t m_enemies_to_respawn{ 0 };
+    std::list< death_info > m_players_death_info;
+    std::list< death_info > m_enemies_death_info;
     std::list< const component::geometry* > m_respawn_points;
 
-    uint32_t m_max_enemies{ 0 };
+    std::chrono::milliseconds m_respawn_delay{ 0 };
 };
 
 class win_defeat_system final : public ecs::system,
@@ -99,12 +109,16 @@ private:
 class tank_ai_system final : public ecs::system
 {
 public:
-    explicit tank_ai_system( ecs::world& world ) noexcept;
+    explicit tank_ai_system( float chance_to_fire, ecs::world& world ) noexcept;
     void tick() override;
     void clean() override;
 
 private:
+    bool maybe_fire();
+
+private:
     std::list< ecs::entity* > m_enemies;
+    float m_chance_to_fire{ 0.0 };
 };
 
 }// system

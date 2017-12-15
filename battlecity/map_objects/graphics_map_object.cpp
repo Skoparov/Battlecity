@@ -18,20 +18,10 @@ graphics_map_object::~graphics_map_object()
     world.unsubscribe< event::graphics_changed >( *this );
 }
 
-void graphics_map_object::set_image_path( const QString& /*path*/ )
-{
-    assert( false );
-}
-
 const QString& graphics_map_object::get_image_path() const noexcept
 {
     const component::graphics& g = m_entity->get_component_unsafe< component::graphics >();
     return g.get_image_path();
-}
-
-void graphics_map_object::set_visible( bool /*visible*/ ) noexcept
-{
-    assert( false );
 }
 
 bool graphics_map_object::get_visible() const noexcept
@@ -46,14 +36,14 @@ void graphics_map_object::on_event( const event::graphics_changed& event )
     {
         const component::graphics& g = m_entity->get_component_unsafe< component::graphics >();
 
-        if( event.image_changed() )
-        {
-            emit image_changed( g.get_image_path() );
-        }
-
         if( event.visibility_changed() )
         {
             emit visibility_changed( g.get_visible() );
+        }
+
+        if( event.image_changed() )
+        {
+            emit image_changed( g.get_image_path() );
         }
     }
 }

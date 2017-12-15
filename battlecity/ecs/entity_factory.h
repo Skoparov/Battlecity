@@ -24,6 +24,7 @@ ecs::entity& create_entity_tank( const QRect& rect,
                                  const alignment& align,
                                  uint32_t speed,
                                  uint32_t health,
+                                 uint32_t turret_cooldown_msec,
                                  ecs::world& world );
 
 QString tile_image_path( const tile_type& type );

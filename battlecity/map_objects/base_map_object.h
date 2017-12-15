@@ -21,29 +21,21 @@ public:
     base_map_object( ecs::entity* entity, const object_type& type, QObject* parent = nullptr );
 
     ecs::entity_id get_id() const noexcept;
-
-    void set_position_x( int x ) noexcept;
-    int get_position_x() const noexcept;
-
-    void set_position_y( int y ) noexcept;
-    int get_position_y() const noexcept;
-
-    int get_width() const noexcept;
-    int get_height() const noexcept;
-
-    void set_rotation( int rotation ) noexcept;
-    int get_rotation() const noexcept;
-
-    bool get_traversible() const noexcept;
-
     const object_type& get_type() const noexcept;
 
+    int get_position_x() const noexcept;
+    int get_position_y() const noexcept;
+    int get_width() const noexcept;
+    int get_height() const noexcept;
+    int get_rotation() const noexcept;
+    bool get_traversible() const noexcept;
+
     Q_PROPERTY( ecs::numeric_id object_id READ get_id CONSTANT )
-    Q_PROPERTY( int pos_x READ get_position_x WRITE set_position_x NOTIFY pos_x_changed )
-    Q_PROPERTY( int pos_y READ get_position_y WRITE set_position_y NOTIFY pos_y_changed )
+    Q_PROPERTY( int pos_x READ get_position_x NOTIFY pos_x_changed )
+    Q_PROPERTY( int pos_y READ get_position_y NOTIFY pos_y_changed )
     Q_PROPERTY( int width READ get_width CONSTANT )
     Q_PROPERTY( int height READ get_height CONSTANT )
-    Q_PROPERTY( int rotation READ get_rotation WRITE set_rotation NOTIFY rotation_changed )
+    Q_PROPERTY( int rotation READ get_rotation NOTIFY rotation_changed )
     Q_PROPERTY( bool traversible READ get_traversible CONSTANT )
 
 signals:

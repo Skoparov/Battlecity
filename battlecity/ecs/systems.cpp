@@ -154,7 +154,7 @@ void movement_system::tick()
             if( x_changed || y_changed || rotation_changed )
             {
                 event::geometry_changed event{ x_changed, y_changed, rotation_changed };
-                event.add_entity( curr_entity.get_id() );
+                event.add_entity( curr_entity );
                 m_world.emit_event( event );
             }
         }
@@ -209,7 +209,7 @@ void projectile_system::kill_entity( ecs::entity& entity )
     {
         entity.get_component< graphics >().set_visible( false );
         event::graphics_changed graphics_changed_event{ false, true };
-        graphics_changed_event.add_entity( entity.get_id() );
+        graphics_changed_event.add_entity( entity );
         m_world.emit_event( graphics_changed_event );
     }
 
@@ -239,12 +239,16 @@ void projectile_system::handle_obstacle(ecs::entity& obstacle,
             if( obstacle.has_component< player >() )
             {
                 kill_entity( obstacle );
-                m_world.emit_event( event::player_killed{} );
+                event::player_killed event;
+                event.add_entity( obstacle );
+                m_world.emit_event( event );
             }
             else if( obstacle.has_component< enemy >() )
             {
                 kill_entity( obstacle );
-                m_world.emit_event( event::enemy_killed{} );
+                event::enemy_killed event;
+                event.add_entity( obstacle );
+                m_world.emit_event( event );
             }
             else if( obstacle.has_component< player_base >() )
             {
@@ -297,7 +301,7 @@ void projectile_system::handle_existing_projectiles()
 
         if( projectile_destroyed )
         {
-            entities_removed_event.add_entity( projectile_entity.get_id() );
+            entities_removed_event.add_entity( projectile_entity );
             m_world.schedule_remove_entity( projectile_entity );
 
         }
@@ -316,11 +320,11 @@ void projectile_system::create_new_projectiles()
     using namespace component;
 
     // Create new projectiles
-    m_world.for_each< tank_object >( [ & ]( ecs::entity& tank_entity, tank_object& tank_info )
+    m_world.for_each< turret >( [ & ]( ecs::entity& turret_entity, turret& turret_info )
     {
-        if( tank_info.has_fired() )
+        if( turret_info.has_fired() )
         {
-            geometry& tank_geom = tank_entity.get_component< geometry >();
+            geometry& tank_geom = turret_entity.get_component< geometry >();
             QRect projectile_rect{ get_projectile_rect( tank_geom.get_rect(), m_projectile_size ) };
 
             movement_direction direction{ get_direction_by_rotation( tank_geom.get_rotation() ) };
@@ -328,12 +332,12 @@ void projectile_system::create_new_projectiles()
                                                                  m_damage,
                                                                  m_speed,
                                                                  direction,
-                                                                 tank_entity.get_id(),
+                                                                 turret_entity.get_id(),
                                                                  m_world );
 
-            event::projectile_fired event{ tank_entity,proj_entity  };
+            event::projectile_fired event{ turret_entity, proj_entity };
             m_world.emit_event( event );
-            tank_info.set_fire_status( false );
+            turret_info.set_fire_status( false );
         }
 
         return true;
@@ -342,13 +346,27 @@ void projectile_system::create_new_projectiles()
 
 //
 
-respawn_system::respawn_system( uint32_t enemies_to_respawn, ecs::world& world ) noexcept:
+respawn_system::respawn_system( const std::chrono::milliseconds respawn_delay,
+                                ecs::world& world ):
     ecs::system( world ),
-    m_enemies_to_respawn( enemies_to_respawn ),
-    m_max_enemies( enemies_to_respawn )
+    m_respawn_delay( respawn_delay )
 {
     m_world.subscribe< event::enemy_killed >( *this );
     m_world.subscribe< event::player_killed >( *this );
+
+    std::list< ecs::entity* > respawn_point_entities{
+        m_world.get_entities_with_component< component::respawn_point >() };
+
+    for( const ecs::entity* e : respawn_point_entities )
+    {
+        m_respawn_points.emplace_back( &e->get_component< component::geometry >() );
+    }
+
+    auto enemies = m_world.get_entities_with_component< component::enemy >();
+    for( ecs::entity* enemy : enemies )
+    {
+        m_enemies_death_info.emplace_back( death_info{ enemy, {} } );
+    }
 }
 
 respawn_system::~respawn_system()
@@ -362,8 +380,8 @@ void respawn_system::respawn_entity( ecs::entity& entity, const component::geome
     using namespace component;
     entity.get_component< movement >().set_move_direction( movement_direction::none );
 
-    health& enemy_health = entity.get_component< health >();
-    enemy_health.increase( enemy_health.get_max_health() );
+    health& entity_health = entity.get_component< health >();
+    entity_health.increase( entity_health.get_max_health() );
 
     entity.add_component< non_traversible >();
 
@@ -371,71 +389,60 @@ void respawn_system::respawn_entity( ecs::entity& entity, const component::geome
     entity.get_component< geometry >().set_rect( respawn.get_rect() );
 
     event::geometry_changed geometry_changed_event{ true, true, true };
-    geometry_changed_event.add_entity( entity.get_id() );
+    geometry_changed_event.add_entity( entity );
 
     event::graphics_changed graphics_changed_event{ false, true };
-    graphics_changed_event.add_entity( entity.get_id() );
+    graphics_changed_event.add_entity( entity );
 
     m_world.emit_event( geometry_changed_event );
     m_world.emit_event( graphics_changed_event );
 }
 
-void respawn_system::tick()
+void respawn_system::respawn_list( std::list< death_info >& list,
+                                   std::list< const component::geometry* > free_respawns )
 {
     using namespace component;
+    using namespace std::chrono;
 
-    if( m_player_needs_respawn || m_enemies_to_respawn )
+    auto curr_time = clock::now();
+
+    while( !free_respawns.empty() )
     {
-        if( m_respawn_points.empty() )
+        auto it = std::find_if( list.begin(), list.end(),[ & ]( const death_info& info )
         {
-            std::list< ecs::entity* > respawn_point_entities{
-                m_world.get_entities_with_component< respawn_point >() };
+            return ( duration_cast< milliseconds >( curr_time - info.death_time ) >= m_respawn_delay );
+        } );
 
-            for( const ecs::entity* e : respawn_point_entities )
-            {
-                m_respawn_points.emplace_back( &e->get_component< geometry >() );
-            }
+        if( it != list.end() )
+        {
+            const geometry* respawn = free_respawns.back();
+            free_respawns.pop_back();
+
+            death_info& info = *it;
+            respawn_entity( *info.entity, *respawn );
+            list.erase( it );
+        }
+        else
+        {
+            break;
+        }
+    }
+}
+
+void respawn_system::tick()
+{
+    if( !m_respawn_points.empty() )
+    {
+        std::list< const component::geometry* > free_respawns{ get_free_respawns() };
+
+        if( !m_players_death_info.empty() )
+        {
+            respawn_list( m_players_death_info, free_respawns );
         }
 
-        if( !m_respawn_points.empty() )
+        if( !m_enemies_death_info.empty() )
         {
-
-            std::vector< const geometry* > free_respawns{ get_free_respawns() };
-            uint32_t curr_respawn_idx{ 0 };
-            if( m_player_needs_respawn && !free_respawns.empty() )
-            {
-                m_player_needs_respawn = false;
-                ecs::entity* player{ m_world.get_entities_with_component< tank_object >().front() };
-
-                const geometry* respawn{ free_respawns[ curr_respawn_idx ] };
-                respawn_entity( *player, *respawn );
-
-                ++curr_respawn_idx;
-            }
-
-            if( m_enemies_to_respawn && curr_respawn_idx < free_respawns.size() )
-            {
-                std::list< ecs::entity* > enemies{ m_world.get_entities_with_component< enemy >() };
-                enemies.erase( std::remove_if( enemies.begin(), enemies.end(),
-                                               []( ecs::entity* e )
-                {
-                    return e->get_component< health >().alive();
-                } ), enemies.end() );
-
-                for( ecs::entity* enemy : enemies )
-                {
-                    if( curr_respawn_idx == free_respawns.size() )
-                    {
-                        break;
-                    }
-
-                    const geometry* respawn{ free_respawns[ curr_respawn_idx ] };
-                    respawn_entity( *enemy, *respawn );
-
-                    ++curr_respawn_idx;
-                    --m_enemies_to_respawn;
-                }
-            }
+            respawn_list( m_enemies_death_info, free_respawns );
         }
     }
 }
@@ -443,30 +450,38 @@ void respawn_system::tick()
 void respawn_system::clean()
 {
     m_respawn_points.clear();
-    m_player_needs_respawn = false;
-    m_enemies_to_respawn = m_max_enemies;
+    m_players_death_info.clear();
+    m_enemies_death_info.clear();
 }
 
-void respawn_system::on_event( const event::player_killed& )
+void respawn_system::on_event( const event::player_killed& event )
 {
-    m_player_needs_respawn = true;
+    auto curr_time = clock::now();
+
+    for( auto& entity_pair : event.get_entities() )
+    {
+        m_players_death_info.emplace_back( death_info{ entity_pair.second, curr_time } );
+    }
 }
 
-void respawn_system::on_event( const event::enemy_killed& )
+void respawn_system::on_event( const event::enemy_killed& event )
 {
-    ++m_enemies_to_respawn;
+    auto curr_time = clock::now();
+
+    for( auto& entity_pair : event.get_entities() )
+    {
+        m_enemies_death_info.emplace_back( death_info{ entity_pair.second, curr_time } );
+    }
 }
 
-std::vector< const component::geometry* > respawn_system::get_free_respawns()
+std::list< const component::geometry* > respawn_system::get_free_respawns()
 {
     using namespace component;
-    std::vector< const geometry* > free_respawns;
 
-    uint32_t free_respawns_needed{ m_enemies_to_respawn };
-    if( m_player_needs_respawn )
-    {
-        ++free_respawns_needed;
-    }
+    size_t free_respawns_needed{ m_players_death_info.size() +
+                                   m_enemies_death_info.size() };
+
+    std::list< const geometry* > free_respawns;
 
     for( const geometry* curr_geom : m_respawn_points )
     {
@@ -554,7 +569,9 @@ void win_defeat_system::on_event( const event::player_base_killed& )
     m_player_base_killed = true;
 }
 
-tank_ai_system::tank_ai_system( ecs::world& world ) noexcept : ecs::system( world ){}
+tank_ai_system::tank_ai_system( float chance_to_fire, ecs::world& world ) noexcept :
+    ecs::system( world ),
+    m_chance_to_fire( chance_to_fire ){}
 
 
 movement_direction generate_move_direction()
@@ -564,11 +581,11 @@ movement_direction generate_move_direction()
     return static_cast< movement_direction >( dist( rng ) );
 }
 
-bool maybe_fire()
+bool tank_ai_system::maybe_fire()
 {
     static std::mt19937 rng{ std::random_device{}() };
-    static std::uniform_int_distribution< std::mt19937::result_type > dist{ 0, 30 };
-    return ( dist( rng ) == 0 );
+    static std::uniform_int_distribution< std::mt19937::result_type >dist{ 0, 100 };
+    return ( dist( rng ) < m_chance_to_fire * 100 );
 }
 
 void tank_ai_system::tick()
@@ -589,10 +606,10 @@ void tank_ai_system::tick()
                 move.set_move_direction( generate_move_direction() );
             }
 
-            tank_object& obj = enemy->get_component< tank_object >();
-            if( !obj.has_fired() )
+            turret& enemy_turret = enemy->get_component< turret >();
+            if( !enemy_turret.has_fired() && maybe_fire() )
             {
-                obj.set_fire_status( maybe_fire() );
+                enemy_turret.set_fire_status( true );
             }
         }
     }

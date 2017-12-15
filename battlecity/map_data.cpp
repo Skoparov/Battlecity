@@ -99,6 +99,7 @@ add_tank( int row, int col, const alignment& align, const game_settings& setting
                                align,
                                settings.get_tank_speed(),
                                settings.get_tank_health(),
+                               settings.get_turret_cooldown_ms(),
                                world );
 
     if( align == alignment::enemy )

@@ -20,12 +20,12 @@ namespace detail
 class causes
 {
 public:
-    void add_entity( ecs::entity_id id );
+    void add_entity( ecs::entity& entity );
     bool entity_present( ecs::entity_id id ) const;
-    const std::unordered_set< ecs::entity_id >& get_entities() const noexcept;
+    const std::unordered_map< ecs::entity_id, ecs::entity* >& get_entities() const noexcept;
 
 private:
-    std::unordered_set< ecs::entity_id > m_entities;
+    std::unordered_map< ecs::entity_id, ecs::entity* > m_entities;
 };
 
 }// detail
@@ -64,7 +64,7 @@ private:
 
 //
 
-class player_killed final{};
+class player_killed final : public detail::causes{};
 
 //
 

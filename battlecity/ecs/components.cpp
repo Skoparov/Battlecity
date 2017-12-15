@@ -21,12 +21,34 @@ const tile_type& tile_object::get_tile_type() const noexcept
 
 //
 
-void turret_object::set_fire_status( bool fired ) noexcept
+turret::turret( const std::chrono::milliseconds& cooldown ) noexcept:
+    m_cooldown( cooldown ){}
+
+bool turret::set_fire_status( bool fired ) noexcept
 {
-    m_fired = fired;
+    using namespace std::chrono;
+
+    bool result{ true };
+
+    if( fired && !m_fired )
+    {
+        auto curr_time = clock::now();
+        result = duration_cast< milliseconds >( curr_time - m_last_fired ) >= m_cooldown;
+        if( result )
+        {
+            m_fired = true;
+            m_last_fired = curr_time;
+        }
+    }
+    else
+    {
+        m_fired = fired;
+    }
+
+    return result;
 }
 
-bool turret_object::has_fired() const noexcept
+bool turret::has_fired() const noexcept
 {
     return m_fired;
 }

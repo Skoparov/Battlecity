@@ -39,9 +39,11 @@ void controller::init()
                                        m_world } };
 
     std::unique_ptr< ecs::system > respawn_system{
-        new system::respawn_system{ m_settings.get_enemies_number(), m_world } };
+        new system::respawn_system{ std::chrono::milliseconds{ m_settings.get_respawn_delay_ms() },
+                                    m_world } };
 
-    std::unique_ptr< ecs::system > tank_ai_system{ new system::tank_ai_system{ m_world } };
+    std::unique_ptr< ecs::system > tank_ai_system{
+        new system::tank_ai_system{ m_settings.get_ai_chance_to_fire(), m_world } };
 
     m_world.add_system( *move_system );
     m_world.add_system( *vic_def_system );
