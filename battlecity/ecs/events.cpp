@@ -9,7 +9,17 @@ namespace event
 namespace _detail
 {
 
-void event_cause::set_cause_entity( ecs::entity& entity )
+void event_cause_id::set_cause_id( ecs::entity_id id ) noexcept
+{
+    m_cause_id = id;
+}
+
+ecs::entity_id event_cause_id::get_cause_id() const noexcept
+{
+    return m_cause_id;
+}
+
+void event_cause::set_cause_entity( ecs::entity& entity ) noexcept
 {
     m_cause_entity = &entity;
 }

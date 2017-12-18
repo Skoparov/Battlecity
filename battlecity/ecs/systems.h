@@ -37,6 +37,7 @@ public:
     void clean() override;
 
 private:
+    void create_explosion( const component::geometry& obstacle_geom );
     void handle_obstacle( ecs::entity& obstacle,
                           const component::projectile& projectile_comp );
 
@@ -126,6 +127,20 @@ private:
 private:
     std::list< ecs::entity* > m_enemies;
     float m_chance_to_fire{ 0.0 };
+};
+
+class explosion_system final : public ecs::system,
+                               public ecs::event_callback< event::projectile_collision >,
+                               public ecs::event_callback< event::explosion_ended >
+{
+public:
+    explicit explosion_system( ecs::world& world ) noexcept;
+    ~explosion_system();
+
+    void tick() override;
+
+    void on_event( const event::projectile_collision& );
+    void on_event( const event::explosion_ended& );
 };
 
 }// system

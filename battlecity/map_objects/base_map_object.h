@@ -21,6 +21,7 @@ public:
     base_map_object( ecs::entity* entity, const object_type& type, QObject* parent = nullptr );
 
     ecs::entity_id get_id() const noexcept;
+    unsigned int get_qml_adapted_id() const noexcept;
     const object_type& get_type() const noexcept;
 
     int get_position_x() const noexcept;
@@ -30,7 +31,7 @@ public:
     int get_rotation() const noexcept;
     bool get_traversible() const noexcept;
 
-    Q_PROPERTY( ecs::numeric_id object_id READ get_id CONSTANT )
+    Q_PROPERTY( unsigned int object_id READ get_qml_adapted_id CONSTANT )
     Q_PROPERTY( int pos_x READ get_position_x NOTIFY pos_x_changed )
     Q_PROPERTY( int pos_y READ get_position_y NOTIFY pos_y_changed )
     Q_PROPERTY( int width READ get_width CONSTANT )

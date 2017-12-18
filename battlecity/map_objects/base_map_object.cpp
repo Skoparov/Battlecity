@@ -21,6 +21,11 @@ ecs::entity_id base_map_object::get_id() const noexcept
     return m_entity->get_id();
 }
 
+unsigned int base_map_object::get_qml_adapted_id() const noexcept
+{
+    return m_entity->get_id();
+}
+
 const object_type& base_map_object::get_type() const noexcept
 {
     return m_object_type;

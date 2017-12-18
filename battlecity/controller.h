@@ -37,6 +37,12 @@ public:
         m_world.unsubscribe< event_type >( callback );
     }
 
+    template< typename event_type >
+    void emit_event( const event_type& event )
+    {
+        m_world.emit_event( event );
+    }
+
     int get_rows_count() const noexcept;
     int get_columns_count() const noexcept;
     int get_tile_width() const noexcept;

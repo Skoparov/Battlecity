@@ -17,11 +17,21 @@ namespace event
 namespace _detail
 {
 
+class event_cause_id
+{
+public:
+    void set_cause_id( ecs::entity_id id ) noexcept;
+    ecs::entity_id get_cause_id() const noexcept;
+
+private:
+    ecs::entity_id m_cause_id{ INVALID_NUMERIC_ID };
+};
+
  // contains entites that caused the event
 class event_cause
 {
 public:
-    void set_cause_entity( ecs::entity& entity );
+    void set_cause_entity( ecs::entity& entity ) noexcept;
     ecs::entity* get_cause_entity() const noexcept;
 
 private:
@@ -113,6 +123,11 @@ public:
 
 class player_base_killed final{};
 
+//
+
+class projectile_collision final : public _detail::event_cause{};
+class explosion_started final : public _detail::event_cause{};
+class explosion_ended final : public _detail::event_cause_id{};
 //
 
 class entities_removed final : public _detail::event_causes{};

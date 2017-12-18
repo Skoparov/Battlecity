@@ -242,8 +242,8 @@ void projectile_system::kill_entity( ecs::entity& entity )
     entity.remove_component< non_traversible >();
 }
 
-void projectile_system::handle_obstacle(ecs::entity& obstacle,
-                                        const component::projectile& projectile_component )
+void projectile_system::handle_obstacle( ecs::entity& obstacle,
+                                         const component::projectile& projectile_component )
 {
     using namespace component;
 
@@ -316,6 +316,12 @@ void projectile_system::handle_existing_projectiles()
                     if( obstacle_geom.intersects_with( projectile_geom ) )
                     {
                         handle_obstacle( obstacle, projectile_component );
+
+                        event::projectile_collision event_collision;
+                        event_collision.set_cause_entity( obstacle );
+
+                        m_world.emit_event( event_collision );
+
                         projectile_destroyed = true;
                     }
                 }
@@ -665,6 +671,36 @@ void tank_ai_system::tick()
 void tank_ai_system::clean()
 {
     m_enemies.clear();
+}
+
+explosion_system::explosion_system( ecs::world& world ) noexcept : ecs::system( world )
+{
+    m_world.subscribe< event::projectile_collision >( *this );
+    m_world.subscribe< event::explosion_ended >( *this );
+}
+
+explosion_system::~explosion_system()
+{
+    m_world.unsubscribe< event::projectile_collision >( *this );
+    m_world.unsubscribe< event::explosion_ended >( *this );
+}
+
+void explosion_system::tick(){}
+
+void explosion_system::on_event( const event::projectile_collision& event )
+{
+    const component::geometry& g = event.get_cause_entity()->
+            get_component< component::geometry >();
+
+    ecs::entity& e = create_explosion( g.get_rect(), m_world );
+    event::explosion_started event_explosion;
+    event_explosion.set_cause_entity( e );
+    m_world.emit_event( event_explosion );
+}
+
+void explosion_system::on_event( const event::explosion_ended& event )
+{
+    m_world.schedule_remove_entity( event.get_cause_id() );
 }
 
 }// system

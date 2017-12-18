@@ -68,6 +68,10 @@ class player_base final{};
 
 //
 
+class explosion final{};
+
+//
+
 class frag final
 {
 public:

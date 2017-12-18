@@ -36,6 +36,7 @@ void controller::init()
 
     // create systems
     std::unique_ptr< ecs::system > move_system{ new system::movement_system{ m_world } };
+    std::unique_ptr< ecs::system > explosion_system{ new system::explosion_system{ m_world } };
 
     std::unique_ptr< ecs::system > vic_def_system{
         new system::win_defeat_system{ m_world } };
@@ -57,12 +58,14 @@ void controller::init()
     m_need_to_load_level = false;
 
     m_world.add_system( *move_system );
+    m_world.add_system( *explosion_system );
     m_world.add_system( *vic_def_system );
     m_world.add_system( *proj_system );
     m_world.add_system( *respawn_system );
     m_world.add_system( *tank_ai_system );
 
     m_systems.emplace_back( std::move( move_system ) );
+    m_systems.emplace_back( std::move( explosion_system ) );
     m_systems.emplace_back( std::move( vic_def_system ) );
     m_systems.emplace_back( std::move( proj_system ) );
     m_systems.emplace_back( std::move( respawn_system ) );

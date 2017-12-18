@@ -9,6 +9,7 @@ static constexpr auto image_player_tank = "player_tank";
 static constexpr auto image_enemy_tank = "enemy_tank";
 static constexpr auto image_projectile = "projectile";
 static constexpr auto image_frag = "frag";
+static constexpr auto image_explosion = "explosion";
 
 namespace game
 {
@@ -177,13 +178,24 @@ ecs::entity& create_entity_projectile( const QRect& rect,
     return entity;
 }
 
-ecs::entity& create_entity_frag( const QRect& rect, ecs::world& world, int i )
+ecs::entity& create_entity_frag(const QRect& rect, ecs::world& world, uint32_t num )
 {
     ecs::entity& entity = world.create_entity();
 
-    entity.add_component< component::frag >(i);
+    entity.add_component< component::frag >( num );
     entity.add_component< component::geometry >( rect );
     entity.add_component< component::graphics >( get_image_path( image_frag ) );
+
+    return entity;
+}
+
+ecs::entity& create_explosion( const QRect& rect, ecs::world& world )
+{
+    ecs::entity& entity = world.create_entity();
+
+    entity.add_component< component::explosion >();
+    entity.add_component< component::geometry >( rect );
+    entity.add_component< component::graphics >( get_image_path( image_explosion ) );
 
     return entity;
 }

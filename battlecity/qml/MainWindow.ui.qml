@@ -52,6 +52,12 @@ Rectangle
                     model: map_interface.projectiles
                     Projectile{}
                 }
+
+                Repeater
+                {
+                    model: map_interface.explosions
+                    Explosion{}
+                }
             }
         }
 
