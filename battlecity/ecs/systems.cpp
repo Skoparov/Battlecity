@@ -553,6 +553,12 @@ void win_defeat_system::init()
 {
     auto entities = m_world.get_entities_with_component< component::frag >();
     std::copy( entities.begin(), entities.end(), std::back_inserter( m_frag_entities ) );
+    std::sort( m_frag_entities.begin(), m_frag_entities.end(),
+               []( const ecs::entity* l, const ecs::entity* r )
+    {
+        return l->get_component< component::frag >().get_num() >
+               r->get_component< component::frag >().get_num();
+    } );
 
     auto level_info_components = m_world.get_components< component::level_info >();
     if( level_info_components.size() != 1 )

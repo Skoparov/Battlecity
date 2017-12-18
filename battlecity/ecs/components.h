@@ -68,7 +68,14 @@ class player_base final{};
 
 //
 
-class frag final{};
+class frag final
+{
+public:
+    explicit frag( uint32_t num ) noexcept: m_num( num ){}
+    uint32_t get_num() const noexcept{ return m_num; }
+private:
+    uint32_t m_num{ 0 };
+};
 
 //
 

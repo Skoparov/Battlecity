@@ -1,4 +1,4 @@
-import QtQuick 2.3
+import QtQuick 2.5
 import QtQuick.Dialogs 1.1
 
 Rectangle
@@ -7,7 +7,7 @@ Rectangle
 
     width: game_map.width + side_bar.width
     height: game_map.height
-    color: "gray"
+    color: "#333333"
 
     MouseArea
     {
@@ -69,10 +69,8 @@ Rectangle
     SideBar
     {
         id: side_bar
-        x: game_map.width + 16
-        y: 96
+        x: game_map.width
         height: parent.height
-        width: 96
     }
 }
 

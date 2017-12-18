@@ -17,6 +17,7 @@ qml_map_interface::qml_map_interface( controller& controller,
     m_controller.subscribe< event::projectile_fired >( *this );
     m_controller.subscribe< event::entities_removed >( *this );
     m_controller.subscribe< event::enemy_killed >( *this );
+    m_controller.subscribe< event::player_killed >( *this );
 
     m_hide_announcement_timer = new QTimer{ this };
     connect( m_hide_announcement_timer, SIGNAL( timeout() ), this, SLOT( hide_announcement() ) );
@@ -26,6 +27,8 @@ qml_map_interface::~qml_map_interface()
 {
     m_controller.unsubscribe< event::projectile_fired >( *this );
     m_controller.unsubscribe< event::entities_removed >( *this );
+    m_controller.unsubscribe< event::enemy_killed >( *this );
+    m_controller.unsubscribe< event::player_killed >( *this );
 }
 
 void qml_map_interface::add_object( const object_type& type, ecs::entity& entity )
@@ -126,6 +129,11 @@ int qml_map_interface::get_tile_height() const noexcept
     return m_controller.get_tile_height();
 }
 
+int qml_map_interface::get_frag_width() const noexcept
+{
+    return m_remaining_frags[ 0 ]->get_width();
+}
+
 QString qml_map_interface::get_text() const
 {
     return m_announcement;
@@ -136,9 +144,14 @@ bool qml_map_interface::get_text_visible() const noexcept
     return m_announcement_visible;
 }
 
-uint32_t qml_map_interface::get_remaining_frags_num() const noexcept
+int qml_map_interface::get_remaining_frags_num() const noexcept
 {
     return m_remaining_frags.size();
+}
+
+int qml_map_interface::get_remaining_lifes_num() const noexcept
+{
+    return m_controller.get_remaining_lifes();
 }
 
 QQmlListProperty< graphics_map_object > qml_map_interface::get_tiles()
@@ -175,6 +188,11 @@ void qml_map_interface::on_event( const event::projectile_fired& event )
 {
     add_object( object_type::projectile, event.get_projectile() );
     objects_of_type_changed( object_type::projectile );
+}
+
+void qml_map_interface::on_event( const event::player_killed& )
+{
+    emit remaining_lifes_changed( m_controller.get_remaining_lifes() );
 }
 
 void qml_map_interface::on_event( const event::enemy_killed& )

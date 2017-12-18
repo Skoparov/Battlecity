@@ -134,10 +134,16 @@ const QString& controller::get_level() const noexcept
     return m_map_data.get_map_name();
 }
 
-uint32_t controller::get_remaining_frag_count()
+uint32_t controller::get_remaining_frags()
 {
-    component::level_info* l = m_world.get_components< component::level_info >().front();
+    component::level_info* l{ m_world.get_components< component::level_info >().front() };
     return l->get_kills_to_win() - l->get_player_kills();
+}
+
+uint32_t controller::get_remaining_lifes()
+{
+    component::level_info* l{ m_world.get_components< component::level_info >().front() };
+    return l->get_player_lifes_left();
 }
 
 uint32_t controller::get_map_switch_pause_duration() const noexcept

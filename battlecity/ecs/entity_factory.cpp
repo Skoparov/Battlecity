@@ -177,11 +177,11 @@ ecs::entity& create_entity_projectile( const QRect& rect,
     return entity;
 }
 
-ecs::entity& create_entity_frag( const QRect& rect, ecs::world& world )
+ecs::entity& create_entity_frag( const QRect& rect, ecs::world& world, int i )
 {
     ecs::entity& entity = world.create_entity();
 
-    entity.add_component< component::frag >();
+    entity.add_component< component::frag >(i);
     entity.add_component< component::geometry >( rect );
     entity.add_component< component::graphics >( get_image_path( image_frag ) );
 

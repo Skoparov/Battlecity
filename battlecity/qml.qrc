@@ -21,5 +21,6 @@
 		<file>graphics/enemy_tank.png</file>
 		<file>graphics/projectile.png</file>
         <file>graphics/frag.png</file>
+        <file>graphics/heart.png</file>
     </qresource>
 </RCC>

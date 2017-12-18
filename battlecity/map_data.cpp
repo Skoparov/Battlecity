@@ -81,9 +81,17 @@ std::pair< tile_type, object_type > char_to_tile_info( char c )
     return { ground, obj_located_on_ground };
 }
 
+template< typename T >
+T abs_diff( T l, T r ) noexcept
+{
+    return  l >= r? l - r : r - l;
+}
+
 QRect obj_rect( int row, int col, const QSize& tile_size, const QSize& size ) noexcept
 {
-    return QRect{ QPoint{ col * tile_size.width(), row * tile_size.height() }, size };
+    int delta_x{ ( abs_diff( size.width(), tile_size.width() ) % tile_size.width() ) / 2 };
+    int delta_y{ ( abs_diff( size.height(), tile_size.height() ) % tile_size.height() ) / 2 };
+    return QRect{ QPoint{ col * tile_size.width() + delta_x, row * tile_size.height() + delta_y }, size };
 }
 
 ecs::entity&
@@ -247,9 +255,9 @@ void read_map_file( map_data& data,
         }
     }
 
-    for( uint32_t frag{ 0 }; frag < settings.get_base_kills_to_win(); ++ frag )
+    for( uint32_t frag{ 0 }; frag < settings.get_base_kills_to_win(); ++frag )
     {
-        ecs::entity& entity = create_entity_frag( QRect{ 0, 0, 32, 32 }, world );
+        ecs::entity& entity = create_entity_frag( QRect{ 0, 0, 32, 32 }, world, frag );
         if( mediator )
         {
             mediator->add_object( object_type::frag, entity );
