@@ -4,6 +4,8 @@
 
 #include "controller.h"
 
+
+
 namespace game
 {
 
@@ -16,8 +18,8 @@ qml_map_interface::qml_map_interface( controller& controller,
     m_controller.subscribe< event::entities_removed >( *this );
     m_controller.subscribe< event::enemy_killed >( *this );
 
-    m_announcement_timer = new QTimer{ this };
-    connect( m_announcement_timer, SIGNAL( timeout() ), this, SLOT( hide_announcement() ) );
+    m_hide_announcement_timer = new QTimer{ this };
+    connect( m_hide_announcement_timer, SIGNAL( timeout() ), this, SLOT( hide_announcement() ) );
 }
 
 qml_map_interface::~qml_map_interface()
@@ -78,19 +80,15 @@ void qml_map_interface::remove_all()
     m_map_objects.clear();
 }
 
-void qml_map_interface::level_started( uint32_t level )
+void qml_map_interface::level_started( const QString& level )
 {
-    m_announcement = QString{ "Level %1" }.arg( level + 1 );
-    m_announcement_visible = true;
-    m_announcement_timer->start( 2000 );
-
+    m_announcement = QString{ "Level %1" }.arg( level );
     update_all();
 }
 
 void qml_map_interface::level_ended( const level_game_result& result )
 {
     m_announcement_visible = true;
-    m_announcement_timer->start( 3000 );
     m_announcement = QString{ "%1" }.arg( result == level_game_result::victory?
                                               "Victory" : "Defeat" );
 
@@ -101,7 +99,6 @@ void qml_map_interface::level_ended( const level_game_result& result )
 void qml_map_interface::game_ended( const level_game_result& result )
 {
     m_announcement_visible = true;
-    m_announcement_timer->start( 3000 );
     m_announcement = QString{ "Game %1" }.arg( result == level_game_result::victory?
                                       "completed" : "lost" );
 
@@ -187,7 +184,7 @@ void qml_map_interface::on_event( const event::enemy_killed& )
 
 void qml_map_interface::on_event( const event::entities_removed& event )
 {
-    const auto& entities = event.get_entities();
+    const auto& entities = event.get_cause_entities();
     std::unordered_map< object_type, object_list > objects_to_remove;
 
     for( auto it = m_map_objects.begin(); it != m_map_objects.end(); ++it )
@@ -225,7 +222,7 @@ void qml_map_interface::on_event( const event::entities_removed& event )
 
 void qml_map_interface::hide_announcement()
 {
-    m_announcement_timer->stop();
+    m_hide_announcement_timer->stop();
     m_announcement_visible = false;
     emit announcement_visibility_changed( m_announcement_visible );
 }

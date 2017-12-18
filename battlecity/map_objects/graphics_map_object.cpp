@@ -32,7 +32,7 @@ bool graphics_map_object::get_visible() const noexcept
 
 void graphics_map_object::on_event( const event::graphics_changed& event )
 {
-    if( event.entity_present( m_entity->get_id() ) )
+    if( event.get_cause_entity() == m_entity )
     {
         const component::graphics& g = m_entity->get_component_unsafe< component::graphics >();
 

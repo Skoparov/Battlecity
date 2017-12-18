@@ -62,6 +62,8 @@ public:
     void clean(); // remove all entities and systems
 
     entity& create_entity();
+    bool entity_present( entity_id id ) const noexcept;
+    entity& get_entity( entity_id id );
     void remove_entity( entity& e );
     void schedule_remove_entity( entity& e );
 

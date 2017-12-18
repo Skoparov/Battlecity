@@ -14,11 +14,11 @@ ecs::entity& create_respawn_point_entity( const QRect& rect, ecs::world& world )
 ecs::entity& create_level_entity( const QRect& rect, uint32_t kills_to_win, uint32_t player_lifes, ecs::world& world );
 ecs::entity& create_entity_player_base( const QRect& rect, uint32_t health, ecs::world& world );
 ecs::entity& create_entity_tile( const tile_type& type, const QRect& rect, ecs::world& world );
-ecs::entity& create_entity_projectile( const QRect& rect,
+ecs::entity& create_entity_projectile(const QRect& rect,
                                        uint32_t damage,
                                        uint32_t speed,
                                        const movement_direction& direction,
-                                       ecs::entity_id owner,
+                                       ecs::entity& owner,
                                        ecs::world& world );
 
 ecs::entity& create_entity_tank( const QRect& rect,

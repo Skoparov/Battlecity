@@ -158,7 +158,7 @@ void movement_system::tick()
             if( x_changed || y_changed || rotation_changed )
             {
                 event::geometry_changed event{ x_changed, y_changed, rotation_changed };
-                event.add_entity( curr_entity );
+                event.set_cause_entity( curr_entity );
                 m_world.emit_event( event );
             }
         }
@@ -235,7 +235,7 @@ void projectile_system::kill_entity( ecs::entity& entity )
     {
         entity.get_component< graphics >().set_visible( false );
         event::graphics_changed graphics_changed_event{ false, true };
-        graphics_changed_event.add_entity( entity );
+        graphics_changed_event.set_cause_entity( entity );
         m_world.emit_event( graphics_changed_event );
     }
 
@@ -254,6 +254,13 @@ void projectile_system::handle_obstacle(ecs::entity& obstacle,
 
         if( !obstacle_health.alive() )
         {
+            ecs::entity* killer{ nullptr };
+            ecs::entity_id killer_id{ projectile_component.get_owner_id() };
+            if( m_world.entity_present( killer_id ) )
+            {
+                killer = &m_world.get_entity( killer_id );
+            }
+
             if( obstacle.has_component< tile_object >() )
             {
                 obstacle.remove_component< health >();
@@ -265,15 +272,14 @@ void projectile_system::handle_obstacle(ecs::entity& obstacle,
             if( obstacle.has_component< player >() )
             {
                 kill_entity( obstacle );
-                event::player_killed event;
-                event.add_entity( obstacle );
+
+                event::player_killed event{ obstacle, projectile_component.get_owner_type(), killer };
                 m_world.emit_event( event );
             }
             else if( obstacle.has_component< enemy >() )
             {
                 kill_entity( obstacle );
-                event::enemy_killed event;
-                event.add_entity( obstacle );
+                event::enemy_killed event{ obstacle, projectile_component.get_owner_type(), killer };
                 m_world.emit_event( event );
             }
             else if( obstacle.has_component< player_base >() )
@@ -304,7 +310,7 @@ void projectile_system::handle_existing_projectiles()
         {
             m_world.for_each< non_traversible >( [ & ]( ecs::entity& obstacle, non_traversible& )
             {
-                if( projectile_component.get_owner() != obstacle.get_id() )
+                if( projectile_component.get_owner_id() != obstacle.get_id() )
                 {
                     geometry& obstacle_geom = obstacle.get_component_unsafe< geometry >();
                     if( obstacle_geom.intersects_with( projectile_geom ) )
@@ -320,7 +326,7 @@ void projectile_system::handle_existing_projectiles()
 
         if( projectile_destroyed )
         {
-            entities_removed_event.add_entity( projectile_entity );
+            entities_removed_event.add_cause_entity( projectile_entity );
             m_world.schedule_remove_entity( projectile_entity );
 
         }
@@ -328,7 +334,7 @@ void projectile_system::handle_existing_projectiles()
         return true;
     } );
 
-    if( !entities_removed_event.get_entities().empty() )
+    if( !entities_removed_event.get_cause_entities().empty() )
     {
         m_world.emit_event( entities_removed_event );
     }
@@ -351,7 +357,7 @@ void projectile_system::create_new_projectiles()
                                                                  m_damage,
                                                                  m_speed,
                                                                  direction,
-                                                                 turret_entity.get_id(),
+                                                                 turret_entity,
                                                                  m_world );
 
             event::projectile_fired event{ turret_entity, proj_entity };
@@ -394,10 +400,10 @@ void respawn_system::respawn_entity( ecs::entity& entity, const component::geome
     entity.get_component< geometry >().set_rect( respawn.get_rect() );
 
     event::geometry_changed geometry_changed_event{ true, true, true };
-    geometry_changed_event.add_entity( entity );
+    geometry_changed_event.set_cause_entity( entity );
 
     event::graphics_changed graphics_changed_event{ false, true };
-    graphics_changed_event.add_entity( entity );
+    graphics_changed_event.set_cause_entity( entity );
 
     m_world.emit_event( geometry_changed_event );
     m_world.emit_event( graphics_changed_event );
@@ -479,21 +485,13 @@ void respawn_system::clean()
 void respawn_system::on_event( const event::player_killed& event )
 {
     auto curr_time = clock::now();
-
-    for( auto& entity_pair : event.get_entities() )
-    {
-        m_players_death_info.emplace_back( death_info{ entity_pair.second, curr_time } );
-    }
+    m_players_death_info.emplace_back( death_info{ &event.get_victim(), curr_time } );
 }
 
 void respawn_system::on_event( const event::enemy_killed& event )
 {
     auto curr_time = clock::now();
-
-    for( auto& entity_pair : event.get_entities() )
-    {
-        m_enemies_death_info.emplace_back( death_info{ entity_pair.second, curr_time } );
-    }
+    m_enemies_death_info.emplace_back( death_info{ &event.get_victim(), curr_time } );
 }
 
 std::list< const component::geometry* > respawn_system::get_free_respawns()
@@ -568,8 +566,6 @@ void win_defeat_system::init()
 
 void win_defeat_system::tick()
 {
-
-
     if( m_level_info->get_player_base_killed() || !m_level_info->get_player_lifes_left() )
     {
         m_world.emit_event( event::level_completed{ level_game_result::defeat } );
@@ -586,17 +582,20 @@ void win_defeat_system::clean()
     m_frag_entities.clear();
 }
 
-void win_defeat_system::on_event( const event::enemy_killed& )
+void win_defeat_system::on_event( const event::enemy_killed& event )
 {
-    m_level_info->enemy_killed();
+    if( event.get_killer_type() == object_type::player_tank )
+    {
+        m_level_info->enemy_killed();
 
-    uint32_t player_kills{ m_level_info->get_player_kills() };
-    ecs::entity* frag_entity{  m_frag_entities[ player_kills - 1 ] };
+        uint32_t player_kills{ m_level_info->get_player_kills() };
+        ecs::entity* frag_entity{  m_frag_entities[ player_kills - 1 ] };
 
-    frag_entity->get_component< component::graphics >().set_visible( false );
-    event::graphics_changed event{ false, true };
-    event.add_entity( *frag_entity );
-    m_world.emit_event( event );
+        frag_entity->get_component< component::graphics >().set_visible( false );
+        event::graphics_changed event_graphics{ false, true };
+        event_graphics.set_cause_entity( *frag_entity );
+        m_world.emit_event( event_graphics );
+    }
 }
 
 void win_defeat_system::on_event( const event::player_killed& )

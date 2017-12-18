@@ -10,8 +10,8 @@
         <file>qml/SideBar.qml</file>
         <file>qml/Frag.qml</file>
 
-        <file>maps/map_0</file>
-        <file>maps/map_1</file>
+        <file>maps/map0.bsmap</file>
+        <file>maps/map1.bsmap</file>
         <file>settings/settings.xml</file>
 
         <file>graphics/tile_empty.png</file>

@@ -55,9 +55,23 @@ bool turret::has_fired() const noexcept
 
 //
 
-projectile::projectile( uint32_t damage, ecs::entity_id owner ) noexcept :
+projectile::projectile(uint32_t damage, const ecs::entity& owner ) :
     m_damage( damage ),
-    m_owner( owner ){}
+    m_owner_id( owner.get_id() )
+{
+    if( owner.has_component< player >() )
+    {
+        m_owner_type = object_type::player_tank;
+    }
+    else if( owner.has_component< enemy >() )
+    {
+        m_owner_type = object_type::enemy_tank;
+    }
+    else
+    {
+        throw std::invalid_argument{ "Unimplemented owner type" };
+    }
+}
 
 void projectile::set_damage( uint32_t damage ) noexcept
 {
@@ -69,9 +83,14 @@ uint32_t projectile::get_damage() const noexcept
     return m_damage;
 }
 
-ecs::entity_id projectile::get_owner() const noexcept
+ecs::entity_id projectile::get_owner_id() const noexcept
 {
-    return m_owner;
+    return m_owner_id;
+}
+
+const object_type& projectile::get_owner_type() const noexcept
+{
+    return m_owner_type;
 }
 
 //

@@ -23,6 +23,11 @@ void map_data::set_map_size( const QSize& size ) noexcept
     m_map_size = size;
 }
 
+void map_data::set_map_name( const QString& name )
+{
+    m_map_name = name;
+}
+
 int map_data::get_rows_count() const noexcept
 {
     return m_map_size.width();
@@ -36,6 +41,11 @@ int map_data::get_columns_count() const noexcept
 const QSize& map_data::get_map_size() const noexcept
 {
     return m_map_size;
+}
+
+const QString &map_data::get_map_name() const noexcept
+{
+    return m_map_name;
 }
 
 std::pair< tile_type, object_type > char_to_tile_info( char c )
@@ -140,6 +150,13 @@ void read_map_file( map_data& data,
     }
 
     QTextStream text_stream{ &map_file };
+    if( text_stream.atEnd() )
+    {
+        throw std::logic_error{ "Map file is empty" };
+    }
+
+    data.set_map_name( text_stream.readLine() );
+
     if( text_stream.atEnd() )
     {
         throw std::logic_error{ "Map file is empty" };

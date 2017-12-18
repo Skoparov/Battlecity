@@ -44,7 +44,7 @@ public:
 
     void add_object( const object_type& type, ecs::entity& entity ) override;
     void remove_all() override;
-    void level_started( uint32_t level ) override;
+    void level_started( const QString& level ) override;
     void level_ended( const level_game_result& result ) override;
     void game_ended( const level_game_result& result ) override;
 
@@ -116,7 +116,7 @@ private:
 
     QString m_announcement;
     bool m_announcement_visible{ false };
-    QTimer* m_announcement_timer{ nullptr };
+    QTimer* m_hide_announcement_timer{ nullptr };
 };
 
 }// game

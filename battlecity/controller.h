@@ -41,13 +41,14 @@ public:
     int get_columns_count() const noexcept;
     int get_tile_width() const noexcept;
     int get_tile_height() const noexcept;
-    uint32_t get_level() const noexcept;
+    const QString& get_level() const noexcept;
     uint32_t get_remaining_frag_count();
+    uint32_t get_map_switch_pause_duration() const noexcept;
 
     virtual void on_event( const event::level_completed& event );
 
 private:
-    bool load_level( uint32_t level );
+    void load_level();
 
 public slots:
     void tick();
@@ -58,7 +59,7 @@ private:
     game_settings m_settings;
     map_data_mediator* m_mediator{ nullptr };
 
-    uint32_t m_level{ 0 };
+    QStringList m_levels;
     bool m_need_to_load_level{ true };
 
     QTimer* m_tick_timer{ nullptr };

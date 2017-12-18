@@ -6,25 +6,35 @@ namespace game
 namespace event
 {
 
-namespace detail
+namespace _detail
 {
 
-void causes::add_entity( ecs::entity& entity )
+void event_cause::set_cause_entity( ecs::entity& entity )
 {
-    m_entities[ entity.get_id() ] = &entity;
+    m_cause_entity = &entity;
 }
 
-bool causes::entity_present( ecs::entity_id id ) const
+ecs::entity* event_cause::get_cause_entity() const noexcept
 {
-    return ( m_entities.count( id )!= 0 );
+    return m_cause_entity;
 }
 
-const std::unordered_map< ecs::entity_id, ecs::entity* >& causes::get_entities() const noexcept
+void event_causes::add_cause_entity( ecs::entity& entity )
 {
-    return m_entities;
+    m_cause_entities[ entity.get_id() ] = &entity;
 }
 
-}// detail
+bool event_causes::entity_present( ecs::entity_id id ) const
+{
+    return ( m_cause_entities.count( id )!= 0 );
+}
+
+const std::unordered_map< ecs::entity_id, ecs::entity* >& event_causes::get_cause_entities() const noexcept
+{
+    return m_cause_entities;
+}
+
+}// _detail
 
 geometry_changed::geometry_changed( bool x_changed,
                                     bool y_changed,
@@ -65,6 +75,31 @@ bool graphics_changed::visibility_changed() const noexcept
 }
 
 //
+
+namespace _detail
+{
+
+kill::kill( ecs::entity& victim, const object_type& killer_type, ecs::entity* killer) noexcept:
+    m_killer( killer ),
+    m_victim( victim ),
+    m_killer_type( killer_type ){}
+
+ecs::entity* kill::get_killer() const noexcept
+{
+    return m_killer;
+}
+
+const object_type& kill::get_killer_type() const noexcept
+{
+    return m_killer_type;
+}
+
+ecs::entity& kill::get_victim() const noexcept
+{
+    return m_victim;
+}
+
+}// _detail
 
 level_completed::level_completed( const level_game_result& result ) noexcept :
     m_level_result( result ){}

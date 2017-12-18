@@ -164,7 +164,7 @@ ecs::entity& create_entity_projectile( const QRect& rect,
                                        uint32_t damage,
                                        uint32_t speed,
                                        const movement_direction& direction,
-                                       ecs::entity_id owner,
+                                       ecs::entity& owner,
                                        ecs::world& world )
 {
     ecs::entity& entity = world.create_entity();

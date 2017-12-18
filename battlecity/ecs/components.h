@@ -76,16 +76,18 @@ class projectile final
 {
 public:
     projectile() = default;
-    projectile( uint32_t damage, ecs::entity_id owner ) noexcept;
+    projectile( uint32_t damage, const ecs::entity& owner );
 
     void set_damage( uint32_t damage ) noexcept;
     uint32_t get_damage() const noexcept;
 
-    ecs::entity_id get_owner() const noexcept;
+    ecs::entity_id get_owner_id() const noexcept;
+    const object_type& get_owner_type() const noexcept;
 
 private:
     uint32_t m_damage{ 1 };
-    ecs::entity_id m_owner{ INVALID_NUMERIC_ID };
+    ecs::entity_id m_owner_id{ INVALID_NUMERIC_ID };
+    object_type m_owner_type;
 };
 
 //
