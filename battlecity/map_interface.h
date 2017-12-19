@@ -32,8 +32,8 @@ public:
     void level_ended( const level_game_result& result ) override;
     void game_ended( const level_game_result& result ) override;
 
-    int get_rows_count() const noexcept;
-    int get_columns_count() const noexcept;
+    int get_rows_num() const noexcept;
+    int get_columns_num() const noexcept;
     int get_tile_width() const noexcept;
     int get_tile_height() const noexcept;
     int get_frag_width() const noexcept;
@@ -58,8 +58,8 @@ public:
     Q_PROPERTY( QQmlListProperty< game::movable_map_object > projectiles READ get_projectiles NOTIFY projectiles_changed )
     Q_PROPERTY( QQmlListProperty< game::graphics_map_object > remaining_frags READ get_remaining_frags NOTIFY remaining_frags_changed )
     Q_PROPERTY( QQmlListProperty< game::graphics_map_object > explosions READ get_explosions NOTIFY explosions_changed )
-    Q_PROPERTY( int rows_num READ get_rows_count CONSTANT )
-    Q_PROPERTY( int columns_num READ get_columns_count CONSTANT )
+    Q_PROPERTY( int rows_num READ get_rows_num NOTIFY rows_num_changed )
+    Q_PROPERTY( int columns_num READ get_columns_num  NOTIFY columns_num_changed )
     Q_PROPERTY( int tile_width READ get_tile_width CONSTANT )
     Q_PROPERTY( int tile_height READ get_tile_height CONSTANT )
     Q_PROPERTY( int frag_width READ get_frag_width CONSTANT )
@@ -77,6 +77,8 @@ public:
     void on_event( const event::explosion_started& event ) override;
 
 signals:
+    void rows_num_changed( int );
+    void columns_num_changed( int );
     void tiles_changed( QQmlListProperty< game::graphics_map_object > );
     void player_bases_changed( QQmlListProperty< game::graphics_map_object > );
     void player_tanks_changed( QQmlListProperty< game::tank_map_object > );

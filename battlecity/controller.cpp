@@ -112,12 +112,12 @@ void controller::set_map_mediator( map_data_mediator* mediator ) noexcept
     m_mediator = mediator;
 }
 
-int controller::get_rows_count() const noexcept
+int controller::get_rows_num() const noexcept
 {
     return m_map_data.get_rows_count();
 }
 
-int controller::get_columns_count() const noexcept
+int controller::get_columns_num() const noexcept
 {
     return m_map_data.get_columns_count();
 }

@@ -4,6 +4,7 @@
 
 static constexpr auto image_tile_empty = "tile_empty";
 static constexpr auto image_tile_wall = "tile_wall";
+static constexpr auto image_tile_iron_wall = "tile_iron_wall";
 static constexpr auto image_player_base = "player_base";
 static constexpr auto image_player_tank = "player_tank";
 static constexpr auto image_enemy_tank = "enemy_tank";
@@ -27,6 +28,7 @@ bool tile_traversible( const tile_type& type )
     {
     case tile_type::empty : traversible = true; break;
     case tile_type::wall : traversible = false; break;
+    case tile_type::iron_wall : traversible = false; break;
     default: throw std::invalid_argument{ "Unimplemented tile type" };
     }
 
@@ -41,6 +43,7 @@ QString tile_image_path( const tile_type& type )
     {
     case tile_type::empty : image_name = image_tile_empty; break;
     case tile_type::wall : image_name = image_tile_wall; break;
+    case tile_type::iron_wall : image_name = image_tile_iron_wall; break;
     default: throw std::invalid_argument{ "Unimplemented tile type" };
     }
 
@@ -94,7 +97,7 @@ ecs::entity& create_entity_player_base( const QRect& rect, uint32_t health, ecs:
     return entity;
 }
 
-ecs::entity& create_entity_tile( const tile_type& type, const QRect& rect, ecs::world& world )
+ecs::entity& create_entity_tile( const tile_type& type, const QRect& rect, uint32_t health, ecs::world& world )
 {
     ecs::entity& entity = world.create_entity();
 
@@ -107,8 +110,7 @@ ecs::entity& create_entity_tile( const tile_type& type, const QRect& rect, ecs::
         if( !tile_traversible( type ) )
         {
             entity.add_component< component::non_traversible >();
-            uint32_t health = 1;
-            entity.add_component< component::health >( health ); // TODO!!!!!!!!
+            entity.add_component< component::health >( health );
         }
     }
     catch( ... )

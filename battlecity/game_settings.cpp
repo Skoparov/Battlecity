@@ -9,6 +9,8 @@ static constexpr auto tag_tank_size = "TankSize";
 static constexpr auto tag_projectile_size = "ProjectileSize";
 static constexpr auto tag_player_base_size = "PlayerBaseSize";
 static constexpr auto tag_tank_health = "TankHealth";
+static constexpr auto tag_wall_health = "WallHealth";
+static constexpr auto tag_iron_wall_health = "IronWallHealth";
 static constexpr auto tag_player_base_health = "PlayerBaseHealth";
 static constexpr auto tag_player_lives = "PlayerLives";
 static constexpr auto tag_enemies_number = "EnemiesNum";
@@ -81,6 +83,26 @@ void game_settings::set_tank_health( const uint32_t health ) noexcept
 uint32_t game_settings::get_tank_health() const noexcept
 {
     return m_tank_health;
+}
+
+void game_settings::set_wall_health( const uint32_t health ) noexcept
+{
+    m_wall_health = health;
+}
+
+uint32_t game_settings::get_wall_health() const noexcept
+{
+    return m_wall_health;
+}
+
+void game_settings::set_iron_wall_health( const uint32_t health ) noexcept
+{
+    m_iron_wall_health = health;
+}
+
+uint32_t game_settings::get_iron_wall_health() const noexcept
+{
+    return m_iron_wall_health;
 }
 
 void game_settings::set_player_base_health( const uint32_t health ) noexcept
@@ -230,6 +252,14 @@ game_settings read_game_settings( const QString& file )
             else if( name == tag_tank_health )
             {
                 settings.set_tank_health( xml_reader.readElementText().toUInt() );
+            }
+            else if( name == tag_wall_health )
+            {
+                settings.set_wall_health( xml_reader.readElementText().toUInt() );
+            }
+            else if( name == tag_iron_wall_health )
+            {
+                settings.set_iron_wall_health( xml_reader.readElementText().toUInt() );
             }
             else if( name == tag_player_base_health )
             {

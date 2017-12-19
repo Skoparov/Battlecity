@@ -43,8 +43,8 @@ public:
         m_world.emit_event( event );
     }
 
-    int get_rows_count() const noexcept;
-    int get_columns_count() const noexcept;
+    int get_rows_num() const noexcept;
+    int get_columns_num() const noexcept;
     int get_tile_width() const noexcept;
     int get_tile_height() const noexcept;
     const QString& get_level() const noexcept;

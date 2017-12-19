@@ -11,6 +11,7 @@
 
 static constexpr auto tile_char_empty = 'e';
 static constexpr auto tile_char_wall = 'w';
+static constexpr auto tile_char_iron_wall = 'i';
 static constexpr auto tile_char_player_base = 'b';
 static constexpr auto tile_char_player_start_position = 'p';
 static constexpr auto tile_char_respawn_point = 'r';
@@ -61,6 +62,10 @@ std::pair< tile_type, object_type > char_to_tile_info( char c )
         break;
     case tile_char_wall :
         ground = tile_type::wall;
+        obj_located_on_ground = object_type::tile;
+        break;
+    case tile_char_iron_wall :
+        ground = tile_type::iron_wall;
         obj_located_on_ground = object_type::tile;
         break;
     case tile_char_player_base :
@@ -130,13 +135,28 @@ add_tank( int row, int col, const alignment& align, const game_settings& setting
     return e;
 }
 
+uint32_t get_tile_health( const tile_type& type, const game_settings& settings )
+{
+    uint32_t health{ 0 };
+
+    switch( type )
+    {
+    case tile_type::wall: health = settings.get_wall_health(); break;
+    case tile_type::iron_wall: health = settings.get_iron_wall_health(); break;
+    default: break;
+    }
+
+    return health;
+}
+
 ecs::entity&
 add_tile( const tile_type& type, int row, int col, const game_settings& settings, ecs::world& world )
 {
     const QSize& tile_size{ settings.get_tile_size() };
     return create_entity_tile( type,
-                        obj_rect( row, col, tile_size, tile_size ),
-                        world );
+                               obj_rect( row, col, tile_size, tile_size ),
+                               get_tile_health( type, settings ),
+                               world );
 }
 
 ecs::entity&

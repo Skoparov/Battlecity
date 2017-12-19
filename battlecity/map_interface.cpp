@@ -114,14 +114,14 @@ void qml_map_interface::game_ended( const level_game_result& result )
                          true );
 }
 
-int qml_map_interface::get_rows_count() const noexcept
+int qml_map_interface::get_rows_num() const noexcept
 {
-    return m_controller.get_rows_count();
+    return m_controller.get_rows_num();
 }
 
-int qml_map_interface::get_columns_count() const noexcept
+int qml_map_interface::get_columns_num() const noexcept
 {
-    return m_controller.get_columns_count();
+    return m_controller.get_columns_num();
 }
 
 int qml_map_interface::get_tile_width() const noexcept
@@ -377,6 +377,8 @@ void qml_map_interface::remove_object_from_model( const object_type& type, base_
 
 void qml_map_interface::update_all()
 {
+    emit rows_num_changed( get_rows_num() );
+    emit columns_num_changed( get_columns_num() );
     emit tiles_changed( get_tiles() );
     emit player_bases_changed( get_player_bases() );
     emit player_tanks_changed( get_player_tanks() );

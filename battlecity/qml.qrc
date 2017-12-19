@@ -17,6 +17,7 @@
 
         <file>graphics/tile_empty.png</file>
         <file>graphics/tile_wall.png</file>
+        <file>graphics/tile_iron_wall.png</file>
         <file>graphics/player_base.png</file>
 		<file>graphics/player_tank.png</file>
 		<file>graphics/enemy_tank.png</file>

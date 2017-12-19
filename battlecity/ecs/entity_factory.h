@@ -14,7 +14,7 @@ ecs::entity& create_entity_frag( const QRect& rect, ecs::world& world, uint32_t 
 ecs::entity& create_respawn_point_entity( const QRect& rect, ecs::world& world );
 ecs::entity& create_map_entity( const QRect& rect, ecs::world& world );
 ecs::entity& create_entity_player_base( const QRect& rect, uint32_t health, ecs::world& world );
-ecs::entity& create_entity_tile( const tile_type& type, const QRect& rect, ecs::world& world );
+ecs::entity& create_entity_tile( const tile_type& type, const QRect& rect, uint32_t health, ecs::world& world );
 ecs::entity& create_entity_projectile( const QRect& rect,
                                        uint32_t damage,
                                        uint32_t speed,

@@ -28,6 +28,12 @@ public:
     void set_tank_health( const uint32_t health ) noexcept;
     uint32_t get_tank_health() const noexcept;
 
+    void set_wall_health( const uint32_t health ) noexcept;
+    uint32_t get_wall_health() const noexcept;
+
+    void set_iron_wall_health( const uint32_t health ) noexcept;
+    uint32_t get_iron_wall_health() const noexcept;
+
     void set_player_base_health( const uint32_t health ) noexcept;
     uint32_t get_player_base_health() const noexcept;
 
@@ -65,6 +71,8 @@ private:
     QSize m_projectile_size{};
     QSize m_player_base_size{};
     uint32_t m_tank_health{ 0 };
+    uint32_t m_wall_health{ 0 };
+    uint32_t m_iron_wall_health{ 0 };
     uint32_t m_base_health{ 0 };
     uint32_t m_player_lives{ 0 };
     uint32_t m_enemies_number{ 0 };

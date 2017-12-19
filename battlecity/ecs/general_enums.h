@@ -4,7 +4,7 @@
 namespace game
 {
 
-enum class tile_type{ wall, empty };
+enum class tile_type{ wall, iron_wall, empty };
 enum class alignment{ player, enemy };
 enum class movement_direction{ left, right, up, down, none };
 enum class has_infinite_lifes{ yes, no };
