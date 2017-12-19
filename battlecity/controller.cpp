@@ -10,7 +10,7 @@
 static constexpr auto map_extension = "bsmap";
 static constexpr auto map_dir_path = ":/maps/";
 
-static const uint32_t map_switch_pause_duration{ 3000 };
+static const uint32_t map_switch_pause_duration{ 2000 };
 
 namespace game
 {
@@ -39,7 +39,7 @@ void controller::init()
     std::unique_ptr< ecs::system > explosion_system{ new system::explosion_system{ m_world } };
 
     std::unique_ptr< ecs::system > vic_def_system{
-        new system::win_defeat_system{ m_world } };
+        new system::win_defeat_system{ m_settings.get_base_kills_to_win(), m_world } };
 
     std::unique_ptr< ecs::system > proj_system{
         new system::projectile_system{ m_settings.get_projectile_size(),
@@ -137,21 +137,16 @@ const QString& controller::get_level() const noexcept
     return m_map_data.get_map_name();
 }
 
-uint32_t controller::get_remaining_frags()
+uint32_t controller::get_player_remaining_lifes()
 {
-    component::level_info* l{ m_world.get_components< component::level_info >().front() };
-    return l->get_kills_to_win() - l->get_player_kills();
+    ecs::entity* player{ m_world.get_entities_with_component< component::player >().front() };
+    return player->get_component< component::lifes >().get_lifes();
 }
 
-uint32_t controller::get_remaining_lifes()
+uint32_t controller::get_base_remaining_lifes()
 {
-    component::level_info* l{ m_world.get_components< component::level_info >().front() };
-    return l->get_player_lifes_left();
-}
-
-uint32_t controller::get_map_switch_pause_duration() const noexcept
-{
-    return map_switch_pause_duration;
+    ecs::entity* player_base{ m_world.get_entities_with_component< component::player >().front() };
+    return player_base->get_component< component::health >().get_health();
 }
 
 void controller::on_event( const event::level_completed& event )

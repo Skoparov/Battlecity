@@ -30,12 +30,12 @@ private:
 
 //
 
-class turret final
+class turret_object final
 {
     using clock = std::chrono::high_resolution_clock;
 
 public:
-    turret( const std::chrono::milliseconds& cooldown ) noexcept;
+    turret_object( const std::chrono::milliseconds& cooldown ) noexcept;
 
     bool set_fire_status( bool fired ) noexcept;
     bool has_fired() const noexcept;
@@ -75,8 +75,9 @@ class explosion final{};
 class frag final
 {
 public:
-    explicit frag( uint32_t num ) noexcept: m_num( num ){}
-    uint32_t get_num() const noexcept{ return m_num; }
+    explicit frag( uint32_t num ) noexcept;
+    uint32_t get_num() const noexcept;
+
 private:
     uint32_t m_num{ 0 };
 };
@@ -92,13 +93,13 @@ public:
     void set_damage( uint32_t damage ) noexcept;
     uint32_t get_damage() const noexcept;
 
-    ecs::entity_id get_owner_id() const noexcept;
-    const object_type& get_owner_type() const noexcept;
+    ecs::entity_id get_shooter_id() const noexcept;
+    const object_type& get_shooter_type() const noexcept;
 
 private:
     uint32_t m_damage{ 1 };
-    ecs::entity_id m_owner_id{ INVALID_NUMERIC_ID };
-    object_type m_owner_type;
+    ecs::entity_id m_shooter_id{ INVALID_NUMERIC_ID };
+    object_type m_shooter_type;
 };
 
 //
@@ -150,6 +151,7 @@ private:
 //
 
 class non_traversible final{};
+class flying final{}; // can pass through non_traversible
 
 //
 
@@ -191,36 +193,35 @@ private:
     const uint32_t m_max_health{ 0 };
 };
 
-//
-
-class level_info final
+class lifes final
 {
 public:
-    level_info( uint32_t kills_to_win, uint32_t player_lifes ) noexcept;
+    lifes() = default;
+    explicit lifes( const has_infinite_lifes& mode, uint32_t lifes = 0 ) noexcept;
 
-    void player_killed() noexcept;
-    void enemy_killed() noexcept;
-    void player_base_killed() noexcept;
+    void increase( uint32_t value ) noexcept;
+    void decrease( uint32_t value ) noexcept;
 
-    uint32_t get_player_lifes_left() const noexcept;
-    uint32_t get_player_kills() const noexcept;
-    bool get_player_base_killed() const noexcept;
-
-    uint32_t get_kills_to_win() const noexcept;
-    uint32_t get_player_lifes() const noexcept;
-
-    void reset() noexcept;
+    bool has_life() const noexcept;
+    uint32_t get_lifes() const noexcept;
+    const has_infinite_lifes& get_mode() const noexcept;
 
 private:
-    uint32_t m_kills_to_win{ 0 };
-    uint32_t m_player_lifes{ 0 };
-
-    bool m_player_base_killed{ false };
-    uint32_t m_player_kills{ 0 };
-    uint32_t m_player_lifes_left{ 0 };
+    has_infinite_lifes m_mode{ has_infinite_lifes::no };
+    uint32_t m_lifes{ 0 };
 };
 
 //
+
+class kills_counter final
+{
+public:
+    void increase( uint32_t value ) noexcept;
+    uint32_t get_kills() const noexcept;
+
+private:
+    uint32_t m_kills{ 0 };
+};
 
 class respawn_point{};
 

@@ -117,6 +117,7 @@ add_tank( int row, int col, const alignment& align, const game_settings& setting
                                align,
                                settings.get_tank_speed(),
                                settings.get_tank_health(),
+                               settings.get_player_lives(),
                                settings.get_turret_cooldown_ms(),
                                world );
 
@@ -270,10 +271,7 @@ void read_map_file( map_data& data,
     // add map entity
     const QSize& tile_size{ settings.get_tile_size() };
     QRect map_rect{ 0, 0, tile_size.width() * map_size.width(), tile_size.height() * map_size.height() };
-    create_level_entity( map_rect,
-                         settings.get_base_kills_to_win(),
-                         settings.get_player_lives(),
-                         world );
+    create_map_entity( map_rect, world );
 }
 
 }// game

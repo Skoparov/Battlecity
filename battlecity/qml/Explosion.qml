@@ -15,7 +15,7 @@ Item
         width: modelData.width
         height: modelData.height
         source: modelData.image_path
-        frameCount: 3
+        frameCount: 12
         frameRate: 6
         loops: 1
     }
@@ -23,13 +23,13 @@ Item
     NumberAnimation on rotation
     {
         to: 0
-        duration: 200
+        duration: 400
 
         onRunningChanged:
         {
             if( !running )
             {
-                map_interface.animation_ended( modelData.object_id )
+                map_interface.explosion_ended( modelData.object_id )
             }
         }
     }

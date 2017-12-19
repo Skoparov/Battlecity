@@ -89,27 +89,46 @@ bool graphics_changed::visibility_changed() const noexcept
 namespace _detail
 {
 
-kill::kill( ecs::entity& victim, const object_type& killer_type, ecs::entity* killer) noexcept:
-    m_killer( killer ),
+projectile_hit_info::projectile_hit_info( const object_type& victim_type,
+                                ecs::entity& victim,
+                                const object_type& shooter_type,
+                                ecs::entity* shooter ) noexcept:
+    m_victim_type( victim_type ),
     m_victim( victim ),
-    m_killer_type( killer_type ){}
+    m_shooter_type( shooter_type ),
+    m_shooter( shooter ){}
 
-ecs::entity* kill::get_killer() const noexcept
+ecs::entity* projectile_hit_info::get_shooter() const noexcept
 {
-    return m_killer;
+    return m_shooter;
 }
 
-const object_type& kill::get_killer_type() const noexcept
-{
-    return m_killer_type;
-}
-
-ecs::entity& kill::get_victim() const noexcept
+ecs::entity& projectile_hit_info::get_victim() const noexcept
 {
     return m_victim;
 }
 
+const object_type& projectile_hit_info::get_shooter_type() const noexcept
+{
+    return m_shooter_type;
+}
+
+const object_type& projectile_hit_info::get_victim_type() const noexcept
+{
+    return m_victim_type;
+}
+
 }// _detail
+
+void entities_removed::add_entity( const object_type& type, ecs::entity& entity )
+{
+    m_removed_entities[ type ].emplace_back( &entity );
+}
+
+auto entities_removed::get_removed_entities() const noexcept -> const removed_entities_umap&
+{
+    return m_removed_entities;
+}
 
 level_completed::level_completed( const level_game_result& result ) noexcept :
     m_level_result( result ){}

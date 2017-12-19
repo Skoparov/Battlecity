@@ -7,24 +7,6 @@
 #include "map_data.h"
 #include "map_objects/tank_map_object.h"
 
-namespace std
-{
-
-template<> struct hash< game::object_type >
-{
-    using argument_type = game::object_type;
-    using underlying_type = std::underlying_type< argument_type >::type;
-    using result_type = std::hash< underlying_type >::result_type;
-
-    size_t operator()( const argument_type& arg ) const
-    {
-        std::hash< underlying_type > hasher;
-        return hasher( static_cast< underlying_type >( arg ) );
-    }
-};
-
-}// std
-
 namespace game
 {
 
@@ -34,8 +16,7 @@ class qml_map_interface : public QObject,
                           public map_data_mediator,
                           public ecs::event_callback< event::projectile_fired >,
                           public ecs::event_callback< event::entities_removed >,
-                          public ecs::event_callback< event::enemy_killed >,
-                          public ecs::event_callback< event::player_killed >,
+                          public ecs::event_callback< event::entity_killed >,
                           public ecs::event_callback< event::explosion_started >
 {
     Q_OBJECT
@@ -55,8 +36,8 @@ public:
     int get_tile_width() const noexcept;
     int get_tile_height() const noexcept;
     int get_frag_width() const noexcept;
-    QString get_text() const;
-    bool get_text_visible() const noexcept;
+    QString get_announcement_text() const;
+    bool get_announecement_visible() const noexcept;
     int get_remaining_frags_num() const noexcept;
     int get_remaining_lifes_num() const noexcept;
 
@@ -80,15 +61,14 @@ public:
     Q_PROPERTY( int tile_width READ get_tile_width CONSTANT )
     Q_PROPERTY( int tile_height READ get_tile_height CONSTANT )
     Q_PROPERTY( int frag_width READ get_frag_width CONSTANT )
-    Q_PROPERTY( QString announcement READ get_text NOTIFY announcement_changed )
-    Q_PROPERTY( bool announcement_visible READ get_text_visible NOTIFY announcement_visibility_changed )
+    Q_PROPERTY( QString announcement READ get_announcement_text NOTIFY announcement_changed )
+    Q_PROPERTY( bool announcement_visible READ get_announecement_visible NOTIFY announcement_visibility_changed )
     Q_PROPERTY( int remaining_frags_num READ get_remaining_frags_num CONSTANT )
     Q_PROPERTY( int remaining_lifes READ get_remaining_lifes_num NOTIFY remaining_lifes_changed )
-    Q_INVOKABLE void animation_ended( unsigned int id );
+    Q_INVOKABLE void explosion_ended( unsigned int id );
 
     void on_event( const event::projectile_fired& event ) override;
-    void on_event( const event::player_killed& ) override;
-    void on_event( const event::enemy_killed& event ) override;
+    void on_event( const event::entity_killed& event ) override;
     void on_event( const event::entities_removed& event ) override;
     void on_event( const event::explosion_started& event ) override;
 
@@ -108,6 +88,7 @@ public slots:
     void hide_announcement();
 
 private:
+    void update_announcement( const QString& text, bool send_update );
     void objects_of_type_changed( const object_type& type );
     void remove_object_from_model( const object_type& type, base_map_object* obj );
     void update_all();
@@ -125,8 +106,8 @@ private:
     QList< graphics_map_object* > m_explosions;
 
 
-    using object_list = std::list< std::unique_ptr< base_map_object > >;
-    std::unordered_map< object_type, object_list > m_map_objects;
+    using object_umap = std::unordered_map< ecs::entity_id, std::unique_ptr< base_map_object > >;
+    std::unordered_map< object_type, object_umap > m_map_objects;
 
     QString m_announcement;
     bool m_announcement_visible{ false };

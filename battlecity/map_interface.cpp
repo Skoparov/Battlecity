@@ -4,7 +4,7 @@
 
 #include "controller.h"
 
-
+static const uint32_t map_switch_pause_duration{ 3000 };
 
 namespace game
 {
@@ -16,8 +16,7 @@ qml_map_interface::qml_map_interface( controller& controller,
 {
     m_controller.subscribe< event::projectile_fired >( *this );
     m_controller.subscribe< event::entities_removed >( *this );
-    m_controller.subscribe< event::enemy_killed >( *this );
-    m_controller.subscribe< event::player_killed >( *this );
+    m_controller.subscribe< event::entity_killed >( *this );
     m_controller.subscribe< event::explosion_started >( *this );
 
     m_hide_announcement_timer = new QTimer{ this };
@@ -28,8 +27,7 @@ qml_map_interface::~qml_map_interface()
 {
     m_controller.unsubscribe< event::projectile_fired >( *this );
     m_controller.unsubscribe< event::entities_removed >( *this );
-    m_controller.unsubscribe< event::enemy_killed >( *this );
-    m_controller.unsubscribe< event::player_killed >( *this );
+    m_controller.unsubscribe< event::entity_killed >( *this );
     m_controller.unsubscribe< event::explosion_started >( *this );
 }
 
@@ -72,7 +70,7 @@ void qml_map_interface::add_object( const object_type& type, ecs::entity& entity
         assert( false );
     }
 
-    m_map_objects[ type ].emplace_back( std::move( map_object ) );
+    m_map_objects[ type ].emplace( entity.get_id(), std::move( map_object ) );
 }
 
 void qml_map_interface::remove_all()
@@ -84,6 +82,7 @@ void qml_map_interface::remove_all()
     m_projectiles.clear();
     m_remaining_frags.clear();
     m_projectiles.clear();
+    m_explosions.clear();
 
     update_all();
 
@@ -92,28 +91,25 @@ void qml_map_interface::remove_all()
 
 void qml_map_interface::level_started( const QString& level )
 {
-    m_announcement = QString{ "Level %1" }.arg( level );
+    update_announcement( QString{ "Level %1" }.arg( level ), false );
+    m_hide_announcement_timer->start( map_switch_pause_duration );
+
     update_all();
 }
 
 void qml_map_interface::level_ended( const level_game_result& result )
 {
-    m_announcement_visible = true;
-    m_announcement = QString{ "%1" }.arg( result == level_game_result::victory?
-                                              "Victory" : "Defeat" );
-
-    emit announcement_changed( m_announcement );
-    emit announcement_visibility_changed( m_announcement_visible );
+    update_announcement( QString{ "%1" }.arg( result == level_game_result::victory?
+                                                  "Victory" : "Defeat" ),
+                         true );
 }
 
 void qml_map_interface::game_ended( const level_game_result& result )
 {
-    m_announcement_visible = true;
-    m_announcement = QString{ "Game %1" }.arg( result == level_game_result::victory?
-                                      "completed" : "lost" );
 
-    emit announcement_changed( m_announcement );
-    emit announcement_visibility_changed( m_announcement_visible );
+    update_announcement( QString{ "Game %1" }.arg( result == level_game_result::victory?
+                                                       "completed" : "lost" ),
+                         true );
 }
 
 int qml_map_interface::get_rows_count() const noexcept
@@ -142,12 +138,12 @@ int qml_map_interface::get_frag_width() const noexcept
                 m_remaining_frags[ 0 ]->get_width() : 0;
 }
 
-QString qml_map_interface::get_text() const
+QString qml_map_interface::get_announcement_text() const
 {
     return m_announcement;
 }
 
-bool qml_map_interface::get_text_visible() const noexcept
+bool qml_map_interface::get_announecement_visible() const noexcept
 {
     return m_announcement_visible;
 }
@@ -159,7 +155,7 @@ int qml_map_interface::get_remaining_frags_num() const noexcept
 
 int qml_map_interface::get_remaining_lifes_num() const noexcept
 {
-    return m_controller.get_remaining_lifes();
+    return m_controller.get_player_remaining_lifes();
 }
 
 QQmlListProperty< graphics_map_object > qml_map_interface::get_tiles()
@@ -203,37 +199,50 @@ void qml_map_interface::on_event( const event::projectile_fired& event )
     objects_of_type_changed( object_type::projectile );
 }
 
-void qml_map_interface::on_event( const event::player_killed& )
+void qml_map_interface::on_event( const event::entity_killed& event )
 {
-    emit remaining_lifes_changed( m_controller.get_remaining_lifes() );
-}
-
-void qml_map_interface::on_event( const event::enemy_killed& )
-{
-    objects_of_type_changed( object_type::frag );
+    const object_type& victim_type = event.get_victim_type();
+    if( victim_type ==  object_type::player_tank )
+    {
+        emit remaining_lifes_changed( m_controller.get_player_remaining_lifes() );
+    }
+    else if( victim_type == object_type::enemy_tank )
+    {
+        objects_of_type_changed( object_type::frag );
+    }
 }
 
 void qml_map_interface::on_event( const event::entities_removed& event )
 {
-    const auto& entities = event.get_cause_entities();
-    std::unordered_map< object_type, object_list > objects_to_remove;
+    std::unordered_map< object_type,
+                        std::list< std::unique_ptr< base_map_object > > > objects_to_remove;
 
-    for( auto it = m_map_objects.begin(); it != m_map_objects.end(); ++it )
+    const auto& entities_to_remove = event.get_removed_entities();
+
+    for( const auto& type_to_remove_and_entities : entities_to_remove )
     {
-        const object_type& type = it->first;
-        auto& objects_list = it->second;
+        const object_type& type = type_to_remove_and_entities.first;
 
-        auto object_it = objects_list.begin();
-        while( object_it != objects_list.end() )
+        auto object_map_it = m_map_objects.find( type );
+        if( object_map_it != m_map_objects.end() )
         {
-            if( entities.count( ( *object_it )->get_id() ) )
+            object_umap& objects_map = object_map_it->second;
+            const std::list< ecs::entity* >& entities_of_type_to_remove =
+                    type_to_remove_and_entities.second;
+
+            for( const ecs::entity* entity_to_remove : entities_of_type_to_remove )
             {
-                objects_to_remove[ type ].emplace_back( std::move( *object_it ) );
-                objects_list.erase( object_it++ );
+                auto object_it = objects_map.find( entity_to_remove->get_id() );
+                if( object_it != objects_map.end() )
+                {
+                    objects_to_remove[ type ].emplace_back( std::move( object_it->second ) );
+                    objects_map.erase( object_it );
+                }
             }
-            else
+
+            if( objects_map.empty() )
             {
-                ++object_it;
+                m_map_objects.erase( object_map_it );
             }
         }
     }
@@ -241,7 +250,6 @@ void qml_map_interface::on_event( const event::entities_removed& event )
     for( const auto& pair_data : objects_to_remove )
     {
         const object_type& type = pair_data.first;
-
         for( const auto& obj : pair_data.second )
         {
             remove_object_from_model( type, obj.get() );
@@ -257,24 +265,20 @@ void qml_map_interface::on_event( const event::explosion_started& event )
     objects_of_type_changed( object_type::explosion );
 }
 
-void qml_map_interface::animation_ended( unsigned int id )
+void qml_map_interface::explosion_ended( unsigned int id )
 {
     auto explosions_it = m_map_objects.find( object_type::explosion );
     if( explosions_it != m_map_objects.end() )
     {
         std::unique_ptr< base_map_object > explosion;
 
-        object_list& explosion_list = explosions_it->second;
-        auto explosion_it = std::find_if( explosion_list.begin(), explosion_list.end(),
-                                          [ id ]( const std::unique_ptr< base_map_object >& obj )
-        {
-            return obj->get_id() == id;
-        } );
+        object_umap& explosions = explosions_it->second;
+        auto explosion_it = explosions.find( id );
 
-        if( explosion_it != explosion_list.end() )
+        if( explosion_it != explosions.end() )
         {
-            explosion = std::move( *explosion_it );
-            explosion_list.erase( explosion_it );
+            explosion = std::move( explosion_it->second );
+            explosions.erase( explosion_it );
 
             remove_object_from_model( object_type::explosion, explosion.get() );
             objects_of_type_changed( object_type::explosion );
@@ -291,6 +295,18 @@ void qml_map_interface::hide_announcement()
     m_hide_announcement_timer->stop();
     m_announcement_visible = false;
     emit announcement_visibility_changed( m_announcement_visible );
+}
+
+void qml_map_interface::update_announcement( const QString& text, bool send_update )
+{
+    m_announcement = text;
+    m_announcement_visible = true;
+
+    if( send_update )
+    {
+        emit announcement_changed( m_announcement );
+        emit announcement_visibility_changed( m_announcement_visible );
+    }
 }
 
 void qml_map_interface::objects_of_type_changed( const object_type& type )

@@ -1,5 +1,6 @@
 #include "systems.h"
 
+#include <cassert>
 #include <random>
 
 #include "entity_factory.h"
@@ -29,15 +30,10 @@ void movement_system::init()
     m_map_geom = &map_entity->get_component_unsafe< component::geometry >();
 }
 
-bool can_pass_through_non_traversible( ecs::entity& e )
-{
-    return e.has_component< component::projectile >();
-}
-
 QRect calc_move( component::movement& move,
                  component::geometry& obj_geom,
                  component::geometry& map_geom,
-                 bool can_pass_though_non_traversible ) noexcept
+                 bool is_flying ) noexcept
 {
     int x_mult{ 0 };
     int y_mult{ 0 };
@@ -73,7 +69,7 @@ QRect calc_move( component::movement& move,
 
     obj_geom.set_rotation( rotation );
 
-    if( !can_pass_though_non_traversible )
+    if( !is_flying )
     {
         bool on_border{ false };
         QRect map_rect{ map_geom.get_rect() };
@@ -118,12 +114,12 @@ void movement_system::tick()
         {
             geometry& curr_geom = curr_entity.get_component_unsafe< geometry >();
             int prev_rotation{ curr_geom.get_rotation() };
-            bool can_pass_though_everything{ can_pass_through_non_traversible( curr_entity ) };
+            bool is_flying{ curr_entity.has_component< flying >() };
             bool movement_valid{ true };
 
-            QRect rect_after_move{ calc_move( move, curr_geom, *m_map_geom, can_pass_though_everything ) };
+            QRect rect_after_move{ calc_move( move, curr_geom, *m_map_geom, is_flying ) };
 
-            if( !can_pass_though_everything )
+            if( !is_flying )
             {
                 m_world.for_each< non_traversible >( [ & ]( ecs::entity& other_entity, non_traversible& )
                 {
@@ -188,6 +184,8 @@ movement_direction get_direction_by_rotation( int rotation )
     return direction;
 }
 
+//
+
 projectile_system::projectile_system( const QSize& projectile_size,
                                       uint32_t projectile_damage,
                                       uint32_t projectile_speed,
@@ -242,11 +240,52 @@ void projectile_system::kill_entity( ecs::entity& entity )
     entity.remove_component< non_traversible >();
 }
 
+object_type get_object_type( const ecs::entity& entity )
+{
+    using namespace component;
+    object_type result;
+
+    if( entity.has_component< tile_object >() )
+    {
+        result = object_type::tile;
+    }
+    else if( entity.has_component< player >() )
+    {
+        result = object_type::player_tank;
+    }
+    else if( entity.has_component< enemy >() )
+    {
+        result = object_type::enemy_tank;
+    }
+    else if( entity.has_component< player_base >() )
+    {
+        result = object_type::player_base;
+    }
+    else
+    {
+        assert( false );
+        throw std::logic_error{ "Unknown entity type" };
+    }
+
+    return result;
+}
+
 void projectile_system::handle_obstacle( ecs::entity& obstacle,
                                          const component::projectile& projectile_component )
 {
     using namespace component;
 
+    object_type obstacle_type{ get_object_type( obstacle ) };
+    const object_type& shooter_type = projectile_component.get_shooter_type();
+
+    ecs::entity* shooter{ nullptr };
+    ecs::entity_id shooter_id{ projectile_component.get_shooter_id() };
+    if( m_world.entity_present( shooter_id ) )
+    {
+        shooter = &m_world.get_entity( shooter_id );
+    }
+
+    // Damage obstacle if it has health
     if( obstacle.has_component< health >() )
     {
         health& obstacle_health = obstacle.get_component< health >();
@@ -254,40 +293,32 @@ void projectile_system::handle_obstacle( ecs::entity& obstacle,
 
         if( !obstacle_health.alive() )
         {
-            ecs::entity* killer{ nullptr };
-            ecs::entity_id killer_id{ projectile_component.get_owner_id() };
-            if( m_world.entity_present( killer_id ) )
-            {
-                killer = &m_world.get_entity( killer_id );
-            }
-
-            if( obstacle.has_component< tile_object >() )
+            if( obstacle_type == object_type::tile )
             {
                 obstacle.remove_component< health >();
                 obstacle.remove_component< non_traversible >();
                 obstacle.get_component< tile_object >().set_tile_type( tile_type::empty );
-                obstacle.get_component< graphics >().set_image_path(
-                            tile_image_path( tile_type::empty ) );
+                obstacle.get_component< graphics >().set_image_path( tile_image_path( tile_type::empty ) );
             }
-            if( obstacle.has_component< player >() )
+            else if( obstacle_type == object_type::player_tank ||
+                     obstacle_type == object_type::enemy_tank ||
+                     obstacle_type == object_type::player_base )
             {
                 kill_entity( obstacle );
 
-                event::player_killed event{ obstacle, projectile_component.get_owner_type(), killer };
+                if( shooter && shooter->has_component< kills_counter >() )
+                {
+                    shooter->get_component< kills_counter >().increase( 1 );
+                }
+
+                event::entity_killed event{ obstacle_type, obstacle, shooter_type, shooter };
                 m_world.emit_event( event );
-            }
-            else if( obstacle.has_component< enemy >() )
-            {
-                kill_entity( obstacle );
-                event::enemy_killed event{ obstacle, projectile_component.get_owner_type(), killer };
-                m_world.emit_event( event );
-            }
-            else if( obstacle.has_component< player_base >() )
-            {
-                m_world.emit_event( event::player_base_killed{} );
             }
         }
     }
+
+    event::entity_hit event{ obstacle_type, obstacle, shooter_type, shooter };
+    m_world.emit_event( event );
 }
 
 void projectile_system::handle_existing_projectiles()
@@ -310,7 +341,7 @@ void projectile_system::handle_existing_projectiles()
         {
             m_world.for_each< non_traversible >( [ & ]( ecs::entity& obstacle, non_traversible& )
             {
-                if( projectile_component.get_owner_id() != obstacle.get_id() )
+                if( projectile_component.get_shooter_id() != obstacle.get_id() )
                 {
                     geometry& obstacle_geom = obstacle.get_component_unsafe< geometry >();
                     if( obstacle_geom.intersects_with( projectile_geom ) )
@@ -319,7 +350,6 @@ void projectile_system::handle_existing_projectiles()
 
                         event::projectile_collision event_collision;
                         event_collision.set_cause_entity( obstacle );
-
                         m_world.emit_event( event_collision );
 
                         projectile_destroyed = true;
@@ -332,7 +362,7 @@ void projectile_system::handle_existing_projectiles()
 
         if( projectile_destroyed )
         {
-            entities_removed_event.add_cause_entity( projectile_entity );
+            entities_removed_event.add_entity( object_type::projectile, projectile_entity );
             m_world.schedule_remove_entity( projectile_entity );
 
         }
@@ -340,7 +370,7 @@ void projectile_system::handle_existing_projectiles()
         return true;
     } );
 
-    if( !entities_removed_event.get_cause_entities().empty() )
+    if( !entities_removed_event.get_removed_entities().empty() )
     {
         m_world.emit_event( entities_removed_event );
     }
@@ -350,8 +380,7 @@ void projectile_system::create_new_projectiles()
 {
     using namespace component;
 
-    // Create new projectiles
-    m_world.for_each< turret >( [ & ]( ecs::entity& turret_entity, turret& turret_info )
+    m_world.for_each< turret_object >( [ & ]( ecs::entity& turret_entity, turret_object& turret_info )
     {
         if( turret_info.has_fired() )
         {
@@ -382,14 +411,12 @@ respawn_system::respawn_system( const std::chrono::milliseconds respawn_delay,
     ecs::system( world ),
     m_respawn_delay( respawn_delay )
 {
-    m_world.subscribe< event::enemy_killed >( *this );
-    m_world.subscribe< event::player_killed >( *this );
+    m_world.subscribe< event::entity_killed >( *this );
 }
 
 respawn_system::~respawn_system()
 {
-    m_world.unsubscribe< event::enemy_killed >( *this );
-    m_world.unsubscribe< event::player_killed >( *this );
+    m_world.unsubscribe< event::entity_killed >( *this );
 }
 
 void respawn_system::respawn_entity( ecs::entity& entity, const component::geometry& respawn )
@@ -488,16 +515,30 @@ void respawn_system::clean()
     m_enemies_death_info.clear();
 }
 
-void respawn_system::on_event( const event::player_killed& event )
+void respawn_system::on_event( const event::entity_killed& event )
 {
-    auto curr_time = clock::now();
-    m_players_death_info.emplace_back( death_info{ &event.get_victim(), curr_time } );
-}
+    using namespace component;
 
-void respawn_system::on_event( const event::enemy_killed& event )
-{
     auto curr_time = clock::now();
-    m_enemies_death_info.emplace_back( death_info{ &event.get_victim(), curr_time } );
+    ecs::entity& victim = event.get_victim();
+
+    if( victim.has_component< lifes >() )
+    {
+        lifes& victim_lifes_component = victim.get_component< lifes >();
+        if( victim_lifes_component.has_life() )
+        {
+            if( event.get_victim().has_component< component::player >() )
+            {
+                m_players_death_info.emplace_back( death_info{ &event.get_victim(), curr_time } );
+            }
+            else if( event.get_victim().has_component< component::enemy >() )
+            {
+                m_enemies_death_info.emplace_back( death_info{ &event.get_victim(), curr_time } );
+            }
+
+            victim_lifes_component.decrease( 1 );
+        }
+    }
 }
 
 std::list< const component::geometry* > respawn_system::get_free_respawns()
@@ -540,19 +581,16 @@ std::list< const component::geometry* > respawn_system::get_free_respawns()
 
 //
 
-win_defeat_system::win_defeat_system( ecs::world& world ) noexcept:
-    ecs::system( world )
+win_defeat_system::win_defeat_system( uint32_t kills_to_win, ecs::world& world ) noexcept:
+    ecs::system( world ),
+    m_kills_to_win( kills_to_win )
 {
-    m_world.subscribe< event::enemy_killed >( *this );
-    m_world.subscribe< event::player_killed >( *this );
-    m_world.subscribe< event::player_base_killed >( *this );
+    m_world.subscribe< event::entity_killed >( *this );
 }
 
 win_defeat_system::~win_defeat_system()
 {
-    m_world.unsubscribe< event::enemy_killed >( *this );
-    m_world.unsubscribe< event::player_killed >( *this );
-    m_world.unsubscribe< event::player_base_killed >( *this );
+    m_world.unsubscribe< event::entity_killed >( *this );
 }
 
 void win_defeat_system::init()
@@ -566,23 +604,35 @@ void win_defeat_system::init()
                r->get_component< component::frag >().get_num();
     } );
 
-    auto level_info_components = m_world.get_components< component::level_info >();
-    if( level_info_components.size() != 1 )
+    auto players = m_world.get_entities_with_component< component::player >();
+    if( players.size() != 1 )
     {
-        throw std::logic_error{ "Exactly one level info entity should exist" };
+        throw std::logic_error{ "Exactly one player entity should exist" };
     }
 
-    m_level_info = level_info_components.front();
+    m_player = players.front();
 
+    auto player_bases = m_world.get_entities_with_component< component::player_base >();
+    if( player_bases.size() != 1 )
+    {
+        throw std::logic_error{ "Exactly one player base entity should exist" };
+    }
+
+    m_player_base = player_bases.front();
 }
 
 void win_defeat_system::tick()
 {
-    if( m_level_info->get_player_base_killed() || !m_level_info->get_player_lifes_left() )
+    using namespace component;
+    health& player_base_health = m_player_base->get_component< health >();
+    kills_counter& player_kills = m_player->get_component< kills_counter >();
+    lifes& player_lifes = m_player->get_component< lifes >();
+
+    if( !player_base_health.alive() || !player_lifes.has_life() )
     {
         m_world.emit_event( event::level_completed{ level_game_result::defeat } );
     }
-    else if( m_level_info->get_player_kills() == m_level_info->get_kills_to_win() )
+    else if( player_kills.get_kills() == m_kills_to_win )
     {
         m_world.emit_event( event::level_completed{ level_game_result::victory } );
     }
@@ -590,34 +640,28 @@ void win_defeat_system::tick()
 
 void win_defeat_system::clean()
 {
-    m_level_info->reset();
+    m_player = m_player_base = nullptr;
     m_frag_entities.clear();
 }
 
-void win_defeat_system::on_event( const event::enemy_killed& event )
+void win_defeat_system::on_event(const event::entity_killed& event )
 {
-    if( event.get_killer_type() == object_type::player_tank )
+    using namespace component;
+
+    if( event.get_shooter_type() == object_type::player_tank )
     {
-        m_level_info->enemy_killed();
+        const ecs::entity& victim = event.get_victim();
+        if( victim.has_component< enemy >() )
+        {
+            uint32_t player_kills{ m_player->get_component< kills_counter >().get_kills() };
+            ecs::entity* frag_entity{  m_frag_entities[ player_kills - 1 ] };
 
-        uint32_t player_kills{ m_level_info->get_player_kills() };
-        ecs::entity* frag_entity{  m_frag_entities[ player_kills - 1 ] };
-
-        frag_entity->get_component< component::graphics >().set_visible( false );
-        event::graphics_changed event_graphics{ false, true };
-        event_graphics.set_cause_entity( *frag_entity );
-        m_world.emit_event( event_graphics );
+            frag_entity->get_component< component::graphics >().set_visible( false );
+            event::graphics_changed event_graphics{ false, true };
+            event_graphics.set_cause_entity( *frag_entity );
+            m_world.emit_event( event_graphics );
+        }
     }
-}
-
-void win_defeat_system::on_event( const event::player_killed& )
-{
-    m_level_info->player_killed();
-}
-
-void win_defeat_system::on_event( const event::player_base_killed& )
-{
-    m_level_info->player_base_killed();
 }
 
 //
@@ -659,7 +703,7 @@ void tank_ai_system::tick()
                 move.set_move_direction( generate_move_direction() );
             }
 
-            turret& enemy_turret = enemy->get_component< turret >();
+            turret_object& enemy_turret = enemy->get_component< turret_object >();
             if( !enemy_turret.has_fired() && maybe_fire() )
             {
                 enemy_turret.set_fire_status( true );

@@ -71,15 +71,11 @@ ecs::entity& create_respawn_point_entity( const QRect& rect, ecs::world& world )
     return entity;
 }
 
-ecs::entity& create_level_entity( const QRect& rect,
-                                  uint32_t kills_to_win,
-                                  uint32_t player_lifes,
-                                  ecs::world& world )
+ecs::entity& create_map_entity(const QRect& rect, ecs::world& world )
 {
     ecs::entity& entity = world.create_entity();
 
     entity.add_component< component::game_map >();
-    entity.add_component< component::level_info >( kills_to_win, player_lifes );
     entity.add_component< component::geometry >( rect );
 
     return entity;
@@ -128,6 +124,7 @@ ecs::entity& create_entity_tank( const QRect& rect,
                                  const alignment& align,
                                  uint32_t speed,
                                  uint32_t health,
+                                 uint32_t lifes,
                                  uint32_t turret_cooldown_msec,
                                  ecs::world& world )
 {
@@ -136,20 +133,23 @@ ecs::entity& create_entity_tank( const QRect& rect,
     try
     {
         entity.add_component< component::tank_object >();
-        entity.add_component< component::turret >( std::chrono::milliseconds{ turret_cooldown_msec } );
+        entity.add_component< component::turret_object >( std::chrono::milliseconds{ turret_cooldown_msec } );
         entity.add_component< component::geometry >( rect );
         entity.add_component< component::health >( health );
         entity.add_component< component::non_traversible >();
         entity.add_component< component::movement >( speed );
+        entity.add_component< component::kills_counter >();
         entity.add_component< component::graphics >( tank_image_path( align ) );
 
         if( align == alignment::player )
         {
             entity.add_component< component::player >();
+            entity.add_component< component::lifes >( has_infinite_lifes::no, lifes );
         }
         else
         {
             entity.add_component< component::enemy >();
+            entity.add_component< component::lifes >( has_infinite_lifes::yes );
         }
     }
     catch( ... )
@@ -172,6 +172,7 @@ ecs::entity& create_entity_projectile( const QRect& rect,
 
     entity.add_component< component::projectile >( damage, owner );
     entity.add_component< component::geometry >( rect );
+    entity.add_component< component::flying >();
     entity.add_component< component::movement >( speed, direction );
     entity.add_component< component::graphics >( get_image_path( image_projectile ) );
 

@@ -21,10 +21,10 @@ const tile_type& tile_object::get_tile_type() const noexcept
 
 //
 
-turret::turret( const std::chrono::milliseconds& cooldown ) noexcept:
+turret_object::turret_object( const std::chrono::milliseconds& cooldown ) noexcept:
     m_cooldown( cooldown ){}
 
-bool turret::set_fire_status( bool fired ) noexcept
+bool turret_object::set_fire_status( bool fired ) noexcept
 {
     using namespace std::chrono;
 
@@ -48,24 +48,33 @@ bool turret::set_fire_status( bool fired ) noexcept
     return result;
 }
 
-bool turret::has_fired() const noexcept
+bool turret_object::has_fired() const noexcept
 {
     return m_fired;
 }
 
 //
 
-projectile::projectile(uint32_t damage, const ecs::entity& owner ) :
+frag::frag( uint32_t num ) noexcept: m_num( num ){}
+
+uint32_t frag::get_num() const noexcept
+{
+    return m_num;
+}
+
+//
+
+projectile::projectile( uint32_t damage, const ecs::entity& owner ) :
     m_damage( damage ),
-    m_owner_id( owner.get_id() )
+    m_shooter_id( owner.get_id() )
 {
     if( owner.has_component< player >() )
     {
-        m_owner_type = object_type::player_tank;
+        m_shooter_type = object_type::player_tank;
     }
     else if( owner.has_component< enemy >() )
     {
-        m_owner_type = object_type::enemy_tank;
+        m_shooter_type = object_type::enemy_tank;
     }
     else
     {
@@ -83,14 +92,14 @@ uint32_t projectile::get_damage() const noexcept
     return m_damage;
 }
 
-ecs::entity_id projectile::get_owner_id() const noexcept
+ecs::entity_id projectile::get_shooter_id() const noexcept
 {
-    return m_owner_id;
+    return m_shooter_id;
 }
 
-const object_type& projectile::get_owner_type() const noexcept
+const object_type& projectile::get_shooter_type() const noexcept
 {
-    return m_owner_type;
+    return m_shooter_type;
 }
 
 //
@@ -232,62 +241,51 @@ bool health::alive() const noexcept
 
 //
 
-level_info::level_info( uint32_t kills_to_win, uint32_t player_lifes ) noexcept:
-    m_kills_to_win( kills_to_win ),
-    m_player_lifes( player_lifes ),
-    m_player_lifes_left( player_lifes ){}
+lifes::lifes( const has_infinite_lifes& mode, uint32_t lifes ) noexcept :
+    m_mode( mode ),
+    m_lifes( lifes ){}
 
-void level_info::player_killed() noexcept
+void lifes::increase( uint32_t value ) noexcept
 {
-    if( m_player_lifes_left )
+    if( m_mode != has_infinite_lifes::yes )
     {
-        --m_player_lifes_left;
+        m_lifes += value;
     }
 }
 
-void level_info::enemy_killed() noexcept
+void lifes::decrease( uint32_t value ) noexcept
 {
-    if( m_player_kills != m_kills_to_win )
+    if( m_mode != has_infinite_lifes::yes )
     {
-        ++m_player_kills;
+        m_lifes = ( m_lifes >= value) ? m_lifes - value : 0;
     }
 }
 
-void level_info::player_base_killed() noexcept
+bool lifes::has_life() const noexcept
 {
-    m_player_base_killed = true;
+    return ( m_mode == has_infinite_lifes::yes || m_lifes != 0 );
 }
 
-uint32_t level_info::get_player_lifes_left() const noexcept
+uint32_t lifes::get_lifes() const noexcept
 {
-    return m_player_lifes_left;
+    return m_lifes;
 }
 
-uint32_t level_info::get_player_kills() const noexcept
+const has_infinite_lifes& lifes::get_mode() const noexcept
 {
-    return m_player_kills;
+    return m_mode;
 }
 
-bool level_info::get_player_base_killed() const noexcept
+//
+
+void kills_counter::increase( uint32_t value ) noexcept
 {
-    return m_player_base_killed;
+    m_kills += value;
 }
 
-uint32_t level_info::get_kills_to_win() const noexcept
+uint32_t kills_counter::get_kills() const noexcept
 {
-    return m_kills_to_win;
-}
-
-uint32_t level_info::get_player_lifes() const noexcept
-{
-    return m_player_lifes;
-}
-
-void level_info::reset() noexcept
-{
-    m_player_kills = 0;
-    m_player_lifes_left = m_player_lifes;
-    m_player_base_killed = false;
+    return m_kills;
 }
 
 }// component

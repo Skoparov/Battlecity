@@ -55,8 +55,7 @@ private:
 };
 
 class respawn_system final : public ecs::system,
-                             public ecs::event_callback< event::enemy_killed >,
-                             public ecs::event_callback< event::player_killed >
+                             public ecs::event_callback< event::entity_killed >
 
 {
     using clock = std::chrono::high_resolution_clock;
@@ -74,8 +73,7 @@ public:
     void init() override;
     void clean() override;
 
-    void on_event( const event::player_killed& );
-    void on_event( const event::enemy_killed& );
+    void on_event( const event::entity_killed& );
 
 private:
     void respawn_list( std::list< death_info >& list,
@@ -92,25 +90,24 @@ private:
 };
 
 class win_defeat_system final : public ecs::system,
-                                public ecs::event_callback< event::enemy_killed >,
-                                public ecs::event_callback< event::player_killed >,
-                                public ecs::event_callback< event::player_base_killed >
+                                public ecs::event_callback< event::entity_killed >
 
 {
 public:
-    win_defeat_system( ecs::world& world ) noexcept;
+    win_defeat_system( uint32_t kills_to_win, ecs::world& world ) noexcept;
     ~win_defeat_system();
 
     void init() override;
     void tick() override;
     void clean() override;
 
-    void on_event( const event::enemy_killed& );
-    void on_event( const event::player_killed& );
-    void on_event( const event::player_base_killed& );
+    void on_event( const event::entity_killed& );
 
 private:
-    component::level_info* m_level_info{ nullptr };
+    uint32_t m_kills_to_win{ 0 };
+
+    ecs::entity* m_player{ nullptr };
+    ecs::entity* m_player_base{ nullptr };
     std::vector< ecs::entity* > m_frag_entities;
 };
 
