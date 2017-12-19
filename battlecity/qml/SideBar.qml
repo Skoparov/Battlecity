@@ -42,10 +42,13 @@ Item
             }
         }
 
+        // Lifes
+
         Text
         {
             id: lifes
             anchors.top : frag_count_grid.bottom
+            anchors.topMargin: 5
             smooth: true
             font { family: "Courier"; pointSize: 15; weight: Font.Bold }
             color: "white"
@@ -66,10 +69,31 @@ Item
             smooth: true
             anchors.verticalCenter : lifes_image.verticalCenter
             anchors.left : lifes_image.right
-            anchors.horizontalCenter : parent.horizontalCenter
+            anchors.leftMargin: 7;
             font { family: "Courier"; pointSize: 15; weight: Font.Bold }
             color: "white"
-            text: map_interface.remaining_lifes
+            text: map_interface.player_remaining_lifes
+        }
+
+        Image
+        {
+            id : base_lifes_image
+            width: 32; height: 32
+            source: "qrc:/graphics/player_base.png"
+            anchors.top : lifes_count.bottom
+            anchors.topMargin: 5
+        }
+
+        Text
+        {
+            id: base_lifes_count
+            smooth: true
+            anchors.verticalCenter : base_lifes_image.verticalCenter
+            anchors.left : base_lifes_image.right
+            anchors.leftMargin: 7;
+            font { family: "Courier"; pointSize: 15; weight: Font.Bold }
+            color: "white"
+            text: map_interface.base_remaining_health
         }
 
         TextMetrics

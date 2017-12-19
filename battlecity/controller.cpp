@@ -143,9 +143,9 @@ uint32_t controller::get_player_remaining_lifes()
     return player->get_component< component::lifes >().get_lifes();
 }
 
-uint32_t controller::get_base_remaining_lifes()
+uint32_t controller::get_base_remaining_health()
 {
-    ecs::entity* player_base{ m_world.get_entities_with_component< component::player >().front() };
+    ecs::entity* player_base{ m_world.get_entities_with_component< component::player_base >().front() };
     return player_base->get_component< component::health >().get_health();
 }
 

@@ -49,7 +49,7 @@ public:
     int get_tile_height() const noexcept;
     const QString& get_level() const noexcept;
     uint32_t get_player_remaining_lifes();
-    uint32_t get_base_remaining_lifes();
+    uint32_t get_base_remaining_health();
 
     virtual void on_event( const event::level_completed& event );
 

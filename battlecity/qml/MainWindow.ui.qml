@@ -65,8 +65,10 @@ Rectangle
         {
             text: map_interface.announcement
             font.family: "Comic Sans"
-            font.pointSize: 24
-            color: "red"
+            font.pointSize: 18
+            font.capitalization: Font.AllUppercase
+            font.bold: true
+            color: "white"
             visible: map_interface.announcement_visible
             anchors.centerIn: parent
         }

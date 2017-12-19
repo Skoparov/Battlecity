@@ -17,7 +17,8 @@ class qml_map_interface : public QObject,
                           public ecs::event_callback< event::projectile_fired >,
                           public ecs::event_callback< event::entities_removed >,
                           public ecs::event_callback< event::entity_killed >,
-                          public ecs::event_callback< event::explosion_started >
+                          public ecs::event_callback< event::explosion_started >,
+                          public ecs::event_callback< event::entity_hit >
 {
     Q_OBJECT
 
@@ -39,7 +40,8 @@ public:
     QString get_announcement_text() const;
     bool get_announecement_visible() const noexcept;
     int get_remaining_frags_num() const noexcept;
-    int get_remaining_lifes_num() const noexcept;
+    int get_player_remaining_lifes() const noexcept;
+    int get_base_remaining_health() const noexcept;
 
     QQmlListProperty< graphics_map_object > get_tiles();
     QQmlListProperty< graphics_map_object > get_player_bases();
@@ -64,11 +66,13 @@ public:
     Q_PROPERTY( QString announcement READ get_announcement_text NOTIFY announcement_changed )
     Q_PROPERTY( bool announcement_visible READ get_announecement_visible NOTIFY announcement_visibility_changed )
     Q_PROPERTY( int remaining_frags_num READ get_remaining_frags_num CONSTANT )
-    Q_PROPERTY( int remaining_lifes READ get_remaining_lifes_num NOTIFY remaining_lifes_changed )
+    Q_PROPERTY( int player_remaining_lifes READ get_player_remaining_lifes NOTIFY player_remaining_lifes_changed )
+    Q_PROPERTY( int base_remaining_health READ get_base_remaining_health NOTIFY base_remaining_health_changed )
     Q_INVOKABLE void explosion_ended( unsigned int id );
 
     void on_event( const event::projectile_fired& event ) override;
     void on_event( const event::entity_killed& event ) override;
+    void on_event( const event::entity_hit& event ) override;
     void on_event( const event::entities_removed& event ) override;
     void on_event( const event::explosion_started& event ) override;
 
@@ -80,7 +84,8 @@ signals:
     void projectiles_changed( QQmlListProperty< game::movable_map_object > );
     void remaining_frags_changed( QQmlListProperty< game::graphics_map_object > );
     void explosions_changed( QQmlListProperty< game::graphics_map_object > );
-    void remaining_lifes_changed( int );
+    void player_remaining_lifes_changed( int );
+    void base_remaining_health_changed( int );
     void announcement_changed( QString );
     void announcement_visibility_changed( bool );
 

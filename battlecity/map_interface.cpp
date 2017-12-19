@@ -18,6 +18,7 @@ qml_map_interface::qml_map_interface( controller& controller,
     m_controller.subscribe< event::entities_removed >( *this );
     m_controller.subscribe< event::entity_killed >( *this );
     m_controller.subscribe< event::explosion_started >( *this );
+    m_controller.subscribe< event::entity_hit >( *this );
 
     m_hide_announcement_timer = new QTimer{ this };
     connect( m_hide_announcement_timer, SIGNAL( timeout() ), this, SLOT( hide_announcement() ) );
@@ -29,6 +30,7 @@ qml_map_interface::~qml_map_interface()
     m_controller.unsubscribe< event::entities_removed >( *this );
     m_controller.unsubscribe< event::entity_killed >( *this );
     m_controller.unsubscribe< event::explosion_started >( *this );
+    m_controller.unsubscribe< event::entity_hit >( *this );
 }
 
 void qml_map_interface::add_object( const object_type& type, ecs::entity& entity )
@@ -153,9 +155,14 @@ int qml_map_interface::get_remaining_frags_num() const noexcept
     return m_remaining_frags.size();
 }
 
-int qml_map_interface::get_remaining_lifes_num() const noexcept
+int qml_map_interface::get_player_remaining_lifes() const noexcept
 {
     return m_controller.get_player_remaining_lifes();
+}
+
+int qml_map_interface::get_base_remaining_health() const noexcept
+{
+    return m_controller.get_base_remaining_health();
 }
 
 QQmlListProperty< graphics_map_object > qml_map_interface::get_tiles()
@@ -204,11 +211,20 @@ void qml_map_interface::on_event( const event::entity_killed& event )
     const object_type& victim_type = event.get_victim_type();
     if( victim_type ==  object_type::player_tank )
     {
-        emit remaining_lifes_changed( m_controller.get_player_remaining_lifes() );
+        emit player_remaining_lifes_changed( m_controller.get_player_remaining_lifes() );
     }
     else if( victim_type == object_type::enemy_tank )
     {
         objects_of_type_changed( object_type::frag );
+    }
+}
+
+void qml_map_interface::on_event( const event::entity_hit& event )
+{
+    const object_type& victim_type = event.get_victim_type();
+    if( victim_type ==  object_type::player_base )
+    {
+        emit base_remaining_health_changed( m_controller.get_base_remaining_health() );
     }
 }
 
@@ -369,6 +385,8 @@ void qml_map_interface::update_all()
     emit announcement_changed( m_announcement );
     emit announcement_visibility_changed( m_announcement_visible );
     emit remaining_frags_changed( get_remaining_frags() );
+    emit player_remaining_lifes_changed( get_player_remaining_lifes() );
+    emit base_remaining_health_changed( get_base_remaining_health() );
     emit explosions_changed( get_explosions() );
 }
 
