@@ -10,6 +10,8 @@
 namespace game
 {
 
+enum class controller_state{ unintialized, stopped, paused, running };
+
 class controller : public QObject,
                    public ecs::event_callback< event::level_completed >
 {
@@ -21,7 +23,11 @@ public:
     void init();
 
     void start();
+    void pause();
+    void resume();
     void stop();
+
+    const controller_state& get_state() const noexcept;
 
     void set_map_mediator( map_data_mediator* mediator ) noexcept;
 
@@ -70,6 +76,8 @@ private:
 
     QTimer* m_tick_timer{ nullptr };
     std::list< std::unique_ptr< ecs::system > > m_systems;
+
+    controller_state m_state{ controller_state::unintialized };
 };
 
 }// game

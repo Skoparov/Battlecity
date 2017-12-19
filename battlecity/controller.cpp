@@ -72,6 +72,8 @@ void controller::init()
     m_systems.emplace_back( std::move( tank_ai_system ) );
 
     m_world.subscribe< event::level_completed >( *this );
+
+    m_state = controller_state::stopped;
 }
 
 QString get_map_path( const QString& map_name )
@@ -95,16 +97,34 @@ void controller::load_level()
 
 void controller::start()
 {
-    m_tick_timer->start( 1000 / m_settings.get_fps() );
     if( m_mediator )
     {
         m_mediator->level_started( m_map_data.get_map_name() );
     }
+
+    resume();
+}
+
+void controller::pause()
+{
+    m_tick_timer->stop();
+    m_state = controller_state::paused;
+}
+
+void controller::resume()
+{
+    m_tick_timer->start( 1000 / m_settings.get_fps() );
+    m_state = controller_state::running;
 }
 
 void controller::stop()
 {
     m_tick_timer->stop();
+}
+
+const controller_state& controller::get_state() const noexcept
+{
+    return m_state;
 }
 
 void controller::set_map_mediator( map_data_mediator* mediator ) noexcept

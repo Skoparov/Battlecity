@@ -306,6 +306,19 @@ void qml_map_interface::explosion_ended( unsigned int id )
     }
 }
 
+void qml_map_interface::pause_resume()
+{
+    const controller_state& state = m_controller.get_state();
+    if( state == controller_state::paused )
+    {
+        m_controller.resume();
+    }
+    else if( state == controller_state::running )
+    {
+        m_controller.pause();
+    }
+}
+
 void qml_map_interface::hide_announcement()
 {
     m_hide_announcement_timer->stop();

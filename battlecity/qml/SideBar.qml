@@ -1,9 +1,11 @@
 import QtQuick 2.5
+import QtQuick.Controls 1.1
+import QtQuick.Controls.Styles 1.4
 
 Item
 {
     id: side_bar
-    width: Math.max( t_metrics.tightBoundingRect.width, map_interface.frag_width * 2 ) + 10
+    width: Math.max( enemies_text_metrics.tightBoundingRect.width, map_interface.frag_width * 2 ) + 10
 
     Item
     {
@@ -17,7 +19,7 @@ Item
             smooth: true
             font { family: "Courier"; pointSize: 15; weight: Font.Bold }
             color: "white"
-            text: "Kills"
+            text: "Foes"
         }
 
         TextMetrics
@@ -96,11 +98,42 @@ Item
             text: map_interface.base_remaining_health
         }
 
-        TextMetrics
+        Button
         {
-            id: t_metrics
-            font: enemies_text.font
-            text: enemies_text.text
+            id: pause_resume_button
+            width: frag_count_grid.width
+            anchors.topMargin: 12;
+            anchors.top : base_lifes_count.bottom
+            text: "Pause"
+
+            style: ButtonStyle
+            {
+                background: Rectangle
+                {
+                    border.color: "#333333"
+                    radius: 0
+
+                    gradient: Gradient
+                    {
+                        GradientStop { position: 0 ; color: control.pressed ? "#ccc" : "#eee" }
+                        GradientStop { position: 1 ; color: control.pressed ? "#aaa" : "#ccc" }
+                    }
+                }
+            }
+
+            onClicked:
+            {
+                if( text == "Pause" )
+                {
+                    text = "Resume"
+                }
+                else
+                {
+                    text = "Pause"
+                }
+
+                map_interface.pause_resume()
+            }
         }
     }
 }

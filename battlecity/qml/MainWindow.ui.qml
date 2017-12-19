@@ -80,5 +80,14 @@ Rectangle
         x: game_map.width
         height: parent.height
     }
+
+    Keys.onPressed:
+    {
+        if( event.key === Qt.Key_P )
+        {
+            map_interface.pause_resume()
+            event.accepted = true;
+        }
+    }
 }
 

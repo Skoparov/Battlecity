@@ -77,9 +77,9 @@ public:
 
 private:
     void respawn_list( std::list< death_info >& list,
-                       std::list< const component::geometry* > free_respawns );
+                       std::vector< const component::geometry* > free_respawns );
     void respawn_entity( ecs::entity& entity, const component::geometry& respawn );
-    std::list< const component::geometry* > get_free_respawns();
+    std::vector< const component::geometry* > get_free_respawns();
 
 private:
     std::list< death_info > m_players_death_info;

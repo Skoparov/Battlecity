@@ -8,11 +8,15 @@ Item
     width: modelData.width
     height: modelData.height
 
-    Image
+    AnimatedSprite
     {
         id: enemy_tank_image
         anchors.centerIn: parent
+        width: modelData.width
+        height: modelData.height
         source: modelData.image_path
+        frameCount: 2
+        frameRate: 30
         rotation: modelData.rotation
         visible: modelData.visible
     }

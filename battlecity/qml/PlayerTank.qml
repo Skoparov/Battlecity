@@ -9,13 +9,18 @@ Item
     width: modelData.width
     height: modelData.height
 
-    Image
+    AnimatedSprite
     {
         id: player_tank_image
         anchors.centerIn: parent
+        width: modelData.width
+        height: modelData.height
         source: modelData.image_path
+        frameCount: 2
+        frameRate: 30
         rotation: modelData.rotation
         visible: modelData.visible
+        paused: !modelData.visible
     }
 
     Keys.onPressed:
@@ -29,6 +34,7 @@ Item
         {
             modelData.move_direction = "Right"
             event.accepted = true;
+            player_tank_image.resume();
         }
         else if( event.key === Qt.Key_Up )
         {

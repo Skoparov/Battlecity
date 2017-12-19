@@ -69,6 +69,7 @@ public:
     Q_PROPERTY( int player_remaining_lifes READ get_player_remaining_lifes NOTIFY player_remaining_lifes_changed )
     Q_PROPERTY( int base_remaining_health READ get_base_remaining_health NOTIFY base_remaining_health_changed )
     Q_INVOKABLE void explosion_ended( unsigned int id );
+    Q_INVOKABLE void pause_resume();
 
     void on_event( const event::projectile_fired& event ) override;
     void on_event( const event::entity_killed& event ) override;

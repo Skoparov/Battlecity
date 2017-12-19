@@ -1,7 +1,8 @@
 #include "systems.h"
 
-#include <cassert>
 #include <random>
+#include <cassert>
+#include <algorithm>
 
 #include "entity_factory.h"
 
@@ -443,7 +444,7 @@ void respawn_system::respawn_entity( ecs::entity& entity, const component::geome
 }
 
 void respawn_system::respawn_list( std::list< death_info >& list,
-                                   std::list< const component::geometry* > free_respawns )
+                                   std::vector< const component::geometry* > free_respawns )
 {
     using namespace component;
     using namespace std::chrono;
@@ -477,7 +478,7 @@ void respawn_system::tick()
 {
     if( !m_respawn_points.empty() )
     {
-        std::list< const component::geometry* > free_respawns{ get_free_respawns() };
+        std::vector< const component::geometry* > free_respawns{ get_free_respawns() };
 
         if( !m_players_death_info.empty() )
         {
@@ -541,14 +542,14 @@ void respawn_system::on_event( const event::entity_killed& event )
     }
 }
 
-std::list< const component::geometry* > respawn_system::get_free_respawns()
+std::vector< const component::geometry* > respawn_system::get_free_respawns()
 {
     using namespace component;
 
     size_t free_respawns_needed{ m_players_death_info.size() +
                 m_enemies_death_info.size() };
 
-    std::list< const geometry* > free_respawns;
+    std::vector< const geometry* > free_respawns;
 
     for( const geometry* curr_geom : m_respawn_points )
     {
@@ -575,6 +576,9 @@ std::list< const component::geometry* > respawn_system::get_free_respawns()
             break;
         }
     }
+
+    static std::default_random_engine engine{};
+    std::shuffle( free_respawns.begin(), free_respawns.end(), engine );
 
     return free_respawns;
 }
