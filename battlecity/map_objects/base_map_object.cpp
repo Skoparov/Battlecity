@@ -16,6 +16,11 @@ base_map_object::base_map_object( ecs::entity* entity, const object_type& type, 
     }
 }
 
+base_map_object::~base_map_object()
+{
+    m_entity->get_world().schedule_remove_entity( *m_entity );
+}
+
 ecs::entity_id base_map_object::get_id() const noexcept
 {
     return m_entity->get_id();

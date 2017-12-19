@@ -7,6 +7,8 @@
 #include <QDir>
 #include <QFileInfo>
 
+#include <QThread>
+
 static constexpr auto map_extension = "bsmap";
 static constexpr auto map_dir_path = ":/maps/";
 
@@ -19,8 +21,23 @@ controller::controller( const game_settings& settings, ecs::world& world ) :
     m_world( world ),
     m_settings( settings )
 {
-    m_tick_timer = new QTimer{ this };
-    connect( m_tick_timer, SIGNAL( timeout() ), this, SLOT( tick() ) );
+    m_thread = new QThread( this );
+    m_thread->setObjectName( "worker thread" );
+
+    m_tick_timer = new QTimer{ nullptr };
+    m_tick_timer->setInterval( 1000 / m_settings.get_fps() );
+
+    m_tick_timer->moveToThread( m_thread );
+
+    connect( m_thread, SIGNAL( started() ), m_tick_timer, SLOT( start() ) );
+    connect( this, SIGNAL( resume_signal() ), m_tick_timer, SLOT( start() ) );
+
+    connect( m_tick_timer, SIGNAL( timeout() ), this, SLOT( tick() ), Qt::DirectConnection );
+}
+
+controller::~controller()
+{
+
 }
 
 void controller::init()
@@ -113,7 +130,8 @@ void controller::pause()
 
 void controller::resume()
 {
-    m_tick_timer->start( 1000 / m_settings.get_fps() );
+    m_tick_timer->start();
+    m_thread->start();
     m_state = controller_state::running;
 }
 

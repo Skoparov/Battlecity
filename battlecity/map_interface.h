@@ -92,8 +92,16 @@ signals:
     void announcement_changed( QString );
     void announcement_visibility_changed( bool );
 
+    void projectile_fired( ecs::entity* );
+    void explosion_started( ecs::entity* );
+    void objects_need_to_be_removed();
+
 public slots:
     void hide_announcement();
+
+    void projectile_fired_slot( ecs::entity* );
+    void explosion_started_slot( ecs::entity* );
+    void remove_dead_objects();
 
 private:
     void update_announcement( const QString& text, bool send_update );
@@ -120,8 +128,15 @@ private:
     QString m_announcement;
     bool m_announcement_visible{ false };
     QTimer* m_hide_announcement_timer{ nullptr };
+
+    std::unordered_map< object_type,
+                        std::list< std::unique_ptr< base_map_object > > > objects_to_remove;
 };
 
 }// game
+
+
+Q_DECLARE_METATYPE(ecs::entity*);
+Q_DECLARE_METATYPE(game::object_type);
 
 #endif // MAPINTERFACE_H

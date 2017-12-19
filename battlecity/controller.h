@@ -19,13 +19,9 @@ class controller : public QObject,
 
 public:
     controller( const game_settings& settings, ecs::world& world );
+    ~controller();
 
     void init();
-
-    void start();
-    void pause();
-    void resume();
-    void stop();
 
     const controller_state& get_state() const noexcept;
 
@@ -59,11 +55,22 @@ public:
 
     virtual void on_event( const event::level_completed& event );
 
+public slots:
+    void start();
+    void pause();
+    void resume();
+    void stop();
+
+private slots:
+    void tick();
+
+signals:
+    void stop_signal();
+    void pause_signal();
+    void resume_signal();
+
 private:
     void load_level();
-
-public slots:
-    void tick();
 
 private:
     ecs::world& m_world;
@@ -75,6 +82,7 @@ private:
     bool m_need_to_load_level{ true };
 
     QTimer* m_tick_timer{ nullptr };
+    QThread* m_thread{ nullptr };
     std::list< std::unique_ptr< ecs::system > > m_systems;
 
     controller_state m_state{ controller_state::unintialized };

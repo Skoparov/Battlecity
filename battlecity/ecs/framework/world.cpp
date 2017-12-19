@@ -55,7 +55,7 @@ entity& world::create_entity()
 
 bool world::entity_present( entity_id id ) const noexcept
 {
-    return m_entities.count( id );
+    return ( m_entities.count( id ) != 0 );
 }
 
 entity& world::get_entity( entity_id id )

@@ -23,6 +23,14 @@ Item
         paused: !modelData.visible
     }
 
+    Rectangle
+    {
+        width: modelData.width
+        height: modelData.height
+        border.color: "green"
+        color: "transparent"
+    }
+
     Keys.onPressed:
     {
         if( event.key === Qt.Key_Left )

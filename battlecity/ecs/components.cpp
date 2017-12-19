@@ -87,9 +87,19 @@ void projectile::set_damage( uint32_t damage ) noexcept
     m_damage = damage;
 }
 
+void projectile::set_destroyed() noexcept
+{
+    m_is_destroyed = true;
+}
+
 uint32_t projectile::get_damage() const noexcept
 {
     return m_damage;
+}
+
+bool projectile::get_destroyed() const noexcept
+{
+    return m_is_destroyed;
 }
 
 ecs::entity_id projectile::get_shooter_id() const noexcept

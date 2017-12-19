@@ -22,6 +22,10 @@ qml_map_interface::qml_map_interface( controller& controller,
 
     m_hide_announcement_timer = new QTimer{ this };
     connect( m_hide_announcement_timer, SIGNAL( timeout() ), this, SLOT( hide_announcement() ) );
+
+    connect( this, SIGNAL(projectile_fired(ecs::entity*) ), SLOT( projectile_fired_slot(ecs::entity*) )  );
+    connect( this, SIGNAL(explosion_started(ecs::entity*) ), SLOT( explosion_started_slot(ecs::entity*) )  );
+    connect( this, SIGNAL(objects_need_to_be_removed() ), SLOT( remove_dead_objects() )  );
 }
 
 qml_map_interface::~qml_map_interface()
@@ -202,8 +206,35 @@ QQmlListProperty< graphics_map_object > qml_map_interface::get_explosions()
 
 void qml_map_interface::on_event( const event::projectile_fired& event )
 {
-    add_object( object_type::projectile, event.get_projectile() );
+    emit projectile_fired( &event.get_projectile() );
+}
+
+void qml_map_interface::projectile_fired_slot( ecs::entity* e)
+{
+    add_object( object_type::projectile, *e );
     objects_of_type_changed( object_type::projectile );
+}
+
+void qml_map_interface::explosion_started_slot( ecs::entity* e )
+{
+    add_object( object_type::explosion, *e );
+    objects_of_type_changed( object_type::explosion );
+}
+
+void qml_map_interface::remove_dead_objects()
+{
+    for( const auto& pair_data : objects_to_remove )
+    {
+        const object_type& type = pair_data.first;
+        for( const auto& obj : pair_data.second )
+        {
+            remove_object_from_model( type, obj.get() );
+        }
+
+        objects_of_type_changed( type );
+    }
+
+    objects_to_remove.clear();
 }
 
 void qml_map_interface::on_event( const event::entity_killed& event )
@@ -230,9 +261,6 @@ void qml_map_interface::on_event( const event::entity_hit& event )
 
 void qml_map_interface::on_event( const event::entities_removed& event )
 {
-    std::unordered_map< object_type,
-                        std::list< std::unique_ptr< base_map_object > > > objects_to_remove;
-
     const auto& entities_to_remove = event.get_removed_entities();
 
     for( const auto& type_to_remove_and_entities : entities_to_remove )
@@ -263,22 +291,12 @@ void qml_map_interface::on_event( const event::entities_removed& event )
         }
     }
 
-    for( const auto& pair_data : objects_to_remove )
-    {
-        const object_type& type = pair_data.first;
-        for( const auto& obj : pair_data.second )
-        {
-            remove_object_from_model( type, obj.get() );
-        }
-
-        objects_of_type_changed( type );
-    }
+    emit objects_need_to_be_removed();
 }
 
 void qml_map_interface::on_event( const event::explosion_started& event )
 {
-    add_object( object_type::explosion, *event.get_cause_entity() );
-    objects_of_type_changed( object_type::explosion );
+    emit explosion_started( event.get_cause_entity() );
 }
 
 void qml_map_interface::explosion_ended( unsigned int id )

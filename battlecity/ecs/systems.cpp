@@ -331,41 +331,41 @@ void projectile_system::handle_existing_projectiles()
 
     m_world.for_each< projectile >( [ & ]( ecs::entity& projectile_entity, projectile& projectile_component )
     {
-        geometry& projectile_geom = projectile_entity.get_component_unsafe< geometry >();
-        bool projectile_destroyed{ false };
+        if( !projectile_component.get_destroyed() )
+        {
+            geometry& projectile_geom = projectile_entity.get_component_unsafe< geometry >();
 
-        if( !m_map_geom->intersects_with( projectile_geom ) )
-        {
-            projectile_destroyed = true;
-        }
-        else
-        {
-            m_world.for_each< non_traversible >( [ & ]( ecs::entity& obstacle, non_traversible& )
+            if( !m_map_geom->intersects_with( projectile_geom ) )
             {
-                if( projectile_component.get_shooter_id() != obstacle.get_id() )
+                projectile_component.set_destroyed();
+            }
+            else
+            {
+                m_world.for_each< non_traversible >( [ & ]( ecs::entity& obstacle, non_traversible& )
                 {
-                    geometry& obstacle_geom = obstacle.get_component_unsafe< geometry >();
-                    if( obstacle_geom.intersects_with( projectile_geom ) )
+                    if( projectile_component.get_shooter_id() != obstacle.get_id() )
                     {
-                        handle_obstacle( obstacle, projectile_component );
+                        geometry& obstacle_geom = obstacle.get_component_unsafe< geometry >();
+                        if( obstacle_geom.intersects_with( projectile_geom ) )
+                        {
+                            handle_obstacle( obstacle, projectile_component );
 
-                        event::projectile_collision event_collision;
-                        event_collision.set_cause_entity( obstacle );
-                        m_world.emit_event( event_collision );
+                            event::projectile_collision event_collision;
+                            event_collision.set_cause_entity( obstacle );
+                            m_world.emit_event( event_collision );
 
-                        projectile_destroyed = true;
+                            projectile_component.set_destroyed();
+                        }
                     }
-                }
 
-                return !projectile_destroyed;
-            } );
-        }
+                    return !projectile_component.get_destroyed();;
+                } );
+            }
 
-        if( projectile_destroyed )
-        {
-            entities_removed_event.add_entity( object_type::projectile, projectile_entity );
-            m_world.schedule_remove_entity( projectile_entity );
-
+            if( projectile_component.get_destroyed() )
+            {
+                entities_removed_event.add_entity( object_type::projectile, projectile_entity );
+            }
         }
 
         return true;

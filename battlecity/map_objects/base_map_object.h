@@ -19,6 +19,7 @@ class base_map_object : public QObject
 public:
     base_map_object() = default;
     base_map_object( ecs::entity* entity, const object_type& type, QObject* parent = nullptr );
+    ~base_map_object();
 
     ecs::entity_id get_id() const noexcept;
     unsigned int get_qml_adapted_id() const noexcept;

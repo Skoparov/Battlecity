@@ -10,9 +10,9 @@
     <IronWallHealth>2</IronWallHealth>
     <PlayerBaseHealth>50</PlayerBaseHealth>
     <PlayerLives>5</PlayerLives>
-    <EnemiesNum>2</EnemiesNum>
+    <EnemiesNum>0</EnemiesNum>
     <RespawnDelayMs>1000</RespawnDelayMs>
-    <BaseKillsToWin>20</BaseKillsToWin>
+    <BaseKillsToWin>2</BaseKillsToWin>
     <TankSpeed>6</TankSpeed>
     <ProjectileSpeed>16</ProjectileSpeed>
     <ProjectileDamage>1</ProjectileDamage>
