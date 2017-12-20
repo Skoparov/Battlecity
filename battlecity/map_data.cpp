@@ -6,7 +6,6 @@
 #include "ecs/framework/world.h"
 #include "ecs/entity_factory.h"
 #include "ecs/components.h"
-
 #include "game_settings.h"
 
 static constexpr auto tile_char_empty = 'e';
@@ -234,10 +233,10 @@ void read_map_file( map_data& data,
             {
                 if( entity )
                 {
-                    mediator->add_object( tile_info.second, *entity );
+                    mediator->add_object( tile_info.second, entity, false );
                 }
 
-                mediator->add_object( object_type::tile, tile_entity );
+                mediator->add_object( object_type::tile, &tile_entity, false );
             }
 
             ++curr_column;
@@ -272,7 +271,7 @@ void read_map_file( map_data& data,
         ecs::entity& entity = add_tank( 0, 0, alignment::enemy, settings, world );
         if( mediator )
         {
-            mediator->add_object( object_type::enemy_tank, entity );
+            mediator->add_object( object_type::enemy_tank, &entity, false );
         }
     }
 
@@ -281,7 +280,7 @@ void read_map_file( map_data& data,
         ecs::entity& entity = create_entity_frag( QRect{ 0, 0, 32, 32 }, world, frag );
         if( mediator )
         {
-            mediator->add_object( object_type::frag, entity );
+            mediator->add_object( object_type::frag, &entity, false );
         }
     }
 

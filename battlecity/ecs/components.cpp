@@ -1,5 +1,7 @@
 #include "components.h"
 
+#include <mutex>
+
 namespace game
 {
 
@@ -26,6 +28,8 @@ turret_object::turret_object( const std::chrono::milliseconds& cooldown ) noexce
 
 bool turret_object::set_fire_status( bool fired ) noexcept
 {
+    std::lock_guard< _detail::spinlock > l{ m_lock };
+
     using namespace std::chrono;
 
     bool result{ true };
@@ -50,6 +54,7 @@ bool turret_object::set_fire_status( bool fired ) noexcept
 
 bool turret_object::has_fired() const noexcept
 {
+    std::lock_guard< _detail::spinlock > l{ m_lock };
     return m_fired;
 }
 
@@ -130,41 +135,49 @@ bool geometry::intersects_with( const QRect& rect ) const noexcept
 
 void geometry::set_pos(const QPoint& point ) noexcept
 {
+    std::lock_guard< _detail::spinlock > l{ m_lock };
     m_rect.moveTo( point );
 }
 
 QPoint geometry::get_pos() const noexcept
 {
+    std::lock_guard< _detail::spinlock > l{ m_lock };
     return m_rect.topLeft();
 }
 
 void geometry::set_size( const QSize& size ) noexcept
 {
+    std::lock_guard< _detail::spinlock > l{ m_lock };
     m_rect.setSize( size );
 }
 
 QSize geometry::get_size() const noexcept
 {
+    std::lock_guard< _detail::spinlock > l{ m_lock };
     return m_rect.size();
 }
 
 void geometry::set_rotation( int rotation ) noexcept
 {
+    std::lock_guard< _detail::spinlock > l{ m_lock };
     m_rotation = rotation;
 }
 
 int geometry::get_rotation() const noexcept
 {
+    std::lock_guard< _detail::spinlock > l{ m_lock };
     return m_rotation;
 }
 
 void geometry::set_rect( const QRect& rect ) noexcept
 {
+    std::lock_guard< _detail::spinlock > l{ m_lock };
     m_rect = rect;
 }
 
 const QRect &geometry::get_rect() const noexcept
 {
+    std::lock_guard< _detail::spinlock > l{ m_lock };
     return m_rect;
 }
 
@@ -177,21 +190,25 @@ movement::movement( uint32_t speed,
 
 void movement::set_speed( uint32_t speed ) noexcept
 {
+    std::lock_guard< _detail::spinlock > l{ m_lock };
     m_speed = speed;
 }
 
 uint32_t movement::get_speed() const noexcept
 {
+    std::lock_guard< _detail::spinlock > l{ m_lock };
     return m_speed;
 }
 
 void movement::set_move_direction( const movement_direction& direction ) noexcept
 {
+    std::lock_guard< _detail::spinlock > l{ m_lock };
     m_move_direction = direction;
 }
 
 const movement_direction& movement::get_move_direction() const noexcept
 {
+    std::lock_guard< _detail::spinlock > l{ m_lock };
     return m_move_direction;
 }
 
@@ -201,21 +218,25 @@ graphics::graphics( const QString& image_path, bool visible ) :
 
 void graphics::set_image_path( const QString& image_path )
 {
+    std::lock_guard< _detail::spinlock > l{ m_lock };
     m_image_path = image_path;
 }
 
 const QString& graphics::get_image_path() const noexcept
 {
+    std::lock_guard< _detail::spinlock > l{ m_lock };
     return m_image_path;
 }
 
 void graphics::set_visible( bool visible ) noexcept
 {
+    std::lock_guard< _detail::spinlock > l{ m_lock };
     m_visible = visible;
 }
 
 bool graphics::get_visible() const noexcept
 {
+    std::lock_guard< _detail::spinlock > l{ m_lock };
     return m_visible;
 }
 
@@ -246,6 +267,7 @@ uint32_t health::get_max_health() const noexcept
 
 bool health::alive() const noexcept
 {
+    std::lock_guard< _detail::spinlock > l{ m_lock };
     return m_health != 0;
 }
 
@@ -257,6 +279,8 @@ lifes::lifes( const has_infinite_lifes& mode, uint32_t lifes ) noexcept :
 
 void lifes::increase( uint32_t value ) noexcept
 {
+    std::lock_guard< _detail::spinlock > l{ m_lock };
+
     if( m_mode != has_infinite_lifes::yes )
     {
         m_lifes += value;
@@ -265,6 +289,8 @@ void lifes::increase( uint32_t value ) noexcept
 
 void lifes::decrease( uint32_t value ) noexcept
 {
+    std::lock_guard< _detail::spinlock > l{ m_lock };
+
     if( m_mode != has_infinite_lifes::yes )
     {
         m_lifes = ( m_lifes >= value) ? m_lifes - value : 0;
@@ -273,16 +299,19 @@ void lifes::decrease( uint32_t value ) noexcept
 
 bool lifes::has_life() const noexcept
 {
+    std::lock_guard< _detail::spinlock > l{ m_lock };
     return ( m_mode == has_infinite_lifes::yes || m_lifes != 0 );
 }
 
 uint32_t lifes::get_lifes() const noexcept
 {
+    std::lock_guard< _detail::spinlock > l{ m_lock };
     return m_lifes;
 }
 
 const has_infinite_lifes& lifes::get_mode() const noexcept
 {
+    std::lock_guard< _detail::spinlock > l{ m_lock };
     return m_mode;
 }
 

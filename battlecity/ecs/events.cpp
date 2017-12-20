@@ -94,7 +94,7 @@ projectile_hit_info::projectile_hit_info( const object_type& victim_type,
                                 const object_type& shooter_type,
                                 ecs::entity* shooter ) noexcept:
     m_victim_type( victim_type ),
-    m_victim( victim ),
+    m_victim( &victim ),
     m_shooter_type( shooter_type ),
     m_shooter( shooter ){}
 
@@ -105,7 +105,7 @@ ecs::entity* projectile_hit_info::get_shooter() const noexcept
 
 ecs::entity& projectile_hit_info::get_victim() const noexcept
 {
-    return m_victim;
+    return *m_victim;
 }
 
 const object_type& projectile_hit_info::get_shooter_type() const noexcept

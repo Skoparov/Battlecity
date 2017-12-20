@@ -101,10 +101,10 @@ Item
         Button
         {
             id: pause_resume_button
-            width: frag_count_grid.width
             anchors.topMargin: 12;
             anchors.top : base_lifes_count.bottom
-            text: "Pause"
+            text: map_interface.pause_play_button_text
+            visible: map_interface.pause_play_button_visible
 
             style: ButtonStyle
             {
@@ -123,15 +123,6 @@ Item
 
             onClicked:
             {
-                if( text == "Pause" )
-                {
-                    text = "Resume"
-                }
-                else
-                {
-                    text = "Pause"
-                }
-
                 map_interface.pause_resume()
             }
         }

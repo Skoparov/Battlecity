@@ -61,16 +61,27 @@ Rectangle
             }
         }
 
-        Text
+        Rectangle
         {
-            text: map_interface.announcement
-            font.family: "Comic Sans"
-            font.pointSize: 18
-            font.capitalization: Font.AllUppercase
-            font.bold: true
+            id: announcenement_back
             color: "white"
+            opacity: 0.7
+            width: announcenement_text.width + 10
+            height: announcenement_text.height + 10
             visible: map_interface.announcement_visible
             anchors.centerIn: parent
+
+            Text
+            {
+                id: announcenement_text
+                text: map_interface.announcement_text
+                font.family: "Comic Sans"
+                font.pointSize: 18
+                font.capitalization: Font.AllUppercase
+                font.bold: true
+                color: "black"
+                anchors.centerIn: parent
+            }
         }
     }
 

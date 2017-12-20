@@ -9,6 +9,7 @@ HEADERS += \
         ecs/framework/world.h \
         ecs/framework/details/polymorph.h \
 # game ecs stuff
+        ecs/details/spinlock.h \
         ecs/components.h \
         ecs/events.h \
         ecs/systems.h \
@@ -34,6 +35,7 @@ SOURCES += \
         ecs/framework/details/polymorph.cpp \
         ecs/framework/details/polymorph.impl \
 # game ecs stuff
+        ecs/details/spinlock.cpp \
         ecs/components.cpp \
         ecs/events.cpp \
         ecs/systems.cpp \

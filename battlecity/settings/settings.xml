@@ -8,11 +8,11 @@
     <TankHealth>1</TankHealth>
     <WallHealth>1</WallHealth>
     <IronWallHealth>2</IronWallHealth>
-    <PlayerBaseHealth>50</PlayerBaseHealth>
-    <PlayerLives>5</PlayerLives>
-    <EnemiesNum>0</EnemiesNum>
+    <PlayerBaseHealth>5</PlayerBaseHealth>
+    <PlayerLives>1</PlayerLives>
+    <EnemiesNum>2</EnemiesNum>
     <RespawnDelayMs>1000</RespawnDelayMs>
-    <BaseKillsToWin>2</BaseKillsToWin>
+    <BaseKillsToWin>1</BaseKillsToWin>
     <TankSpeed>6</TankSpeed>
     <ProjectileSpeed>16</ProjectileSpeed>
     <ProjectileDamage>1</ProjectileDamage>

@@ -111,8 +111,11 @@ namespace _detail
 class projectile_hit_info
 {
 public:
-    projectile_hit_info( const object_type& victim_type, ecs::entity& victim,
-                         const object_type& shooter_type, ecs::entity* shooter = nullptr ) noexcept;
+    projectile_hit_info() = default;
+    projectile_hit_info( const object_type& victim_type,
+                         ecs::entity& victim,
+                         const object_type& shooter_type,
+                         ecs::entity* shooter = nullptr ) noexcept;
 
     ecs::entity* get_shooter() const noexcept;
     ecs::entity& get_victim() const noexcept;
@@ -121,7 +124,7 @@ public:
 
 private:
     object_type m_victim_type;
-    ecs::entity& m_victim;
+    ecs::entity* m_victim{ nullptr };
     object_type m_shooter_type;
     ecs::entity* m_shooter{ nullptr };
 };
