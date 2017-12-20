@@ -7,16 +7,23 @@
 		<file>qml/PlayerTank.qml</file>
         <file>qml/EnemyTank.qml</file>
 		<file>qml/Projectile.qml</file>
+        <file>qml/SideBar.qml</file>
+        <file>qml/Frag.qml</file>
+        <file>qml/Explosion.qml</file>
 
-        <file>maps/map_0</file>
-        <file>maps/map_1</file>
+        <file>maps/map0.bsmap</file>
+        <file>maps/map1.bsmap</file>
         <file>settings/settings.xml</file>
 
         <file>graphics/tile_empty.png</file>
         <file>graphics/tile_wall.png</file>
+        <file>graphics/tile_iron_wall.png</file>
         <file>graphics/player_base.png</file>
 		<file>graphics/player_tank.png</file>
 		<file>graphics/enemy_tank.png</file>
 		<file>graphics/projectile.png</file>
+        <file>graphics/frag.png</file>
+        <file>graphics/heart.png</file>
+        <file>graphics/explosion.png</file>
     </qresource>
 </RCC>

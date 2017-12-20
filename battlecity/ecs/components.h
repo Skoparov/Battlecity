@@ -1,10 +1,13 @@
 #ifndef COMPONENTS_H
 #define COMPONENTS_H
 
+#include <chrono>
+
 #include <QRect>
 #include <QString>
 
 #include "ecs/framework/entity.h"
+#include "ecs/details/spinlock.h"
 #include "general_enums.h"
 
 namespace game
@@ -28,19 +31,27 @@ private:
 
 //
 
-class turret_object
+class turret_object final
 {
+    using clock = std::chrono::high_resolution_clock;
+
 public:
-    void set_fire_status( bool fired ) noexcept;
+    turret_object( const std::chrono::milliseconds& cooldown ) noexcept;
+
+    bool set_fire_status( bool fired ) noexcept;
     bool has_fired() const noexcept;
 
 private:
     bool m_fired{ false };
+    clock::time_point m_last_fired{};
+    std::chrono::milliseconds m_cooldown{ 0 };
+
+    mutable _detail::spinlock m_lock;
 };
 
 //
 
-class tank_object final : public turret_object{};
+class tank_object final{};
 
 //
 
@@ -60,20 +71,41 @@ class player_base final{};
 
 //
 
+class explosion final{};
+
+//
+
+class frag final
+{
+public:
+    explicit frag( uint32_t num ) noexcept;
+    uint32_t get_num() const noexcept;
+
+private:
+    uint32_t m_num{ 0 };
+};
+
+//
+
 class projectile final
 {
 public:
     projectile() = default;
-    projectile( uint32_t damage, ecs::entity_id owner ) noexcept;
+    projectile( uint32_t damage, const ecs::entity& owner );
 
     void set_damage( uint32_t damage ) noexcept;
-    uint32_t get_damage() const noexcept;
+    void set_destroyed() noexcept;
 
-    ecs::entity_id get_owner() const noexcept;
+    uint32_t get_damage() const noexcept;
+    bool get_destroyed() const noexcept;
+    ecs::entity_id get_shooter_id() const noexcept;
+    const object_type& get_shooter_type() const noexcept;
 
 private:
     uint32_t m_damage{ 1 };
-    ecs::entity_id m_owner{ INVALID_NUMERIC_ID };
+    ecs::entity_id m_shooter_id{ INVALID_NUMERIC_ID };
+    object_type m_shooter_type;
+    bool m_is_destroyed{ false };
 };
 
 //
@@ -102,6 +134,8 @@ public:
 private:
     QRect m_rect;
     int m_rotation{ 0 };
+
+    mutable _detail::spinlock m_lock;
 };
 
 //
@@ -120,11 +154,14 @@ public:
 private:
     uint32_t m_speed{ 0 };
     movement_direction m_move_direction{ movement_direction::none };
+
+    mutable _detail::spinlock m_lock;
 };
 
 //
 
 class non_traversible final{};
+class flying final{}; // can pass through non_traversible
 
 //
 
@@ -143,6 +180,8 @@ public:
 private:
     QString m_image_path;
     bool m_visible{ true };
+
+    mutable _detail::spinlock m_lock;
 };
 
 //
@@ -164,9 +203,41 @@ public:
 private:
     uint32_t m_health{ 0 };
     const uint32_t m_max_health{ 0 };
+
+    mutable _detail::spinlock m_lock;
+};
+
+class lifes final
+{
+public:
+    lifes() = default;
+    explicit lifes( const has_infinite_lifes& mode, uint32_t lifes = 0 ) noexcept;
+
+    void increase( uint32_t value ) noexcept;
+    void decrease( uint32_t value ) noexcept;
+
+    bool has_life() const noexcept;
+    uint32_t get_lifes() const noexcept;
+    const has_infinite_lifes& get_mode() const noexcept;
+
+private:
+    has_infinite_lifes m_mode{ has_infinite_lifes::no };
+    uint32_t m_lifes{ 0 };
+
+    mutable _detail::spinlock m_lock;
 };
 
 //
+
+class kills_counter final
+{
+public:
+    void increase( uint32_t value ) noexcept;
+    uint32_t get_kills() const noexcept;
+
+private:
+    uint32_t m_kills{ 0 };
+};
 
 class respawn_point{};
 

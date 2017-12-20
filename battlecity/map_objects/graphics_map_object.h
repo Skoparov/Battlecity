@@ -16,14 +16,12 @@ public:
     graphics_map_object( ecs::entity* entity, const object_type& type, QObject* parent = nullptr );
     ~graphics_map_object() override;
 
-    void set_image_path( const QString& path );
     const QString& get_image_path() const noexcept;
 
-    void set_visible( bool visible ) noexcept;
     bool get_visible() const noexcept;
 
-    Q_PROPERTY( QString image_path READ get_image_path CONSTANT )
-    Q_PROPERTY( bool visible READ get_visible WRITE set_visible NOTIFY visibility_changed )
+    Q_PROPERTY( QString image_path READ get_image_path NOTIFY image_changed )
+    Q_PROPERTY( bool visible READ get_visible NOTIFY visibility_changed )
 
     // Event callbacks
     void on_event( const event::graphics_changed& event ) override;

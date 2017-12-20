@@ -2,15 +2,20 @@
 <Settings>
     <Fps>30</Fps>
     <TileSize>64</TileSize>
-    <TankSize>60</TankSize>
+    <TankSize>55</TankSize>
     <ProjectileSize>10</ProjectileSize>
     <PlayerBaseSize>64</PlayerBaseSize>
     <TankHealth>1</TankHealth>
+    <WallHealth>1</WallHealth>
+    <IronWallHealth>2</IronWallHealth>
     <PlayerBaseHealth>5</PlayerBaseHealth>
     <PlayerLives>5</PlayerLives>
     <EnemiesNum>2</EnemiesNum>
-    <BaseKillsToWin>10</BaseKillsToWin>
-    <TankSpeed>8</TankSpeed>
+    <RespawnDelayMs>1000</RespawnDelayMs>
+    <BaseKillsToWin>20</BaseKillsToWin>
+    <TankSpeed>6</TankSpeed>
     <ProjectileSpeed>16</ProjectileSpeed>
     <ProjectileDamage>1</ProjectileDamage>
+    <TurretCooldownMs>500</TurretCooldownMs>
+    <AiChanceToFire>0.03</AiChanceToFire>
 </Settings>

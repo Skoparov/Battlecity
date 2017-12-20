@@ -13,15 +13,17 @@ namespace ecs
 
 class world;
 
-namespace detail
+namespace _detail
 {
 
 class event_callback_base{};
 
-}// details
+}// _detail
 
+
+// All classes subscribing to a certain event should inherit a specialization of this interface
 template< typename event_type >
-class event_callback : public detail::event_callback_base
+class event_callback : public _detail::event_callback_base
 {
 public:
     virtual void on_event( const event_type& event ) = 0;
@@ -35,6 +37,8 @@ class system
 public:
     system( world& world ) noexcept;
     virtual ~system() = default;
+
+    virtual void init(){}
     virtual void tick() = 0;
     virtual void clean(){}
 
@@ -54,14 +58,20 @@ class world final
 public:
     world() = default;
 
-    void tick(); // tick() of each system
+    // calls tick() of each system, clears objects schduled to be removed
+    void tick();
 
     void reset(); // remove all entities, clean() systems
     void clean(); // remove all entities and systems
 
     entity& create_entity();
+    entity& get_entity( entity_id id );
+    bool entity_present( entity_id id ) const noexcept;
+
     void remove_entity( entity& e );
+    void remove_entity( ecs::entity_id id );
     void schedule_remove_entity( entity& e );
+    void schedule_remove_entity( ecs::entity_id id );
 
     template< typename component_type >
     std::list< component_type* > get_components() const
@@ -167,7 +177,7 @@ private:
     std::list< system* > m_systems_to_remove;
     std::list< entity_id > m_entities_to_remove;
 
-    std::unordered_map< event_id, std::unordered_set< detail::event_callback_base* > > m_subscribers;
+    std::unordered_map< event_id, std::unordered_set< _detail::event_callback_base* > > m_subscribers;
 };
 
 }// ecs

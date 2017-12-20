@@ -9,13 +9,18 @@ static constexpr auto tag_tank_size = "TankSize";
 static constexpr auto tag_projectile_size = "ProjectileSize";
 static constexpr auto tag_player_base_size = "PlayerBaseSize";
 static constexpr auto tag_tank_health = "TankHealth";
+static constexpr auto tag_wall_health = "WallHealth";
+static constexpr auto tag_iron_wall_health = "IronWallHealth";
 static constexpr auto tag_player_base_health = "PlayerBaseHealth";
 static constexpr auto tag_player_lives = "PlayerLives";
 static constexpr auto tag_enemies_number = "EnemiesNum";
+static constexpr auto tag_respawn_delay_ms = "RespawnDelayMs";
 static constexpr auto tag_base_kills_to_win = "BaseKillsToWin";
 static constexpr auto tag_tank_speed = "TankSpeed";
 static constexpr auto tag_projectile_speed = "ProjectileSpeed";
 static constexpr auto tag_projectile_damage = "ProjectileDamage";
+static constexpr auto tag_turret_cooldown_ms = "TurretCooldownMs";
+static constexpr auto tag_ai_chance_to_fire = "AiChanceToFire";
 
 namespace game
 {
@@ -80,6 +85,26 @@ uint32_t game_settings::get_tank_health() const noexcept
     return m_tank_health;
 }
 
+void game_settings::set_wall_health( const uint32_t health ) noexcept
+{
+    m_wall_health = health;
+}
+
+uint32_t game_settings::get_wall_health() const noexcept
+{
+    return m_wall_health;
+}
+
+void game_settings::set_iron_wall_health( const uint32_t health ) noexcept
+{
+    m_iron_wall_health = health;
+}
+
+uint32_t game_settings::get_iron_wall_health() const noexcept
+{
+    return m_iron_wall_health;
+}
+
 void game_settings::set_player_base_health( const uint32_t health ) noexcept
 {
     m_base_health = health;
@@ -108,6 +133,16 @@ void game_settings::set_enemies_number( const uint32_t number ) noexcept
 uint32_t game_settings::get_enemies_number() const noexcept
 {
     return m_enemies_number;
+}
+
+void game_settings::set_respawn_delay_ms( const uint32_t delay ) noexcept
+{
+    m_respawn_delay_ms = delay;
+}
+
+uint32_t game_settings::get_respawn_delay_ms() const noexcept
+{
+    return m_respawn_delay_ms;
 }
 
 void game_settings::set_base_kills_to_win( const uint32_t kills ) noexcept
@@ -148,6 +183,26 @@ void game_settings::set_projectile_damage( uint32_t damage ) noexcept
 uint32_t game_settings::get_projectile_damage() const noexcept
 {
     return m_projectile_damage;
+}
+
+void game_settings::set_turret_cooldown_ms( uint32_t cooldown_ms ) noexcept
+{
+    m_turret_cooldown_ms = cooldown_ms;
+}
+
+uint32_t game_settings::get_turret_cooldown_ms() const noexcept
+{
+    return m_turret_cooldown_ms;
+}
+
+void game_settings::set_ai_chance_to_fire( float chance_to_fire ) noexcept
+{
+    m_ai_chance_to_file = chance_to_fire;
+}
+
+float game_settings::get_ai_chance_to_fire() const noexcept
+{
+    return m_ai_chance_to_file;
 }
 
 game_settings read_game_settings( const QString& file )
@@ -198,6 +253,14 @@ game_settings read_game_settings( const QString& file )
             {
                 settings.set_tank_health( xml_reader.readElementText().toUInt() );
             }
+            else if( name == tag_wall_health )
+            {
+                settings.set_wall_health( xml_reader.readElementText().toUInt() );
+            }
+            else if( name == tag_iron_wall_health )
+            {
+                settings.set_iron_wall_health( xml_reader.readElementText().toUInt() );
+            }
             else if( name == tag_player_base_health )
             {
                 settings.set_player_base_health( xml_reader.readElementText().toUInt() );
@@ -209,6 +272,10 @@ game_settings read_game_settings( const QString& file )
             else if( name == tag_enemies_number )
             {
                 settings.set_enemies_number( xml_reader.readElementText().toUInt() );
+            }
+            else if( name == tag_respawn_delay_ms )
+            {
+                settings.set_respawn_delay_ms( xml_reader.readElementText().toUInt() );
             }
             else if( name == tag_base_kills_to_win )
             {
@@ -225,6 +292,14 @@ game_settings read_game_settings( const QString& file )
             else if( name == tag_projectile_damage )
             {
                 settings.set_projectile_damage( xml_reader.readElementText().toUInt() );
+            }
+            else if( name == tag_turret_cooldown_ms )
+            {
+                settings.set_turret_cooldown_ms( xml_reader.readElementText().toUInt() );
+            }
+            else if( name == tag_ai_chance_to_fire )
+            {
+                settings.set_ai_chance_to_fire( xml_reader.readElementText().toFloat() );
             }
         }
     }

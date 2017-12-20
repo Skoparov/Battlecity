@@ -17,7 +17,7 @@ public:
     tank_map_object() = default;
     tank_map_object( ecs::entity* entity, const object_type& type, QObject* parent = nullptr );
 
-    void set_fired( bool fired ) noexcept;
+    bool set_fired( bool fired ) noexcept;
     bool get_fired() const noexcept;
 
     Q_PROPERTY( bool fired READ get_fired WRITE set_fired )

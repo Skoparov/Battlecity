@@ -6,11 +6,11 @@
 #include "ecs/framework/world.h"
 #include "ecs/entity_factory.h"
 #include "ecs/components.h"
-
 #include "game_settings.h"
 
 static constexpr auto tile_char_empty = 'e';
 static constexpr auto tile_char_wall = 'w';
+static constexpr auto tile_char_iron_wall = 'i';
 static constexpr auto tile_char_player_base = 'b';
 static constexpr auto tile_char_player_start_position = 'p';
 static constexpr auto tile_char_respawn_point = 'r';
@@ -21,6 +21,11 @@ namespace game
 void map_data::set_map_size( const QSize& size ) noexcept
 {
     m_map_size = size;
+}
+
+void map_data::set_map_name( const QString& name )
+{
+    m_map_name = name;
 }
 
 int map_data::get_rows_count() const noexcept
@@ -38,6 +43,11 @@ const QSize& map_data::get_map_size() const noexcept
     return m_map_size;
 }
 
+const QString &map_data::get_map_name() const noexcept
+{
+    return m_map_name;
+}
+
 std::pair< tile_type, object_type > char_to_tile_info( char c )
 {
     tile_type ground;
@@ -51,6 +61,10 @@ std::pair< tile_type, object_type > char_to_tile_info( char c )
         break;
     case tile_char_wall :
         ground = tile_type::wall;
+        obj_located_on_ground = object_type::tile;
+        break;
+    case tile_char_iron_wall :
+        ground = tile_type::iron_wall;
         obj_located_on_ground = object_type::tile;
         break;
     case tile_char_player_base :
@@ -71,9 +85,17 @@ std::pair< tile_type, object_type > char_to_tile_info( char c )
     return { ground, obj_located_on_ground };
 }
 
+template< typename T >
+T abs_diff( T l, T r ) noexcept
+{
+    return  l >= r? l - r : r - l;
+}
+
 QRect obj_rect( int row, int col, const QSize& tile_size, const QSize& size ) noexcept
 {
-    return QRect{ QPoint{ col * tile_size.width(), row * tile_size.height() }, size };
+    int delta_x{ ( abs_diff( size.width(), tile_size.width() ) % tile_size.width() ) / 2 };
+    int delta_y{ ( abs_diff( size.height(), tile_size.height() ) % tile_size.height() ) / 2 };
+    return QRect{ QPoint{ col * tile_size.width() + delta_x, row * tile_size.height() + delta_y }, size };
 }
 
 ecs::entity&
@@ -99,6 +121,8 @@ add_tank( int row, int col, const alignment& align, const game_settings& setting
                                align,
                                settings.get_tank_speed(),
                                settings.get_tank_health(),
+                               settings.get_player_lives(),
+                               settings.get_turret_cooldown_ms(),
                                world );
 
     if( align == alignment::enemy )
@@ -110,13 +134,28 @@ add_tank( int row, int col, const alignment& align, const game_settings& setting
     return e;
 }
 
+uint32_t get_tile_health( const tile_type& type, const game_settings& settings )
+{
+    uint32_t health{ 0 };
+
+    switch( type )
+    {
+    case tile_type::wall: health = settings.get_wall_health(); break;
+    case tile_type::iron_wall: health = settings.get_iron_wall_health(); break;
+    default: break;
+    }
+
+    return health;
+}
+
 ecs::entity&
 add_tile( const tile_type& type, int row, int col, const game_settings& settings, ecs::world& world )
 {
     const QSize& tile_size{ settings.get_tile_size() };
     return create_entity_tile( type,
-                        obj_rect( row, col, tile_size, tile_size ),
-                        world );
+                               obj_rect( row, col, tile_size, tile_size ),
+                               get_tile_health( type, settings ),
+                               world );
 }
 
 ecs::entity&
@@ -139,6 +178,13 @@ void read_map_file( map_data& data,
     }
 
     QTextStream text_stream{ &map_file };
+    if( text_stream.atEnd() )
+    {
+        throw std::logic_error{ "Map file is empty" };
+    }
+
+    data.set_map_name( text_stream.readLine() );
+
     if( text_stream.atEnd() )
     {
         throw std::logic_error{ "Map file is empty" };
@@ -187,10 +233,10 @@ void read_map_file( map_data& data,
             {
                 if( entity )
                 {
-                    mediator->add_object( tile_info.second, *entity );
+                    mediator->add_object( tile_info.second, entity, false );
                 }
 
-                mediator->add_object( object_type::tile, tile_entity );
+                mediator->add_object( object_type::tile, &tile_entity, false );
             }
 
             ++curr_column;
@@ -225,7 +271,16 @@ void read_map_file( map_data& data,
         ecs::entity& entity = add_tank( 0, 0, alignment::enemy, settings, world );
         if( mediator )
         {
-            mediator->add_object( object_type::enemy_tank, entity );
+            mediator->add_object( object_type::enemy_tank, &entity, false );
+        }
+    }
+
+    for( uint32_t frag{ 0 }; frag < settings.get_base_kills_to_win(); ++frag )
+    {
+        ecs::entity& entity = create_entity_frag( QRect{ 0, 0, 32, 32 }, world, frag );
+        if( mediator )
+        {
+            mediator->add_object( object_type::frag, &entity, false );
         }
     }
 

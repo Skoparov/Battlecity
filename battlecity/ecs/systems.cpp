@@ -1,6 +1,8 @@
 #include "systems.h"
 
 #include <random>
+#include <cassert>
+#include <algorithm>
 
 #include "entity_factory.h"
 
@@ -17,15 +19,22 @@ namespace system
 
 movement_system::movement_system( ecs::world& world ): ecs::system( world ){}
 
-bool can_pass_through_non_traversible( ecs::entity& e )
+void movement_system::init()
 {
-    return e.has_component< component::projectile >();
+    auto map_entities = m_world.get_entities_with_component< component::game_map >();
+    if( map_entities.size() != 1 )
+    {
+        throw std::logic_error{ "Exactly one map entity should exist" };
+    }
+
+    ecs::entity* map_entity{ map_entities.front() };
+    m_map_geom = &map_entity->get_component_unsafe< component::geometry >();
 }
 
 QRect calc_move( component::movement& move,
                  component::geometry& obj_geom,
                  component::geometry& map_geom,
-                 bool can_pass_though_non_traversible ) noexcept
+                 bool is_flying ) noexcept
 {
     int x_mult{ 0 };
     int y_mult{ 0 };
@@ -61,7 +70,7 @@ QRect calc_move( component::movement& move,
 
     obj_geom.set_rotation( rotation );
 
-    if( !can_pass_though_non_traversible )
+    if( !is_flying )
     {
         bool on_border{ false };
         QRect map_rect{ map_geom.get_rect() };
@@ -100,26 +109,18 @@ void movement_system::tick()
 {
     using namespace component;
 
-    geometry* map_geom{ nullptr };
-
     m_world.for_each< movement >( [ & ]( ecs::entity& curr_entity, movement& move )
     {
         if( move.get_move_direction() != movement_direction::none )
         {
-            if( !map_geom )
-            {
-                ecs::entity* map_entity{ m_world.get_entities_with_component< game_map >().front() };
-                map_geom = &map_entity->get_component_unsafe< geometry >();
-            }
-
             geometry& curr_geom = curr_entity.get_component_unsafe< geometry >();
             int prev_rotation{ curr_geom.get_rotation() };
-            bool can_pass_though_everything{ can_pass_through_non_traversible( curr_entity ) };
+            bool is_flying{ curr_entity.has_component< flying >() };
             bool movement_valid{ true };
 
-            QRect rect_after_move{ calc_move( move, curr_geom, *map_geom, can_pass_though_everything ) };
+            QRect rect_after_move{ calc_move( move, curr_geom, *m_map_geom, is_flying ) };
 
-            if( !can_pass_though_everything )
+            if( !is_flying )
             {
                 m_world.for_each< non_traversible >( [ & ]( ecs::entity& other_entity, non_traversible& )
                 {
@@ -154,13 +155,18 @@ void movement_system::tick()
             if( x_changed || y_changed || rotation_changed )
             {
                 event::geometry_changed event{ x_changed, y_changed, rotation_changed };
-                event.add_entity( curr_entity.get_id() );
+                event.set_cause_entity( curr_entity );
                 m_world.emit_event( event );
             }
         }
 
         return true;
     } );
+}
+
+void movement_system::clean()
+{
+    m_map_geom = nullptr;
 }
 
 movement_direction get_direction_by_rotation( int rotation )
@@ -179,6 +185,8 @@ movement_direction get_direction_by_rotation( int rotation )
     return direction;
 }
 
+//
+
 projectile_system::projectile_system( const QSize& projectile_size,
                                       uint32_t projectile_damage,
                                       uint32_t projectile_speed,
@@ -187,6 +195,18 @@ projectile_system::projectile_system( const QSize& projectile_size,
     m_projectile_size( projectile_size ),
     m_damage( projectile_damage ),
     m_speed( projectile_speed ){}
+
+void projectile_system::init()
+{
+    auto map_entities = m_world.get_entities_with_component< component::game_map >();
+    if( map_entities.size() != 1 )
+    {
+        throw std::logic_error{ "Exactly one map entity should exist" };
+    }
+
+    ecs::entity* map_entity{ map_entities.front() };
+    m_map_geom = &map_entity->get_component_unsafe< component::geometry >();
+}
 
 QRect get_projectile_rect( const QRect& tank_rect, const QSize& proj_size )
 {
@@ -202,6 +222,11 @@ void projectile_system::tick()
     create_new_projectiles();
 }
 
+void projectile_system::clean()
+{
+    m_map_geom = nullptr;
+}
+
 void projectile_system::kill_entity( ecs::entity& entity )
 {
     using namespace component;
@@ -209,18 +234,59 @@ void projectile_system::kill_entity( ecs::entity& entity )
     {
         entity.get_component< graphics >().set_visible( false );
         event::graphics_changed graphics_changed_event{ false, true };
-        graphics_changed_event.add_entity( entity.get_id() );
+        graphics_changed_event.set_cause_entity( entity );
         m_world.emit_event( graphics_changed_event );
     }
 
     entity.remove_component< non_traversible >();
 }
 
-void projectile_system::handle_obstacle(ecs::entity& obstacle,
-                                        const component::projectile& projectile_component )
+object_type get_object_type( const ecs::entity& entity )
+{
+    using namespace component;
+    object_type result;
+
+    if( entity.has_component< tile_object >() )
+    {
+        result = object_type::tile;
+    }
+    else if( entity.has_component< player >() )
+    {
+        result = object_type::player_tank;
+    }
+    else if( entity.has_component< enemy >() )
+    {
+        result = object_type::enemy_tank;
+    }
+    else if( entity.has_component< player_base >() )
+    {
+        result = object_type::player_base;
+    }
+    else
+    {
+        assert( false );
+        throw std::logic_error{ "Unknown entity type" };
+    }
+
+    return result;
+}
+
+void projectile_system::handle_obstacle( ecs::entity& obstacle,
+                                         const component::projectile& projectile_component )
 {
     using namespace component;
 
+    object_type obstacle_type{ get_object_type( obstacle ) };
+    const object_type& shooter_type = projectile_component.get_shooter_type();
+
+    ecs::entity* shooter{ nullptr };
+    ecs::entity_id shooter_id{ projectile_component.get_shooter_id() };
+    if( m_world.entity_present( shooter_id ) )
+    {
+        shooter = &m_world.get_entity( shooter_id );
+    }
+
+    // Damage obstacle if it has health
     if( obstacle.has_component< health >() )
     {
         health& obstacle_health = obstacle.get_component< health >();
@@ -228,30 +294,32 @@ void projectile_system::handle_obstacle(ecs::entity& obstacle,
 
         if( !obstacle_health.alive() )
         {
-            if( obstacle.has_component< tile_object >() )
+            if( obstacle_type == object_type::tile )
             {
                 obstacle.remove_component< health >();
                 obstacle.remove_component< non_traversible >();
                 obstacle.get_component< tile_object >().set_tile_type( tile_type::empty );
-                obstacle.get_component< graphics >().set_image_path(
-                            tile_image_path( tile_type::empty ) );
+                obstacle.get_component< graphics >().set_image_path( tile_image_path( tile_type::empty ) );
             }
-            if( obstacle.has_component< player >() )
+            else if( obstacle_type == object_type::player_tank ||
+                     obstacle_type == object_type::enemy_tank ||
+                     obstacle_type == object_type::player_base )
             {
                 kill_entity( obstacle );
-                m_world.emit_event( event::player_killed{} );
-            }
-            else if( obstacle.has_component< enemy >() )
-            {
-                kill_entity( obstacle );
-                m_world.emit_event( event::enemy_killed{} );
-            }
-            else if( obstacle.has_component< player_base >() )
-            {
-                m_world.emit_event( event::player_base_killed{} );
+
+                if( shooter && shooter->has_component< kills_counter >() )
+                {
+                    shooter->get_component< kills_counter >().increase( 1 );
+                }
+
+                event::entity_killed event{ obstacle_type, obstacle, shooter_type, shooter };
+                m_world.emit_event( event );
             }
         }
     }
+
+    event::entity_hit event{ obstacle_type, obstacle, shooter_type, shooter };
+    m_world.emit_event( event );
 }
 
 void projectile_system::handle_existing_projectiles()
@@ -259,53 +327,51 @@ void projectile_system::handle_existing_projectiles()
     using namespace component;
 
     // Calc existing projectiles
-    geometry* map_geom{ nullptr };
     event::entities_removed entities_removed_event;
 
     m_world.for_each< projectile >( [ & ]( ecs::entity& projectile_entity, projectile& projectile_component )
     {
-        if( !map_geom )
+        if( !projectile_component.get_destroyed() )
         {
-            ecs::entity* map_entity{ m_world.get_entities_with_component< game_map >().front() };
-            map_geom = &map_entity->get_component_unsafe< geometry >();
-        }
+            geometry& projectile_geom = projectile_entity.get_component_unsafe< geometry >();
 
-        geometry& projectile_geom = projectile_entity.get_component_unsafe< geometry >();
-        bool projectile_destroyed{ false };
-
-        if( !map_geom->intersects_with( projectile_geom ) )
-        {
-            projectile_destroyed = true;
-        }
-        else
-        {
-            m_world.for_each< non_traversible >( [ & ]( ecs::entity& obstacle, non_traversible& )
+            if( !m_map_geom->intersects_with( projectile_geom ) )
             {
-                if( projectile_component.get_owner() != obstacle.get_id() )
+                projectile_component.set_destroyed();
+            }
+            else
+            {
+                m_world.for_each< non_traversible >( [ & ]( ecs::entity& obstacle, non_traversible& )
                 {
-                    geometry& obstacle_geom = obstacle.get_component_unsafe< geometry >();
-                    if( obstacle_geom.intersects_with( projectile_geom ) )
+                    if( projectile_component.get_shooter_id() != obstacle.get_id() )
                     {
-                        handle_obstacle( obstacle, projectile_component );
-                        projectile_destroyed = true;
+                        geometry& obstacle_geom = obstacle.get_component_unsafe< geometry >();
+                        if( obstacle_geom.intersects_with( projectile_geom ) )
+                        {
+                            handle_obstacle( obstacle, projectile_component );
+
+                            event::projectile_collision event_collision;
+                            event_collision.set_cause_entity( obstacle );
+                            m_world.emit_event( event_collision );
+
+                            projectile_component.set_destroyed();
+                        }
                     }
-                }
 
-                return !projectile_destroyed;
-            } );
-        }
+                    return !projectile_component.get_destroyed();;
+                } );
+            }
 
-        if( projectile_destroyed )
-        {
-            entities_removed_event.add_entity( projectile_entity.get_id() );
-            m_world.schedule_remove_entity( projectile_entity );
-
+            if( projectile_component.get_destroyed() )
+            {
+                entities_removed_event.add_entity( object_type::projectile, projectile_entity );
+            }
         }
 
         return true;
     } );
 
-    if( !entities_removed_event.get_entities().empty() )
+    if( !entities_removed_event.get_removed_entities().empty() )
     {
         m_world.emit_event( entities_removed_event );
     }
@@ -315,12 +381,11 @@ void projectile_system::create_new_projectiles()
 {
     using namespace component;
 
-    // Create new projectiles
-    m_world.for_each< tank_object >( [ & ]( ecs::entity& tank_entity, tank_object& tank_info )
+    m_world.for_each< turret_object >( [ & ]( ecs::entity& turret_entity, turret_object& turret_info )
     {
-        if( tank_info.has_fired() )
+        if( turret_info.has_fired() )
         {
-            geometry& tank_geom = tank_entity.get_component< geometry >();
+            geometry& tank_geom = turret_entity.get_component< geometry >();
             QRect projectile_rect{ get_projectile_rect( tank_geom.get_rect(), m_projectile_size ) };
 
             movement_direction direction{ get_direction_by_rotation( tank_geom.get_rotation() ) };
@@ -328,12 +393,12 @@ void projectile_system::create_new_projectiles()
                                                                  m_damage,
                                                                  m_speed,
                                                                  direction,
-                                                                 tank_entity.get_id(),
+                                                                 turret_entity,
                                                                  m_world );
 
-            event::projectile_fired event{ tank_entity,proj_entity  };
+            event::projectile_fired event{ turret_entity, proj_entity };
             m_world.emit_event( event );
-            tank_info.set_fire_status( false );
+            turret_info.set_fire_status( false );
         }
 
         return true;
@@ -342,19 +407,17 @@ void projectile_system::create_new_projectiles()
 
 //
 
-respawn_system::respawn_system( uint32_t enemies_to_respawn, ecs::world& world ) noexcept:
+respawn_system::respawn_system( const std::chrono::milliseconds respawn_delay,
+                                ecs::world& world ):
     ecs::system( world ),
-    m_enemies_to_respawn( enemies_to_respawn ),
-    m_max_enemies( enemies_to_respawn )
+    m_respawn_delay( respawn_delay )
 {
-    m_world.subscribe< event::enemy_killed >( *this );
-    m_world.subscribe< event::player_killed >( *this );
+    m_world.subscribe< event::entity_killed >( *this );
 }
 
 respawn_system::~respawn_system()
 {
-    m_world.unsubscribe< event::enemy_killed >( *this );
-    m_world.unsubscribe< event::player_killed >( *this );
+    m_world.unsubscribe< event::entity_killed >( *this );
 }
 
 void respawn_system::respawn_entity( ecs::entity& entity, const component::geometry& respawn )
@@ -362,8 +425,8 @@ void respawn_system::respawn_entity( ecs::entity& entity, const component::geome
     using namespace component;
     entity.get_component< movement >().set_move_direction( movement_direction::none );
 
-    health& enemy_health = entity.get_component< health >();
-    enemy_health.increase( enemy_health.get_max_health() );
+    health& entity_health = entity.get_component< health >();
+    entity_health.increase( entity_health.get_max_health() );
 
     entity.add_component< non_traversible >();
 
@@ -371,102 +434,122 @@ void respawn_system::respawn_entity( ecs::entity& entity, const component::geome
     entity.get_component< geometry >().set_rect( respawn.get_rect() );
 
     event::geometry_changed geometry_changed_event{ true, true, true };
-    geometry_changed_event.add_entity( entity.get_id() );
+    geometry_changed_event.set_cause_entity( entity );
 
     event::graphics_changed graphics_changed_event{ false, true };
-    graphics_changed_event.add_entity( entity.get_id() );
+    graphics_changed_event.set_cause_entity( entity );
 
     m_world.emit_event( geometry_changed_event );
     m_world.emit_event( graphics_changed_event );
 }
 
-void respawn_system::tick()
+void respawn_system::respawn_list( std::list< death_info >& list,
+                                   std::vector< const component::geometry* > free_respawns )
 {
     using namespace component;
+    using namespace std::chrono;
 
-    if( m_player_needs_respawn || m_enemies_to_respawn )
+    auto curr_time = clock::now();
+
+    while( !free_respawns.empty() )
     {
-        if( m_respawn_points.empty() )
+        auto it = std::find_if( list.begin(), list.end(),[ & ]( const death_info& info )
         {
-            std::list< ecs::entity* > respawn_point_entities{
-                m_world.get_entities_with_component< respawn_point >() };
+            return ( duration_cast< milliseconds >( curr_time - info.death_time ) >= m_respawn_delay );
+        } );
 
-            for( const ecs::entity* e : respawn_point_entities )
-            {
-                m_respawn_points.emplace_back( &e->get_component< geometry >() );
-            }
+        if( it != list.end() )
+        {
+            const geometry* respawn = free_respawns.back();
+            free_respawns.pop_back();
+
+            death_info& info = *it;
+            respawn_entity( *info.entity, *respawn );
+            list.erase( it );
+        }
+        else
+        {
+            break;
+        }
+    }
+}
+
+void respawn_system::tick()
+{
+    if( !m_respawn_points.empty() )
+    {
+        std::vector< const component::geometry* > free_respawns{ get_free_respawns() };
+
+        if( !m_players_death_info.empty() )
+        {
+            respawn_list( m_players_death_info, free_respawns );
         }
 
-        if( !m_respawn_points.empty() )
+        if( !m_enemies_death_info.empty() )
         {
-
-            std::vector< const geometry* > free_respawns{ get_free_respawns() };
-            uint32_t curr_respawn_idx{ 0 };
-            if( m_player_needs_respawn && !free_respawns.empty() )
-            {
-                m_player_needs_respawn = false;
-                ecs::entity* player{ m_world.get_entities_with_component< tank_object >().front() };
-
-                const geometry* respawn{ free_respawns[ curr_respawn_idx ] };
-                respawn_entity( *player, *respawn );
-
-                ++curr_respawn_idx;
-            }
-
-            if( m_enemies_to_respawn && curr_respawn_idx < free_respawns.size() )
-            {
-                std::list< ecs::entity* > enemies{ m_world.get_entities_with_component< enemy >() };
-                enemies.erase( std::remove_if( enemies.begin(), enemies.end(),
-                                               []( ecs::entity* e )
-                {
-                    return e->get_component< health >().alive();
-                } ), enemies.end() );
-
-                for( ecs::entity* enemy : enemies )
-                {
-                    if( curr_respawn_idx == free_respawns.size() )
-                    {
-                        break;
-                    }
-
-                    const geometry* respawn{ free_respawns[ curr_respawn_idx ] };
-                    respawn_entity( *enemy, *respawn );
-
-                    ++curr_respawn_idx;
-                    --m_enemies_to_respawn;
-                }
-            }
+            respawn_list( m_enemies_death_info, free_respawns );
         }
+    }
+}
+
+void respawn_system::init()
+{
+    std::list< ecs::entity* > respawn_point_entities{
+        m_world.get_entities_with_component< component::respawn_point >() };
+
+    for( const ecs::entity* e : respawn_point_entities )
+    {
+        m_respawn_points.emplace_back( &e->get_component< component::geometry >() );
+    }
+
+    auto enemies = m_world.get_entities_with_component< component::enemy >();
+    for( ecs::entity* enemy : enemies )
+    {
+        m_enemies_death_info.emplace_back( death_info{ enemy, {} } );
     }
 }
 
 void respawn_system::clean()
 {
     m_respawn_points.clear();
-    m_player_needs_respawn = false;
-    m_enemies_to_respawn = m_max_enemies;
+    m_players_death_info.clear();
+    m_enemies_death_info.clear();
 }
 
-void respawn_system::on_event( const event::player_killed& )
+void respawn_system::on_event( const event::entity_killed& event )
 {
-    m_player_needs_respawn = true;
-}
+    using namespace component;
 
-void respawn_system::on_event( const event::enemy_killed& )
-{
-    ++m_enemies_to_respawn;
+    auto curr_time = clock::now();
+    ecs::entity& victim = event.get_victim();
+
+    if( victim.has_component< lifes >() )
+    {
+        lifes& victim_lifes_component = victim.get_component< lifes >();
+        if( victim_lifes_component.has_life() )
+        {
+            if( event.get_victim().has_component< component::player >() )
+            {
+                m_players_death_info.emplace_back( death_info{ &event.get_victim(), curr_time } );
+            }
+            else if( event.get_victim().has_component< component::enemy >() )
+            {
+                m_enemies_death_info.emplace_back( death_info{ &event.get_victim(), curr_time } );
+            }
+
+            victim_lifes_component.decrease( 1 );
+        }
+    }
 }
 
 std::vector< const component::geometry* > respawn_system::get_free_respawns()
 {
     using namespace component;
-    std::vector< const geometry* > free_respawns;
 
-    uint32_t free_respawns_needed{ m_enemies_to_respawn };
-    if( m_player_needs_respawn )
-    {
-        ++free_respawns_needed;
-    }
+    size_t free_respawns_needed{ m_players_death_info.size() +
+                m_enemies_death_info.size() };
+
+    std::vector< const geometry* > free_respawns;
 
     for( const geometry* curr_geom : m_respawn_points )
     {
@@ -475,7 +558,7 @@ std::vector< const component::geometry* > respawn_system::get_free_respawns()
         m_world.for_each< tank_object >( [ & ]( ecs::entity& e, tank_object& )
         {
             if( e.has_component< non_traversible >() &&
-                e.get_component< geometry >().intersects_with( *curr_geom ) )
+                    e.get_component< geometry >().intersects_with( *curr_geom ) )
             {
                 respawn_free = false;
             }
@@ -494,36 +577,66 @@ std::vector< const component::geometry* > respawn_system::get_free_respawns()
         }
     }
 
+    static std::default_random_engine engine{};
+    std::shuffle( free_respawns.begin(), free_respawns.end(), engine );
+
     return free_respawns;
 }
 
-win_defeat_system::win_defeat_system( uint32_t kills_to_win,
-                                      uint32_t player_lifes,
-                                      ecs::world& world ) noexcept:
+//
+
+win_defeat_system::win_defeat_system( uint32_t kills_to_win, ecs::world& world ) noexcept:
     ecs::system( world ),
-    m_kills_to_win( kills_to_win ),
-    m_player_lifes( player_lifes ),
-    m_player_lifes_left( player_lifes )
+    m_kills_to_win( kills_to_win )
 {
-    m_world.subscribe< event::enemy_killed >( *this );
-    m_world.subscribe< event::player_killed >( *this );
-    m_world.subscribe< event::player_base_killed >( *this );
+    m_world.subscribe< event::entity_killed >( *this );
 }
 
 win_defeat_system::~win_defeat_system()
 {
-    m_world.unsubscribe< event::enemy_killed >( *this );
-    m_world.unsubscribe< event::player_killed >( *this );
-    m_world.unsubscribe< event::player_base_killed >( *this );
+    m_world.unsubscribe< event::entity_killed >( *this );
+}
+
+void win_defeat_system::init()
+{
+    auto entities = m_world.get_entities_with_component< component::frag >();
+    std::copy( entities.begin(), entities.end(), std::back_inserter( m_frag_entities ) );
+    std::sort( m_frag_entities.begin(), m_frag_entities.end(),
+               []( const ecs::entity* l, const ecs::entity* r )
+    {
+        return l->get_component< component::frag >().get_num() >
+               r->get_component< component::frag >().get_num();
+    } );
+
+    auto players = m_world.get_entities_with_component< component::player >();
+    if( players.size() != 1 )
+    {
+        throw std::logic_error{ "Exactly one player entity should exist" };
+    }
+
+    m_player = players.front();
+
+    auto player_bases = m_world.get_entities_with_component< component::player_base >();
+    if( player_bases.size() != 1 )
+    {
+        throw std::logic_error{ "Exactly one player base entity should exist" };
+    }
+
+    m_player_base = player_bases.front();
 }
 
 void win_defeat_system::tick()
 {
-    if( m_player_base_killed || !m_player_lifes_left )
+    using namespace component;
+    health& player_base_health = m_player_base->get_component< health >();
+    kills_counter& player_kills = m_player->get_component< kills_counter >();
+    lifes& player_lifes = m_player->get_component< lifes >();
+
+    if( !player_base_health.alive() || !player_lifes.has_life() )
     {
         m_world.emit_event( event::level_completed{ level_game_result::defeat } );
     }
-    else if( m_player_kills == m_kills_to_win )
+    else if( player_kills.get_kills() == m_kills_to_win )
     {
         m_world.emit_event( event::level_completed{ level_game_result::victory } );
     }
@@ -531,30 +644,35 @@ void win_defeat_system::tick()
 
 void win_defeat_system::clean()
 {
-    m_player_kills = 0;
-    m_player_base_killed = false;
-    m_player_lifes_left = m_player_lifes;
+    m_player = m_player_base = nullptr;
+    m_frag_entities.clear();
 }
 
-void win_defeat_system::on_event( const event::enemy_killed& )
+void win_defeat_system::on_event(const event::entity_killed& event )
 {
-    ++m_player_kills;
-}
+    using namespace component;
 
-void win_defeat_system::on_event( const event::player_killed& )
-{
-    if( m_player_lifes_left )
+    if( event.get_shooter_type() == object_type::player_tank )
     {
-        --m_player_lifes_left;
+        const ecs::entity& victim = event.get_victim();
+        if( victim.has_component< enemy >() )
+        {
+            uint32_t player_kills{ m_player->get_component< kills_counter >().get_kills() };
+            ecs::entity* frag_entity{  m_frag_entities[ player_kills - 1 ] };
+
+            frag_entity->get_component< component::graphics >().set_visible( false );
+            event::graphics_changed event_graphics{ false, true };
+            event_graphics.set_cause_entity( *frag_entity );
+            m_world.emit_event( event_graphics );
+        }
     }
 }
 
-void win_defeat_system::on_event( const event::player_base_killed& )
-{
-    m_player_base_killed = true;
-}
+//
 
-tank_ai_system::tank_ai_system( ecs::world& world ) noexcept : ecs::system( world ){}
+tank_ai_system::tank_ai_system( float chance_to_fire, ecs::world& world ) noexcept :
+    ecs::system( world ),
+    m_chance_to_fire( chance_to_fire ){}
 
 
 movement_direction generate_move_direction()
@@ -564,11 +682,11 @@ movement_direction generate_move_direction()
     return static_cast< movement_direction >( dist( rng ) );
 }
 
-bool maybe_fire()
+bool tank_ai_system::maybe_fire()
 {
     static std::mt19937 rng{ std::random_device{}() };
-    static std::uniform_int_distribution< std::mt19937::result_type > dist{ 0, 30 };
-    return ( dist( rng ) == 0 );
+    static std::uniform_int_distribution< std::mt19937::result_type >dist{ 0, 100 };
+    return ( dist( rng ) < m_chance_to_fire * 100 );
 }
 
 void tank_ai_system::tick()
@@ -589,10 +707,10 @@ void tank_ai_system::tick()
                 move.set_move_direction( generate_move_direction() );
             }
 
-            tank_object& obj = enemy->get_component< tank_object >();
-            if( !obj.has_fired() )
+            turret_object& enemy_turret = enemy->get_component< turret_object >();
+            if( !enemy_turret.has_fired() && maybe_fire() )
             {
-                obj.set_fire_status( maybe_fire() );
+                enemy_turret.set_fire_status( true );
             }
         }
     }
@@ -601,6 +719,36 @@ void tank_ai_system::tick()
 void tank_ai_system::clean()
 {
     m_enemies.clear();
+}
+
+explosion_system::explosion_system( ecs::world& world ) noexcept : ecs::system( world )
+{
+    m_world.subscribe< event::projectile_collision >( *this );
+    m_world.subscribe< event::explosion_ended >( *this );
+}
+
+explosion_system::~explosion_system()
+{
+    m_world.unsubscribe< event::projectile_collision >( *this );
+    m_world.unsubscribe< event::explosion_ended >( *this );
+}
+
+void explosion_system::tick(){}
+
+void explosion_system::on_event( const event::projectile_collision& event )
+{
+    const component::geometry& g = event.get_cause_entity()->
+            get_component< component::geometry >();
+
+    ecs::entity& e = create_explosion( g.get_rect(), m_world );
+    event::explosion_started event_explosion;
+    event_explosion.set_cause_entity( e );
+    m_world.emit_event( event_explosion );
+}
+
+void explosion_system::on_event( const event::explosion_ended& event )
+{
+    m_world.schedule_remove_entity( event.get_cause_id() );
 }
 
 }// system

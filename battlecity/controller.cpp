@@ -4,9 +4,15 @@
 
 #include "ecs/systems.h"
 
+#include <QDir>
+#include <QThread>
 #include <QFileInfo>
 
-static constexpr auto map_name_pattern = ":/maps/map_%1";
+static constexpr auto map_extension = "bsmap";
+static constexpr auto map_dir_path = ":/maps/";
+
+static const uint32_t map_switch_pause_duration{ 2000 };
+
 
 namespace game
 {
@@ -15,158 +21,328 @@ controller::controller( const game_settings& settings, ecs::world& world ) :
     m_world( world ),
     m_settings( settings )
 {
-    m_tick_timer = new QTimer{ this };
-    connect( m_tick_timer, SIGNAL( timeout() ), this, SLOT( tick() ) );
+    m_thread = new QThread{ this };
+    m_thread->setObjectName( "ECS thread" );
+
+    m_tick_timer = new QTimer{ nullptr };
+    m_tick_timer->setInterval( 1000 / m_settings.get_fps() );
+    m_tick_timer->moveToThread( m_thread );
+
+    connect( m_thread, SIGNAL( started() ), m_tick_timer, SLOT( start() ) );
+    connect( this, SIGNAL( start_tick_timer_signal() ), m_tick_timer, SLOT( start() ) );
+    connect( this, SIGNAL( stop_tick_timer_signal() ), m_tick_timer, SLOT( stop() ) );
+    connect( m_tick_timer, SIGNAL( timeout() ), this, SLOT( tick() ), Qt::DirectConnection );
+
+    qRegisterMetaType< ecs::entity* >( "ecs::entity*" );
+    qRegisterMetaType< game::object_type >( "object_type" );
+    qRegisterMetaType< game::level_game_result >( "level_game_result" );
+    qRegisterMetaType< event::entity_hit >( "event::entity_hit" );
+    qRegisterMetaType< event::entity_killed >( "event::entity_killed" );
+    qRegisterMetaType< event::entities_removed >( "event::entities_removed" );
+}
+
+controller::~controller()
+{
+    stop();
 }
 
 void controller::init()
 {
-    load_level( m_level );
-    m_need_to_load_level = false;
+    std::lock_guard< std::mutex > l{ m_mutex };
+
+    QDir map_dir{ map_dir_path };
+    map_dir.setNameFilters( QStringList{} <<  QString{ "*.%1" }.arg( map_extension ) );
+    m_levels = map_dir.entryList( QDir::NoDotAndDotDot | QDir::AllEntries );
+
+    if( m_levels.empty() )
+    {
+        throw std::logic_error{ "No maps found" };
+    }
+
+    load_level();
 
     // create systems
     std::unique_ptr< ecs::system > move_system{ new system::movement_system{ m_world } };
+    std::unique_ptr< ecs::system > explosion_system{ new system::explosion_system{ m_world } };
 
     std::unique_ptr< ecs::system > vic_def_system{
-        new system::win_defeat_system{ m_settings.get_base_kills_to_win(),
-                                       m_settings.get_player_lives(),
-                                       m_world } };
+        new system::win_defeat_system{ m_settings.get_base_kills_to_win(), m_world } };
 
     std::unique_ptr< ecs::system > proj_system{
         new system::projectile_system{ m_settings.get_projectile_size(),
-                                       m_settings.get_projectile_damage(),
-                                       m_settings.get_projectile_speed(),
-                                       m_world } };
+                    m_settings.get_projectile_damage(),
+                    m_settings.get_projectile_speed(),
+                    m_world } };
 
     std::unique_ptr< ecs::system > respawn_system{
-        new system::respawn_system{ m_settings.get_enemies_number(), m_world } };
+        new system::respawn_system{ std::chrono::milliseconds{ m_settings.get_respawn_delay_ms() },
+                                    m_world } };
 
-    std::unique_ptr< ecs::system > tank_ai_system{ new system::tank_ai_system{ m_world } };
+    std::unique_ptr< ecs::system > tank_ai_system{
+        new system::tank_ai_system{ m_settings.get_ai_chance_to_fire(), m_world } };
 
     m_world.add_system( *move_system );
+    m_world.add_system( *explosion_system );
     m_world.add_system( *vic_def_system );
     m_world.add_system( *proj_system );
     m_world.add_system( *respawn_system );
     m_world.add_system( *tank_ai_system );
 
     m_systems.emplace_back( std::move( move_system ) );
+    m_systems.emplace_back( std::move( explosion_system ) );
     m_systems.emplace_back( std::move( vic_def_system ) );
     m_systems.emplace_back( std::move( proj_system ) );
     m_systems.emplace_back( std::move( respawn_system ) );
     m_systems.emplace_back( std::move( tank_ai_system ) );
 
     m_world.subscribe< event::level_completed >( *this );
-}
+    m_world.subscribe< event::projectile_fired >( *this );
+    m_world.subscribe< event::entities_removed >( *this );
+    m_world.subscribe< event::entity_killed >( *this );
+    m_world.subscribe< event::entity_hit >( *this );
+    m_world.subscribe< event::explosion_started >( *this );
 
-bool controller::load_level( uint32_t level )
-{
-    QString map_path{ QString{ map_name_pattern }.arg( level ) };
-    QFileInfo map_file{ map_path };
-    bool map_valid{ map_file.exists() && map_file.isFile() };
-
-    if( map_valid )
-    {
-        read_map_file( m_map_data,
-                       QString{ map_name_pattern }.arg( level ),
-                       m_settings,
-                       m_world,
-                       m_mediator );
-    }
-
-    return map_valid;
+    m_state = controller_state::stopped;
 }
 
 void controller::start()
 {
-    m_tick_timer->start( 1000 / m_settings.get_fps() );
-    if( m_mediator )
-    {
-        m_mediator->level_started( m_level );
-    }
+    std::lock_guard< std::mutex > l{ m_mutex };
+
+    m_thread->start();
+    emit level_started_signal( m_map_data.get_map_name() );
+    m_state = controller_state::running;
+}
+
+void controller::pause()
+{
+    std::lock_guard< std::mutex > l{ m_mutex };
+
+    emit stop_tick_timer_signal();
+    m_state = controller_state::paused;
+}
+
+void controller::resume()
+{
+    std::lock_guard< std::mutex > l{ m_mutex };
+
+    emit start_tick_timer_signal();
+    m_state = controller_state::running;
+}
+
+void controller::start_level()
+{
+    std::lock_guard< std::mutex > l{ m_mutex };
+
+    m_world.reset();
+    load_level();
+
+    emit level_started_signal( m_map_data.get_map_name() );
+    emit start_tick_timer_signal();
+    m_state = controller_state::running;
 }
 
 void controller::stop()
 {
-    m_tick_timer->stop();
+    std::lock_guard< std::mutex > l{ m_mutex };
+
+    emit stop_tick_timer_signal();
+    if( m_thread->isRunning() )
+    {
+        m_thread->quit();
+        m_thread->wait();
+    }
+
+    m_state = controller_state::stopped;
+}
+
+QString get_map_path( const QString& map_name )
+{
+    return QString{ map_dir_path } + map_name;
+}
+
+void controller::load_level()
+{
+    read_map_file( m_map_data,
+                   get_map_path( m_levels.front() ),
+                   m_settings,
+                   m_world,
+                   m_mediator );
+
+    for( auto& system : m_systems )
+    {
+        system->init();
+    }
+}
+
+const controller_state& controller::get_state() const noexcept
+{
+    std::lock_guard< std::mutex > l{ m_mutex };
+    return m_state;
 }
 
 void controller::set_map_mediator( map_data_mediator* mediator ) noexcept
 {
+    std::lock_guard< std::mutex > l{ m_mutex };
+
     m_mediator = mediator;
+
+    connect( this,
+             SIGNAL( level_started_signal( const QString& ) ),
+             mediator,
+             SLOT( level_started( const QString& ) ), Qt::QueuedConnection );
+
+    connect( this,
+             SIGNAL( level_completed_signal( const level_game_result& ) ),
+             mediator,
+             SLOT( level_completed( const level_game_result& ) ), Qt::QueuedConnection );
+
+    connect( this,
+             SIGNAL( game_completed_signal() ),
+             mediator,
+             SLOT( game_completed() ), Qt::QueuedConnection );
+
+    connect( this,
+             SIGNAL( add_object_signal(game::object_type,ecs::entity*) ),
+             mediator,
+             SLOT( add_object(game::object_type,ecs::entity*) ) );
+
+    connect( this,
+             SIGNAL( entity_hit_signal( const event::entity_hit& ) ),
+             mediator,
+             SLOT( entity_hit( const event::entity_hit& ) ) );
+
+    connect( this,
+             SIGNAL( entity_killed_signal( const event::entity_killed& ) ),
+             mediator,
+             SLOT( entity_killed( const event::entity_killed& ) ) );
+
+    connect( this,
+             SIGNAL( entities_removed_signal( const event::entities_removed& ) ),
+             mediator,
+             SLOT( entities_removed( const event::entities_removed& ) ) );
+
+    connect( this,
+             SIGNAL( prepare_to_load_next_level_signal() ),
+             mediator,
+             SLOT( prepare_to_load_next_level() ) );
+
+    connect( mediator,
+             SIGNAL( load_next_level() ),
+             this,
+             SLOT( start_level() ) );
+
+    connect( mediator,
+             SIGNAL( start() ),
+             this,
+             SLOT( start() ) );
+
+    connect( mediator,
+             SIGNAL( stop() ),
+             this,
+             SLOT( stop() ) );
+
+    connect( mediator,
+             SIGNAL( pause() ),
+             this,
+             SLOT( pause() ) );
+
+    connect( mediator,
+             SIGNAL( resume() ),
+             this,
+             SLOT( resume() ) );
 }
 
-int controller::get_rows_count() const noexcept
+int controller::get_rows_num() const noexcept
 {
+    std::lock_guard< std::mutex > l{ m_mutex };
     return m_map_data.get_rows_count();
 }
 
-int controller::get_columns_count() const noexcept
+int controller::get_columns_num() const noexcept
 {
+    std::lock_guard< std::mutex > l{ m_mutex };
     return m_map_data.get_columns_count();
 }
 
 int controller::get_tile_width() const noexcept
 {
+    std::lock_guard< std::mutex > l{ m_mutex };
     return m_settings.get_tile_size().width();
 }
 
 int controller::get_tile_height() const noexcept
 {
+    std::lock_guard< std::mutex > l{ m_mutex };
     return m_settings.get_tile_size().height();
 }
 
-uint32_t controller::get_level() const noexcept
+const QString& controller::get_level() const noexcept
 {
-    return m_level;
+    std::lock_guard< std::mutex > l{ m_mutex };
+    return m_map_data.get_map_name();
+}
+
+uint32_t controller::get_player_remaining_lifes()
+{
+    ecs::entity* player{ m_world.get_entities_with_component< component::player >().front() };
+    return player->get_component< component::lifes >().get_lifes();
+}
+
+uint32_t controller::get_base_remaining_health()
+{
+    ecs::entity* player_base{ m_world.get_entities_with_component< component::player_base >().front() };
+    return player_base->get_component< component::health >().get_health();
 }
 
 void controller::on_event( const event::level_completed& event )
 {
-    // TODO: check if level is present
-     m_need_to_load_level = true;
+    pause();
+
     if( event.get_result() == level_game_result::victory )
     {
-        ++m_level;
+        m_levels.pop_front();
     }
 
-    if( m_mediator )
+    if( !m_levels.empty() )
     {
-        m_mediator->level_ended( event.get_result() );
+        emit level_completed_signal( event.get_result() );
+        std::this_thread::sleep_for( std::chrono::milliseconds{ map_switch_pause_duration } );
+        emit prepare_to_load_next_level_signal();
     }
+    else
+    {
+        emit game_completed_signal();
+    }
+}
+
+void controller::on_event( const event::projectile_fired& event )
+{
+    emit add_object_signal( object_type::projectile, &event.get_projectile() );
+}
+
+void controller::on_event( const event::explosion_started& event )
+{
+    emit add_object_signal( object_type::explosion, event.get_cause_entity() );
+}
+
+void controller::on_event( const event::entity_hit& event )
+{
+    emit entity_hit_signal( event );
+}
+
+void controller::on_event(const event::entity_killed &event)
+{
+    emit entity_killed_signal( event );
+}
+
+void controller::on_event( const event::entities_removed& event )
+{
+    emit entities_removed_signal( event );
 }
 
 void controller::tick()
 {
-    if( m_need_to_load_level )
-    {
-        std::this_thread::sleep_for( std::chrono::seconds{ 2 } );
-
-        if( m_mediator )
-        {
-            m_mediator->remove_all();
-        }
-
-        m_world.reset();
-        if( load_level( m_level ) )
-        {
-            if( m_mediator )
-            {
-                m_mediator->level_started( m_level );
-            }
-
-            m_need_to_load_level = false;
-        }
-        else // all maps have been beaten
-        {
-            if( m_mediator )
-            {
-                m_mediator->game_ended( level_game_result::victory );
-                stop();
-                return;
-            }
-        }
-    }
-
     m_world.tick();
 }
 

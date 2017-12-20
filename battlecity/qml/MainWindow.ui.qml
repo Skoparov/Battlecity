@@ -1,17 +1,17 @@
-import QtQuick 2.3
+import QtQuick 2.5
 import QtQuick.Dialogs 1.1
 
 Rectangle
 {
-    property alias mouseArea: mouseArea
+    property alias mouseArea: mouse_area
 
-    width: game_map.width
+    width: game_map.width + side_bar.width
     height: game_map.height
-    color: "gray"
+    color: "#333333"
 
     MouseArea
     {
-        id: mouseArea
+        id: mouse_area
         anchors.fill: parent
 
         Item
@@ -52,17 +52,52 @@ Rectangle
                     model: map_interface.projectiles
                     Projectile{}
                 }
+
+                Repeater
+                {
+                    model: map_interface.explosions
+                    Explosion{}
+                }
             }
         }
 
-        Text
+        Rectangle
         {
-            text: map_interface.announcement
-            font.family: "Comic Sans"
-            font.pointSize: 24
-            color: "red"
+            id: announcenement_back
+            color: "white"
+            opacity: 0.7
+            width: announcenement_text.width + 10
+            height: announcenement_text.height + 10
             visible: map_interface.announcement_visible
             anchors.centerIn: parent
+
+            Text
+            {
+                id: announcenement_text
+                text: map_interface.announcement_text
+                font.family: "Comic Sans"
+                font.pointSize: 18
+                font.capitalization: Font.AllUppercase
+                font.bold: true
+                color: "black"
+                anchors.centerIn: parent
+            }
+        }
+    }
+
+    SideBar
+    {
+        id: side_bar
+        x: game_map.width
+        height: parent.height
+    }
+
+    Keys.onPressed:
+    {
+        if( event.key === Qt.Key_P )
+        {
+            map_interface.pause_resume()
+            event.accepted = true;
         }
     }
 }
