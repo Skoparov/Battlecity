@@ -55,8 +55,8 @@ Rectangle
 
                 Repeater
                 {
-                    model: map_interface.explosions
-                    Explosion{}
+                    model: map_interface.animations
+                    MAnimation{}
                 }
             }
         }

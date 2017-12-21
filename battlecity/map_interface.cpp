@@ -54,9 +54,9 @@ void qml_map_interface::add_object( const object_type& type, ecs::entity* entity
         map_object.reset( new graphics_map_object{ entity, type } );
         m_remaining_frags.append( dynamic_cast< graphics_map_object* >( map_object.get() ) );
         break;
-    case object_type::explosion:
-        map_object.reset( new graphics_map_object{ entity, type } );
-        m_explosions.append( dynamic_cast< graphics_map_object* >( map_object.get() ) );
+    case object_type::animation:
+        map_object.reset( new animated_map_object{ entity, type } );
+        m_animations.append( dynamic_cast< animated_map_object* >( map_object.get() ) );
         break;
     case object_type::respawn_point: break;
     default:
@@ -80,7 +80,7 @@ void qml_map_interface::remove_all_objects()
     m_projectiles.clear();
     m_remaining_frags.clear();
     m_projectiles.clear();
-    m_explosions.clear();
+    m_animations.clear();
 
     update_all();
 
@@ -279,34 +279,9 @@ QQmlListProperty<graphics_map_object> qml_map_interface::get_remaining_frags()
     return QQmlListProperty< graphics_map_object >{ this, m_remaining_frags };
 }
 
-QQmlListProperty< graphics_map_object > qml_map_interface::get_explosions()
+QQmlListProperty< animated_map_object > qml_map_interface::get_animations()
 {
-    return QQmlListProperty< graphics_map_object >{ this, m_explosions };
-}
-
-void qml_map_interface::explosion_ended( unsigned int id )
-{
-    auto explosions_it = m_map_objects.find( object_type::explosion );
-    if( explosions_it != m_map_objects.end() )
-    {
-        std::unique_ptr< base_map_object > explosion;
-
-        object_umap& explosions = explosions_it->second;
-        auto explosion_it = explosions.find( id );
-
-        if( explosion_it != explosions.end() )
-        {
-            explosion = std::move( explosion_it->second );
-            explosions.erase( explosion_it );
-
-            remove_object_from_model( object_type::explosion, explosion.get() );
-            objects_of_type_changed( object_type::explosion );
-
-            event::explosion_ended event;
-            event.set_cause_id( id );
-            m_controller.emit_event( event );
-        }
-    }
+    return QQmlListProperty< animated_map_object >{ this, m_animations };
 }
 
 void qml_map_interface::pause_resume()
@@ -373,8 +348,8 @@ void qml_map_interface::objects_of_type_changed( const object_type& type )
     case object_type::frag:
         emit remaining_frags_changed( get_remaining_frags() );
         break;
-    case object_type::explosion:
-        emit explosions_changed( get_explosions() );
+    case object_type::animation:
+        emit animations_changed( get_animations() );
         break;
     default:
         assert( false );
@@ -389,10 +364,10 @@ void qml_map_interface::remove_object_from_model( const object_type& type, base_
         m_projectiles.erase( std::remove( m_projectiles.begin(), m_projectiles.end(), obj ),
                              m_projectiles.end() );
         break;
-    case object_type::explosion:
+    case object_type::animation:
     {
-        m_explosions.erase( std::remove( m_explosions.begin(), m_explosions.end(), obj ),
-                             m_explosions.end() );
+        m_animations.erase( std::remove( m_animations.begin(), m_animations.end(), obj ),
+                             m_animations.end() );
         break;
     }
     default:
@@ -414,7 +389,7 @@ void qml_map_interface::update_all()
     emit remaining_frags_changed( get_remaining_frags() );
     emit player_remaining_lifes_changed( get_player_remaining_lifes() );
     emit base_remaining_health_changed( get_base_remaining_health() );
-    emit explosions_changed( get_explosions() );
+    emit animations_changed( get_animations() );
 }
 
 }// game

@@ -1,6 +1,8 @@
 #ifndef ENTITY_FACTORY_H
 #define ENTITY_FACTORY_H
 
+#include <chrono>
+
 #include <QRect>
 
 #include "framework/world.h"
@@ -9,7 +11,13 @@
 namespace game
 {
 
-ecs::entity& create_explosion( const QRect& rect, ecs::world& world );
+ecs::entity& create_explosion( const QRect& rect,
+                               uint32_t frame_num,
+                               uint32_t frame_rate,
+                               uint32_t loops_num,
+                               const std::chrono::milliseconds& duration,
+                               ecs::world& world );
+
 ecs::entity& create_entity_frag( const QRect& rect, ecs::world& world, uint32_t num );
 ecs::entity& create_respawn_point_entity( const QRect& rect, ecs::world& world );
 ecs::entity& create_map_entity( const QRect& rect, ecs::world& world );

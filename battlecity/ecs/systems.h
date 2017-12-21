@@ -5,6 +5,24 @@
 #include "components.h"
 #include "framework/world.h"
 
+namespace std
+{
+
+template<> struct hash< game::animation_type >
+{
+    using argument_type = game::animation_type;
+    using underlying_type = std::underlying_type< argument_type >::type;
+    using result_type = std::hash< underlying_type >::result_type;
+
+    size_t operator()( const argument_type& arg ) const
+    {
+        std::hash< underlying_type > hasher;
+        return hasher( static_cast< underlying_type >( arg ) );
+    }
+};
+
+}// std
+
 namespace game
 {
 
@@ -66,7 +84,14 @@ class respawn_system final : public ecs::system,
     };
 
 public:
-    respawn_system( const std::chrono::milliseconds respawn_delay, ecs::world& world );
+    template< typename rep, typename period >
+    respawn_system( const std::chrono::duration< rep, period >& respawn_delay, ecs::world& world ):
+        ecs::system( world ),
+        m_respawn_delay( std::chrono::duration_cast< std::chrono::milliseconds >( respawn_delay ) )
+    {
+        m_world.subscribe< event::entity_killed >( *this );
+    }
+
     ~respawn_system() override;
 
     void tick() override;
@@ -126,20 +151,33 @@ private:
     float m_chance_to_fire{ 0.0 };
 };
 
-class explosion_system final : public ecs::system,
-                               public ecs::event_callback< event::projectile_collision >,
-                               public ecs::event_callback< event::explosion_ended >
+class animation_system final : public ecs::system,
+                               public ecs::event_callback< event::projectile_collision >
 {
-public:
-    explicit explosion_system( ecs::world& world ) noexcept;
-    ~explosion_system();
+private:
+    using clock = std::chrono::high_resolution_clock;
 
+    struct animation_info
+    {
+        ecs::entity* entity;
+        clock::time_point start;
+    };
+
+public:
+    explicit animation_system( ecs::world& world ) noexcept;
+    ~animation_system();
+
+    void clean();
     void tick() override;
 
-    void on_event( const event::projectile_collision& );
-    void on_event( const event::explosion_ended& );
-};
+    void add_animation_settings( const animation_type& type, const animation_data& data );
 
+    void on_event( const event::projectile_collision& );
+
+private:
+    std::list< animation_info > m_animations;
+    std::unordered_map< animation_type, animation_data > m_animation_data;
+};
 }// system
 
 }// ecs

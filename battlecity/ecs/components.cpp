@@ -23,9 +23,6 @@ const tile_type& tile_object::get_tile_type() const noexcept
 
 //
 
-turret_object::turret_object( const std::chrono::milliseconds& cooldown ) noexcept:
-    m_cooldown( cooldown ){}
-
 bool turret_object::set_fire_status( bool fired ) noexcept
 {
     std::lock_guard< _detail::spinlock > l{ m_lock };
@@ -238,6 +235,33 @@ bool graphics::get_visible() const noexcept
 {
     std::lock_guard< _detail::spinlock > l{ m_lock };
     return m_visible;
+}
+
+//
+
+const animation_type& animation_info::get_type() const noexcept
+{
+    return m_type;
+}
+
+uint32_t animation_info::get_frames_num() const noexcept
+{
+    return m_frames_num;
+}
+
+uint32_t animation_info::get_frame_rate() const noexcept
+{
+    return m_frame_rate;
+}
+
+uint32_t animation_info::get_loops_num() const noexcept
+{
+    return m_loops_num;
+}
+
+const std::chrono::milliseconds& animation_info::get_duration() const noexcept
+{
+    return m_duration;
 }
 
 //

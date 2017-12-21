@@ -63,7 +63,6 @@ void controller::init()
 
     // create systems
     std::unique_ptr< ecs::system > move_system{ new system::movement_system{ m_world } };
-    std::unique_ptr< ecs::system > explosion_system{ new system::explosion_system{ m_world } };
 
     std::unique_ptr< ecs::system > vic_def_system{
         new system::win_defeat_system{ m_settings.get_base_kills_to_win(), m_world } };
@@ -81,15 +80,22 @@ void controller::init()
     std::unique_ptr< ecs::system > tank_ai_system{
         new system::tank_ai_system{ m_settings.get_ai_chance_to_fire(), m_world } };
 
+    std::unique_ptr< ecs::system > animation_system{ new system::animation_system{ m_world } };
+    system::animation_system* anim_sys = dynamic_cast< system::animation_system* >( animation_system.get() );
+    for( const auto& data_pair : m_settings.get_animation_data() )
+    {
+        anim_sys->add_animation_settings( data_pair.first, data_pair.second );
+    }
+
     m_world.add_system( *move_system );
-    m_world.add_system( *explosion_system );
+    m_world.add_system( *animation_system );
     m_world.add_system( *vic_def_system );
     m_world.add_system( *proj_system );
     m_world.add_system( *respawn_system );
     m_world.add_system( *tank_ai_system );
 
     m_systems.emplace_back( std::move( move_system ) );
-    m_systems.emplace_back( std::move( explosion_system ) );
+    m_systems.emplace_back( std::move( animation_system ) );
     m_systems.emplace_back( std::move( vic_def_system ) );
     m_systems.emplace_back( std::move( proj_system ) );
     m_systems.emplace_back( std::move( respawn_system ) );
@@ -100,7 +106,7 @@ void controller::init()
     m_world.subscribe< event::entities_removed >( *this );
     m_world.subscribe< event::entity_killed >( *this );
     m_world.subscribe< event::entity_hit >( *this );
-    m_world.subscribe< event::explosion_started >( *this );
+    m_world.subscribe< event::animation_started >( *this );
 
     m_state = controller_state::stopped;
 }
@@ -321,9 +327,9 @@ void controller::on_event( const event::projectile_fired& event )
     emit add_object_signal( object_type::projectile, &event.get_projectile() );
 }
 
-void controller::on_event( const event::explosion_started& event )
+void controller::on_event( const event::animation_started& event )
 {
-    emit add_object_signal( object_type::explosion, event.get_cause_entity() );
+    emit add_object_signal( object_type::animation, event.get_cause_entity() );
 }
 
 void controller::on_event( const event::entity_hit& event )

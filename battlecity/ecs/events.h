@@ -47,7 +47,7 @@ private:
     ecs::entity_id m_cause_id{ INVALID_NUMERIC_ID };
 };
 
- // contains the entity that caused the event
+// contains the entity that caused the event
 class event_cause
 {
 public:
@@ -65,6 +65,7 @@ public:
     void add_cause_entity( ecs::entity& entity );
     bool entity_present( ecs::entity_id id ) const;
     const std::unordered_map< ecs::entity_id, ecs::entity* >& get_cause_entities() const noexcept;
+    bool empty() const noexcept;
 
 private:
     std::unordered_map< ecs::entity_id, ecs::entity* > m_cause_entities;
@@ -148,8 +149,24 @@ public:
 //
 
 class projectile_collision final : public _detail::event_cause{};
-class explosion_started final : public _detail::event_cause{};
-class explosion_ended final : public _detail::event_cause_id{};
+
+class animation_started final : public _detail::event_cause
+{
+public:
+    animation_started( const animation_type& type ) : m_animation_type( type ){}
+
+private:
+    animation_type m_animation_type;
+};
+
+class animation_ended final : public _detail::event_cause
+{
+public:
+    animation_ended( const animation_type& type ) : m_animation_type( type ){}
+
+private:
+    animation_type m_animation_type;
+};
 
 //
 
@@ -160,6 +177,7 @@ class entities_removed final
 public:
     void add_entity( const object_type& type, ecs::entity& entity );
     const removed_entities_umap& get_removed_entities() const noexcept;
+    bool empty() const noexcept;
 
 private:
     removed_entities_umap m_removed_entities;

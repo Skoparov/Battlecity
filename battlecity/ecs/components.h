@@ -36,7 +36,9 @@ class turret_object final
     using clock = std::chrono::high_resolution_clock;
 
 public:
-    turret_object( const std::chrono::milliseconds& cooldown ) noexcept;
+    template< typename rep, typename period >
+    turret_object( const std::chrono::duration< rep, period >& cooldown ) noexcept:
+        m_cooldown( std::chrono::duration_cast< std::chrono::milliseconds >( cooldown ) ){}
 
     bool set_fire_status( bool fired ) noexcept;
     bool has_fired() const noexcept;
@@ -182,6 +184,39 @@ private:
     bool m_visible{ true };
 
     mutable _detail::spinlock m_lock;
+};
+
+//
+
+class animation_info
+{
+public:
+    animation_info() = default;
+
+    template< typename rep, typename period >
+    animation_info( const animation_type& type,
+                    uint32_t frames_num,
+                    uint32_t frame_rate,
+                    uint32_t loops_num,
+                    const std::chrono::duration< rep, period >& duration ):
+           m_type( type ),
+           m_frames_num( frames_num ),
+           m_frame_rate( frame_rate ),
+           m_loops_num( loops_num ),
+           m_duration( std::chrono::duration_cast< std::chrono::milliseconds >( duration ) ){}
+
+    const animation_type& get_type() const noexcept;
+    uint32_t get_frames_num() const noexcept;
+    uint32_t get_frame_rate() const noexcept;
+    uint32_t get_loops_num() const noexcept;
+    const std::chrono::milliseconds& get_duration() const noexcept;
+
+private:
+    animation_type m_type;
+    uint32_t m_frames_num{ 0 };
+    uint32_t m_frame_rate{ 0 };
+    uint32_t m_loops_num{ 0 };
+    std::chrono::milliseconds m_duration{ 0 };
 };
 
 //

@@ -18,6 +18,7 @@ HEADERS += \
 # game stuff
         map_objects/base_map_object.h \
         map_objects/graphics_map_object.h \
+        map_objects/animated_map_object.h \
         map_objects/movable_map_object.h \
         map_objects/tank_map_object.h \
         map_interface.h \
@@ -43,6 +44,7 @@ SOURCES += \
 # game stuff
         map_objects/base_map_object.cpp \
         map_objects/graphics_map_object.cpp \
+        map_objects/animated_map_object.cpp \
         map_objects/movable_map_object.cpp \
         map_objects/tank_map_object.cpp \
         map_interface.cpp \
@@ -50,7 +52,7 @@ SOURCES += \
         game_settings.cpp \
         map_data.cpp
 
-RESOURCES += qml.qrc
+RESOURCES += resources.qrc
 
 # Additional import path used to resolve QML modules in Qt Creator's code model
 QML_IMPORT_PATH =
