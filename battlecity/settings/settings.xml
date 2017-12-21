@@ -25,4 +25,10 @@
         <LoopsNum>1</LoopsNum>
         <DurationMs>400</DurationMs>
     </ExplosionAnimation>
+    <RespawnAnimation>
+        <FrameNum>9</FrameNum>
+        <FrameRate>9</FrameRate>
+        <LoopsNum>1</LoopsNum>
+        <DurationMs>400</DurationMs>
+    </RespawnAnimation>
 </Settings>

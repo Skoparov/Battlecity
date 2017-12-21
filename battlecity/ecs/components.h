@@ -73,7 +73,7 @@ class player_base final{};
 
 //
 
-class explosion final{};
+class animation final{};
 
 //
 

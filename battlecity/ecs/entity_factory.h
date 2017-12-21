@@ -11,11 +11,12 @@
 namespace game
 {
 
-ecs::entity& create_explosion( const QRect& rect,
+ecs::entity& create_animation( const QRect& rect,
                                uint32_t frame_num,
                                uint32_t frame_rate,
                                uint32_t loops_num,
                                const std::chrono::milliseconds& duration,
+                               const animation_type& type,
                                ecs::world& world );
 
 ecs::entity& create_entity_frag( const QRect& rect, ecs::world& world, uint32_t num );

@@ -185,6 +185,10 @@ private:
 
 //
 
+class entity_respawned final :  public _detail::event_cause{};
+
+//
+
 class level_completed final
 {
 public:

@@ -152,7 +152,8 @@ private:
 };
 
 class animation_system final : public ecs::system,
-                               public ecs::event_callback< event::projectile_collision >
+                               public ecs::event_callback< event::projectile_collision >,
+                               public ecs::event_callback< event::entity_respawned >
 {
 private:
     using clock = std::chrono::high_resolution_clock;
@@ -173,6 +174,10 @@ public:
     void add_animation_settings( const animation_type& type, const animation_data& data );
 
     void on_event( const event::projectile_collision& );
+    void on_event( const event::entity_respawned& );
+
+private:
+    void create_animation_entity( const QRect& rect, const animation_type& type );
 
 private:
     std::list< animation_info > m_animations;
