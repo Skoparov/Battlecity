@@ -9,7 +9,7 @@
 		<file>qml/Projectile.qml</file>
         <file>qml/SideBar.qml</file>
         <file>qml/Frag.qml</file>
-        <file>qml/Explosion.qml</file>
+        <file>qml/MAnimation.qml</file>
 
         <file>maps/map0.bsmap</file>
         <file>maps/map1.bsmap</file>

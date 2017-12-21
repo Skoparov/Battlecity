@@ -6,6 +6,7 @@
 
 #include "map_data.h"
 #include "map_objects/tank_map_object.h"
+#include "map_objects/animated_map_object.h"
 
 namespace game
 {
@@ -54,7 +55,7 @@ public:
     QQmlListProperty< tank_map_object > get_enemy_tanks();
     QQmlListProperty< movable_map_object > get_projectiles();
     QQmlListProperty< graphics_map_object > get_remaining_frags();
-    QQmlListProperty< graphics_map_object > get_explosions();
+    QQmlListProperty< animated_map_object > get_animations();
 
     Q_PROPERTY( int rows_num READ get_rows_num NOTIFY rows_num_changed )
     Q_PROPERTY( int columns_num READ get_columns_num  NOTIFY columns_num_changed )
@@ -70,13 +71,12 @@ public:
     Q_PROPERTY( QQmlListProperty< game::tank_map_object > enemy_tanks READ get_enemy_tanks NOTIFY enemy_tanks_changed )
     Q_PROPERTY( QQmlListProperty< game::movable_map_object > projectiles READ get_projectiles NOTIFY projectiles_changed )
     Q_PROPERTY( QQmlListProperty< game::graphics_map_object > remaining_frags READ get_remaining_frags NOTIFY remaining_frags_changed )
-    Q_PROPERTY( QQmlListProperty< game::graphics_map_object > explosions READ get_explosions NOTIFY explosions_changed )
+    Q_PROPERTY( QQmlListProperty< game::animated_map_object > animations READ get_animations NOTIFY animations_changed )
     Q_PROPERTY( QString announcement_text READ get_announcement_text NOTIFY announcement_text_changed )
     Q_PROPERTY( bool announcement_visible READ get_announecement_visible NOTIFY announcement_visibility_changed )
     Q_PROPERTY( QString pause_play_button_text READ get_pause_resume_button_text NOTIFY pause_resume_button_text_changed )
     Q_PROPERTY( bool pause_play_button_visible READ get_pause_resume_button_visible NOTIFY pause_resume_button_visibility_changed )
 
-    Q_INVOKABLE void explosion_ended( unsigned int id );
     Q_INVOKABLE void pause_resume();
 
 signals:
@@ -89,7 +89,7 @@ signals:
     void enemy_tanks_changed( QQmlListProperty< game::tank_map_object > );
     void projectiles_changed( QQmlListProperty< game::movable_map_object > );
     void remaining_frags_changed( QQmlListProperty< game::graphics_map_object > );
-    void explosions_changed( QQmlListProperty< game::graphics_map_object > );
+    void animations_changed( QQmlListProperty< game::animated_map_object > );
     void player_remaining_lifes_changed( int );
     void base_remaining_health_changed( int );
     void announcement_text_changed( const QString& );
@@ -117,7 +117,7 @@ private:
     QList< tank_map_object* > m_enemy_tanks;
     QList< movable_map_object* > m_projectiles;
     QList< graphics_map_object* > m_remaining_frags;
-    QList< graphics_map_object* > m_explosions;
+    QList< animated_map_object* > m_animations;
 
     using object_umap = std::unordered_map< ecs::entity_id, std::unique_ptr< base_map_object > >;
     std::unordered_map< object_type, object_umap > m_map_objects;

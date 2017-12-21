@@ -20,7 +20,7 @@ class controller :  public QObject,
                     public ecs::event_callback< event::entities_removed >,
                     public ecs::event_callback< event::entity_killed >,
                     public ecs::event_callback< event::entity_hit >,
-                    public ecs::event_callback< event::explosion_started >
+                    public ecs::event_callback< event::animation_started >
 {
     Q_OBJECT
 
@@ -50,7 +50,7 @@ public:
 
     void on_event( const event::level_completed& event ) override;
     void on_event( const event::projectile_fired& event ) override;
-    void on_event( const event::explosion_started& event ) override;
+    void on_event( const event::animation_started& event ) override;
     void on_event( const event::entity_hit& event ) override;
     void on_event( const event::entity_killed& event ) override;
     void on_event( const event::entities_removed& event ) override;
