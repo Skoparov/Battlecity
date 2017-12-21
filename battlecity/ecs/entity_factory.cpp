@@ -192,11 +192,22 @@ ecs::entity& create_entity_frag(const QRect& rect, ecs::world& world, uint32_t n
     return entity;
 }
 
-ecs::entity& create_explosion( const QRect& rect, ecs::world& world )
+ecs::entity& create_explosion( const QRect& rect,
+                               uint32_t frame_num,
+                               uint32_t frame_rate,
+                               uint32_t loops_num,
+                               const std::chrono::milliseconds& duration,
+                               ecs::world& world )
 {
     ecs::entity& entity = world.create_entity();
 
     entity.add_component< component::explosion >();
+    entity.add_component< component::animation_info >( animation_type::explosion,
+                                                       frame_num,
+                                                       frame_rate,
+                                                       loops_num,
+                                                       duration );
+
     entity.add_component< component::geometry >( rect );
     entity.add_component< component::graphics >( get_image_path( image_explosion ) );
 

@@ -371,7 +371,7 @@ void projectile_system::handle_existing_projectiles()
         return true;
     } );
 
-    if( !entities_removed_event.get_removed_entities().empty() )
+    if( !entities_removed_event.empty() )
     {
         m_world.emit_event( entities_removed_event );
     }
@@ -406,14 +406,6 @@ void projectile_system::create_new_projectiles()
 }
 
 //
-
-respawn_system::respawn_system( const std::chrono::milliseconds respawn_delay,
-                                ecs::world& world ):
-    ecs::system( world ),
-    m_respawn_delay( respawn_delay )
-{
-    m_world.subscribe< event::entity_killed >( *this );
-}
 
 respawn_system::~respawn_system()
 {
@@ -721,34 +713,84 @@ void tank_ai_system::clean()
     m_enemies.clear();
 }
 
-explosion_system::explosion_system( ecs::world& world ) noexcept : ecs::system( world )
+animation_system::animation_system( ecs::world& world ) noexcept : ecs::system( world )
 {
     m_world.subscribe< event::projectile_collision >( *this );
-    m_world.subscribe< event::explosion_ended >( *this );
 }
 
-explosion_system::~explosion_system()
+animation_system::~animation_system()
 {
     m_world.unsubscribe< event::projectile_collision >( *this );
-    m_world.unsubscribe< event::explosion_ended >( *this );
 }
 
-void explosion_system::tick(){}
+void animation_system::clean()
+{
+    m_animations.clear();
+}
 
-void explosion_system::on_event( const event::projectile_collision& event )
+void animation_system::tick()
+{
+    using namespace std::chrono;
+
+    event::entities_removed entities_removed_event;
+
+    auto now = clock::now();
+    for( auto iter = m_animations.begin(); iter != m_animations.end(); )
+    {
+        const animation_info& anim = *iter;
+
+        const component::animation_info& info =
+                anim.entity->get_component_unsafe< component::animation_info >();
+
+        auto anum_duration = duration_cast< milliseconds >( now - anim.start );
+        if( anum_duration >= info.get_duration() )
+        {
+            entities_removed_event.add_entity( object_type::animation, *anim.entity );
+
+            event::animation_ended event{ info.get_type() };
+            event.set_cause_entity( *anim.entity );
+            m_world.emit_event( event );
+
+            m_animations.erase( iter++ );
+        }
+        else
+        {
+            ++iter;
+        }
+    }
+
+    if( !entities_removed_event.empty() )
+    {
+        m_world.emit_event( entities_removed_event );
+    }
+}
+
+void animation_system::add_animation_settings( const animation_type& type,
+                                               const animation_data& data )
+{
+    m_animation_data[ type ] = data;
+}
+
+void animation_system::on_event( const event::projectile_collision& event )
 {
     const component::geometry& g = event.get_cause_entity()->
             get_component< component::geometry >();
 
-    ecs::entity& e = create_explosion( g.get_rect(), m_world );
-    event::explosion_started event_explosion;
-    event_explosion.set_cause_entity( e );
-    m_world.emit_event( event_explosion );
-}
+    const animation_data& data = m_animation_data.at( animation_type::explosion );
+    ecs::entity& e = create_explosion( g.get_rect(),
+                                       data.frame_num,
+                                       data.frame_rate,
+                                       data.loops,
+                                       data.duration,
+                                       m_world );
 
-void explosion_system::on_event( const event::explosion_ended& event )
-{
-    m_world.schedule_remove_entity( event.get_cause_id() );
+    event::animation_started event_explosion{ animation_type::explosion };
+    event_explosion.set_cause_entity( e );
+
+    animation_info info{ &e, clock::now() };
+    m_animations.emplace_back( info );
+
+    m_world.emit_event( event_explosion );
 }
 
 }// system

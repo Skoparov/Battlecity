@@ -1,6 +1,8 @@
 #ifndef GENERAL_ENUMS_H
 #define GENERAL_ENUMS_H
 
+#include <chrono>
+
 namespace game
 {
 
@@ -8,6 +10,7 @@ enum class tile_type{ wall, iron_wall, empty };
 enum class alignment{ player, enemy };
 enum class movement_direction{ left, right, up, down, none };
 enum class has_infinite_lifes{ yes, no };
+enum class animation_type{ explosion };
 enum class object_type{ tile,
                         player_base,
                         player_tank,
@@ -15,7 +18,16 @@ enum class object_type{ tile,
                         projectile,
                         respawn_point,
                         frag,
-                        explosion };
+                        animation };
+
+struct animation_data
+{
+    std::chrono::milliseconds duration;
+    uint32_t frame_num;
+    uint32_t frame_rate;
+    uint32_t loops;
+};
+
 
 }// game
 

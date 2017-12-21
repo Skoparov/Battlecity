@@ -2,7 +2,7 @@ import QtQuick 2.0
 
 Item
 {
-    id: explosion
+    id: animation
     x: modelData.pos_x
     y: modelData.pos_y
     width: modelData.width
@@ -15,23 +15,15 @@ Item
         width: modelData.width
         height: modelData.height
         source: modelData.image_path
-        frameCount: 12
-        frameRate: 6
-        loops: 1
+        frameCount: modelData.frames_num//12
+        frameRate: modelData.frame_rate//6
+        loops: modelData.loops//1
     }
 
     NumberAnimation on rotation
     {
         to: 0
-        duration: 400
-
-        onRunningChanged:
-        {
-            if( !running )
-            {
-                map_interface.explosion_ended( modelData.object_id )
-            }
-        }
+        duration: modelData.duration
     }
 }
 

@@ -44,6 +44,11 @@ const std::unordered_map< ecs::entity_id, ecs::entity* >& event_causes::get_caus
     return m_cause_entities;
 }
 
+bool event_causes::empty() const noexcept
+{
+    return m_cause_entities.empty();
+}
+
 }// _detail
 
 geometry_changed::geometry_changed( bool x_changed,
@@ -123,6 +128,11 @@ const object_type& projectile_hit_info::get_victim_type() const noexcept
 void entities_removed::add_entity( const object_type& type, ecs::entity& entity )
 {
     m_removed_entities[ type ].emplace_back( &entity );
+}
+
+bool entities_removed::empty() const noexcept
+{
+    return m_removed_entities.empty();
 }
 
 auto entities_removed::get_removed_entities() const noexcept -> const removed_entities_umap&

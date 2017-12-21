@@ -1,8 +1,13 @@
 #ifndef GAME_SETTINGS_H
 #define GAME_SETTINGS_H
 
+#include <map>
+#include <chrono>
+
 #include <QSize>
 #include <QString>
+
+#include "ecs/general_enums.h"
 
 namespace game
 {
@@ -64,6 +69,10 @@ public:
     void set_ai_chance_to_fire( float chance_to_fire ) noexcept;
     float get_ai_chance_to_fire() const noexcept;
 
+    void set_animation_data( const animation_type& type, const animation_data& data );
+    const animation_data& get_animation_data( const animation_type& type ) const;
+    const std::map< animation_type, animation_data >& get_animation_data() const noexcept;
+
 private:
     uint32_t m_fps{ 0 };
     QSize m_tile_size{};
@@ -83,6 +92,8 @@ private:
     uint32_t m_projectile_damage{ 0 };
     uint32_t m_turret_cooldown_ms{ 0 };
     float m_ai_chance_to_file{ 0.0 };
+
+    std::map< animation_type, animation_data > m_animation_data;
 };
 
 game_settings read_game_settings( const QString& file );

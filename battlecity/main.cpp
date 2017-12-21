@@ -27,6 +27,7 @@ int main(int argc, char *argv[])
         qmlRegisterType< game::graphics_map_object >();
         qmlRegisterType< game::tank_map_object >();
         qmlRegisterType< game::movable_map_object >();
+        qmlRegisterType< game::animated_map_object >();
 
         QGuiApplication app{ argc, argv };
         QQmlApplicationEngine engine;
