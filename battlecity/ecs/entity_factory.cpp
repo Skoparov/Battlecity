@@ -11,6 +11,7 @@ static constexpr auto image_enemy_tank = "enemy_tank";
 static constexpr auto image_projectile = "projectile";
 static constexpr auto image_frag = "frag";
 static constexpr auto image_explosion = "explosion";
+static constexpr auto image_respawn = "respawn";
 
 namespace game
 {
@@ -192,24 +193,39 @@ ecs::entity& create_entity_frag(const QRect& rect, ecs::world& world, uint32_t n
     return entity;
 }
 
-ecs::entity& create_explosion( const QRect& rect,
+QString get_animation_path( const animation_type& type )
+{
+    QString image_name;
+
+    switch( type )
+    {
+    case animation_type::explosion : image_name = image_explosion; break;
+    case animation_type::respawn : image_name = image_respawn; break;
+    default: throw std::invalid_argument{ "Unimplemented animation type" };
+    }
+
+    return get_image_path( image_name );
+}
+
+ecs::entity& create_animation( const QRect& rect,
                                uint32_t frame_num,
                                uint32_t frame_rate,
                                uint32_t loops_num,
                                const std::chrono::milliseconds& duration,
+                               const animation_type& type,
                                ecs::world& world )
 {
     ecs::entity& entity = world.create_entity();
 
-    entity.add_component< component::explosion >();
-    entity.add_component< component::animation_info >( animation_type::explosion,
+    entity.add_component< component::animation >();
+    entity.add_component< component::animation_info >( type,
                                                        frame_num,
                                                        frame_rate,
                                                        loops_num,
                                                        duration );
 
     entity.add_component< component::geometry >( rect );
-    entity.add_component< component::graphics >( get_image_path( image_explosion ) );
+    entity.add_component< component::graphics >( get_animation_path( type ) );
 
     return entity;
 }

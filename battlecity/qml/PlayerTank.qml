@@ -23,13 +23,14 @@ Item
         paused: !modelData.visible
     }
 
-    Rectangle
-    {
-        width: modelData.width
-        height: modelData.height
-        border.color: "green"
-        color: "transparent"
-    }
+//    Rectangle
+//    {
+//        id: debug_tank_border
+//        width: modelData.width
+//        height: modelData.height
+//        border.color: "green"
+//        color: "transparent"
+//    }
 
     Keys.onPressed:
     {

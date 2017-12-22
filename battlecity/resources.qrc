@@ -25,5 +25,6 @@
         <file>graphics/frag.png</file>
         <file>graphics/heart.png</file>
         <file>graphics/explosion.png</file>
+		<file>graphics/respawn.png</file>
     </qresource>
 </RCC>

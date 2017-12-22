@@ -9,10 +9,10 @@
     <WallHealth>1</WallHealth>
     <IronWallHealth>2</IronWallHealth>
     <PlayerBaseHealth>5</PlayerBaseHealth>
-    <PlayerLives>1</PlayerLives>
+    <PlayerLives>5</PlayerLives>
     <EnemiesNum>2</EnemiesNum>
     <RespawnDelayMs>1000</RespawnDelayMs>
-    <BaseKillsToWin>1</BaseKillsToWin>
+    <BaseKillsToWin>20</BaseKillsToWin>
     <TankSpeed>6</TankSpeed>
     <ProjectileSpeed>16</ProjectileSpeed>
     <ProjectileDamage>1</ProjectileDamage>
@@ -25,4 +25,10 @@
         <LoopsNum>1</LoopsNum>
         <DurationMs>400</DurationMs>
     </ExplosionAnimation>
+    <RespawnAnimation>
+        <FrameNum>9</FrameNum>
+        <FrameRate>9</FrameRate>
+        <LoopsNum>1</LoopsNum>
+        <DurationMs>400</DurationMs>
+    </RespawnAnimation>
 </Settings>

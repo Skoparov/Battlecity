@@ -431,8 +431,12 @@ void respawn_system::respawn_entity( ecs::entity& entity, const component::geome
     event::graphics_changed graphics_changed_event{ false, true };
     graphics_changed_event.set_cause_entity( entity );
 
+    event::entity_respawned respawn_event;
+    respawn_event.set_cause_entity( entity );
+
     m_world.emit_event( geometry_changed_event );
     m_world.emit_event( graphics_changed_event );
+    m_world.emit_event( respawn_event );
 }
 
 void respawn_system::respawn_list( std::list< death_info >& list,
@@ -716,11 +720,13 @@ void tank_ai_system::clean()
 animation_system::animation_system( ecs::world& world ) noexcept : ecs::system( world )
 {
     m_world.subscribe< event::projectile_collision >( *this );
+    m_world.subscribe< event::entity_respawned >( *this );
 }
 
 animation_system::~animation_system()
 {
     m_world.unsubscribe< event::projectile_collision >( *this );
+    m_world.unsubscribe< event::entity_respawned >( *this );
 }
 
 void animation_system::clean()
@@ -773,24 +779,41 @@ void animation_system::add_animation_settings( const animation_type& type,
 
 void animation_system::on_event( const event::projectile_collision& event )
 {
-    const component::geometry& g = event.get_cause_entity()->
-            get_component< component::geometry >();
+    ecs::entity& entity = *event.get_cause_entity();
+    const component::geometry& g = entity.get_component< component::geometry >();
+    create_animation_entity( g.get_rect(), animation_type::explosion );
+}
 
-    const animation_data& data = m_animation_data.at( animation_type::explosion );
-    ecs::entity& e = create_explosion( g.get_rect(),
+void animation_system::on_event( const event::entity_respawned& event )
+{
+    ecs::entity& entity = *event.get_cause_entity();
+    const component::geometry& g = entity.get_component< component::geometry >();
+    QRect rect = g.get_rect();
+    QSize size{ rect.size() };
+    rect.translate( -size.width() / 2, -size.height() / 2 );
+    rect.setSize( size * 2 );
+
+    create_animation_entity( rect, animation_type::respawn );
+}
+
+void animation_system::create_animation_entity( const QRect& rect, const animation_type& type )
+{
+    const animation_data& data = m_animation_data.at( type );
+    ecs::entity& e = create_animation( rect,
                                        data.frame_num,
                                        data.frame_rate,
                                        data.loops,
                                        data.duration,
+                                       type,
                                        m_world );
 
-    event::animation_started event_explosion{ animation_type::explosion };
-    event_explosion.set_cause_entity( e );
+    event::animation_started event_animation{ type };
+    event_animation.set_cause_entity( e );
 
     animation_info info{ &e, clock::now() };
     m_animations.emplace_back( info );
 
-    m_world.emit_event( event_explosion );
+    m_world.emit_event( event_animation );
 }
 
 }// system

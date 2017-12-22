@@ -22,6 +22,7 @@ static constexpr auto tag_projectile_damage = "ProjectileDamage";
 static constexpr auto tag_turret_cooldown_ms = "TurretCooldownMs";
 static constexpr auto tag_ai_chance_to_fire = "AiChanceToFire";
 static constexpr auto tag_explosion_animation_data = "ExplosionAnimation";
+static constexpr auto tag_respawn_animation_data = "RespawnAnimation";
 static constexpr auto tag_animation_frame_num = "FrameNum";
 static constexpr auto tag_animation_frame_rate = "FrameRate";
 static constexpr auto tag_animation_loops_num = "LoopsNum";
@@ -225,7 +226,7 @@ const std::map< animation_type, animation_data >& game_settings::get_animation_d
     return m_animation_data;
 }
 
-animation_data read_animation_data( QXmlStreamReader& xml_reader )
+animation_data read_animation_data( QXmlStreamReader& xml_reader, const QStringRef& start_tag_name )
 {
     animation_data data;
     QStringRef name;
@@ -252,7 +253,7 @@ animation_data read_animation_data( QXmlStreamReader& xml_reader )
             data.duration = std::chrono::milliseconds{ xml_reader.readElementText().toUInt() };
         }
     }
-    while( name != tag_explosion_animation_data );
+    while( name != start_tag_name );
 
     return data;
 }
@@ -353,10 +354,15 @@ game_settings read_game_settings( const QString& file )
             {
                 settings.set_ai_chance_to_fire( xml_reader.readElementText().toFloat() );
             }
-            if( name == tag_explosion_animation_data )
+            else if( name == tag_explosion_animation_data )
             {
                 settings.set_animation_data( animation_type::explosion,
-                                             read_animation_data( xml_reader ) );
+                                             read_animation_data( xml_reader, name ) );
+            }
+            else if( name == tag_respawn_animation_data )
+            {
+                settings.set_animation_data( animation_type::respawn,
+                                             read_animation_data( xml_reader, name ) );
             }
         }
     }
