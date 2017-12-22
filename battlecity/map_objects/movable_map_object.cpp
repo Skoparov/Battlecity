@@ -1,5 +1,7 @@
 #include "movable_map_object.h"
 
+#include <mutex>
+
 #include "ecs/components.h"
 
 static constexpr auto str_move_direction_up = "Up";
@@ -74,12 +76,14 @@ movable_map_object::~movable_map_object()
 void movable_map_object::set_move_direction( const QString& direction )
 {
     component::movement& m = m_entity->get_component_unsafe< component::movement >();
+    std::lock_guard< ecs::lockable > l{ m };
     m.set_move_direction( str_to_move_direction( direction ) );
 }
 
 QString movable_map_object::get_move_direction() const
 {
     component::movement& m = m_entity->get_component_unsafe< component::movement >();
+    std::lock_guard< ecs::lockable > l{ m };
     return move_direction_to_str( m.get_move_direction() );
 }
 
@@ -87,12 +91,19 @@ void movable_map_object::on_event( const event::geometry_changed& event )
 {
     if( event.get_cause_entity() == m_entity )
     {
-        const component::geometry& g = m_entity->get_component_unsafe< component::geometry >();
-        QPoint pos{ g.get_pos() };
+        QPoint pos;
+        int rotation{ 0 };
+
+        {
+            component::geometry& g = m_entity->get_component_unsafe< component::geometry >();
+            std::lock_guard< ecs::lockable > l{ g };
+            pos = g.get_pos();
+            rotation = g.get_rotation();
+        }
 
         emit pos_x_changed( pos.x() );
         emit pos_y_changed( pos.y() );
-        emit rotation_changed( g.get_rotation() );
+        emit rotation_changed( rotation );
     }
 }
 

@@ -170,7 +170,7 @@ private:
 
 private:
     std::unordered_set< system* > m_systems;
-    std::unordered_map< entity_id, entity > m_entities;
+    std::unordered_map< entity_id, std::unique_ptr< entity > > m_entities;
     std::unordered_map< entity::component_id,
     std::unordered_map< entity*, entity::component_wrapper* > > m_components;
 

@@ -3,7 +3,7 @@
 namespace ecs
 {
 
-entity_id generate_entity_id( const std::unordered_map< entity_id, entity >& present_entries )
+entity_id generate_entity_id( const std::unordered_map< entity_id, std::unique_ptr< entity > >& present_entries )
 {
     numeric_id id{ generate_numeric_id() };
     while( present_entries.count( id ) )
@@ -49,8 +49,9 @@ void world::clean()
 entity& world::create_entity()
 {
     entity_id id{ generate_entity_id( m_entities ) };
-    auto res = m_entities.emplace( id, entity{ this, id } );
-    return res.first->second;
+    std::unique_ptr< entity > e{ new entity{ this, id } };
+    auto res = m_entities.emplace( id, std::move( e ) );
+    return *res.first->second;
 }
 
 bool world::entity_present( entity_id id ) const noexcept
@@ -60,7 +61,7 @@ bool world::entity_present( entity_id id ) const noexcept
 
 entity& world::get_entity( entity_id id )
 {
-    return m_entities.at( id );
+    return *m_entities.at( id );
 }
 
 void world::remove_entity( entity& e )
@@ -75,7 +76,7 @@ void world::remove_entity( entity& e )
 
 void world::remove_entity( entity_id id )
 {
-    entity& e = m_entities.at( id );
+    entity& e = *m_entities.at( id );
     remove_entity( e );
 }
 
@@ -130,7 +131,7 @@ void world::cleanup()
         auto it = m_entities.find( id );
         if( it != m_entities.end() )
         {
-            remove_entity( it->second );
+            remove_entity( *it->second );
         }
     }
 

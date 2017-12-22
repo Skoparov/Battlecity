@@ -6,6 +6,7 @@
 
 #include "id_engine.h"
 #include "details/polymorph.h"
+#include "../details/spinlock.h"
 
 namespace ecs
 {
@@ -14,6 +15,9 @@ using entity_id = numeric_id;
 class world;
 
 class entity final
+        #ifdef ECS_CONCURRENCY
+        : public lockable
+        #endif
 {
     friend class world;
     using component_id = type_id;
@@ -22,9 +26,9 @@ class entity final
 public:
     entity() = default;
     entity( const entity& ) = delete;
-    entity( entity&& ) = default;
+    entity( entity&& ) = delete;
     entity& operator=( const entity& ) = delete;
-    entity& operator=( entity&& ) = default;
+    entity& operator=( entity&& ) = delete;
 
     template< typename component_type, typename... constructor_args >
     void add_component( constructor_args&&... args )

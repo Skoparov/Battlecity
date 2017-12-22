@@ -31,7 +31,7 @@ private:
 
 //
 
-class turret_object final
+class turret_object final : public ecs::lockable
 {
     using clock = std::chrono::high_resolution_clock;
 
@@ -47,8 +47,6 @@ private:
     bool m_fired{ false };
     clock::time_point m_last_fired{};
     std::chrono::milliseconds m_cooldown{ 0 };
-
-    mutable _detail::spinlock m_lock;
 };
 
 //
@@ -84,7 +82,7 @@ public:
     uint32_t get_num() const noexcept;
 
 private:
-    uint32_t m_num{ 0 };
+    const uint32_t m_num{ 0 };
 };
 
 //
@@ -112,7 +110,7 @@ private:
 
 //
 
-class geometry final
+class geometry final : public ecs::lockable
 {
 public:
     geometry() = default;
@@ -136,13 +134,11 @@ public:
 private:
     QRect m_rect;
     int m_rotation{ 0 };
-
-    mutable _detail::spinlock m_lock;
 };
 
 //
 
-class movement final
+class movement final : public ecs::lockable
 {
 public:
     movement() = default;
@@ -156,8 +152,6 @@ public:
 private:
     uint32_t m_speed{ 0 };
     movement_direction m_move_direction{ movement_direction::none };
-
-    mutable _detail::spinlock m_lock;
 };
 
 //
@@ -167,7 +161,7 @@ class flying final{}; // can pass through non_traversible
 
 //
 
-class graphics final
+class graphics final : public ecs::lockable
 {
 public:
     graphics() = default;
@@ -182,8 +176,6 @@ public:
 private:
     QString m_image_path;
     bool m_visible{ true };
-
-    mutable _detail::spinlock m_lock;
 };
 
 //
@@ -221,7 +213,7 @@ private:
 
 //
 
-class health final
+class health final : public ecs::lockable
 {
 public:
     health() = default;
@@ -238,11 +230,9 @@ public:
 private:
     uint32_t m_health{ 0 };
     const uint32_t m_max_health{ 0 };
-
-    mutable _detail::spinlock m_lock;
 };
 
-class lifes final
+class lifes final : public ecs::lockable
 {
 public:
     lifes() = default;
@@ -258,8 +248,6 @@ public:
 private:
     has_infinite_lifes m_mode{ has_infinite_lifes::no };
     uint32_t m_lifes{ 0 };
-
-    mutable _detail::spinlock m_lock;
 };
 
 //

@@ -3,18 +3,15 @@
 
 #include <atomic>
 
-namespace game
+namespace ecs
 {
 
-namespace _detail
-{
-
-class spinlock final
+class lockable
 {
 public:
-    spinlock() = default;
+    lockable() = default;
     // required due to necessity to initially move a guarded component
-    spinlock( spinlock&& ){}
+    lockable( lockable&& ){}
 
     void lock() noexcept;
     bool try_lock() noexcept;
@@ -24,8 +21,6 @@ private:
     std::atomic_flag m_flag{ ATOMIC_FLAG_INIT };
 };
 
-}// _detail
-
-}// game
+}// ecs
 
 #endif

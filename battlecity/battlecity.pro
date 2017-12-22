@@ -53,6 +53,7 @@ SOURCES += \
         map_data.cpp
 
 RESOURCES += resources.qrc
+DEFINES += "ECS_CONCURRENCY"
 
 # Additional import path used to resolve QML modules in Qt Creator's code model
 QML_IMPORT_PATH =

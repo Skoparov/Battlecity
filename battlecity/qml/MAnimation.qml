@@ -15,9 +15,9 @@ Item
         width: modelData.width
         height: modelData.height
         source: modelData.image_path
-        frameCount: modelData.frames_num//12
-        frameRate: modelData.frame_rate//6
-        loops: modelData.loops//1
+        frameCount: modelData.frames_num
+        frameRate: modelData.frame_rate
+        loops: modelData.loops_num
     }
 
     NumberAnimation on rotation

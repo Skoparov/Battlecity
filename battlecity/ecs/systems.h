@@ -1,27 +1,11 @@
 #ifndef SYSTEMS_H
 #define SYSTEMS_H
 
+#include <map>
+
 #include "events.h"
 #include "components.h"
 #include "framework/world.h"
-
-namespace std
-{
-
-template<> struct hash< game::animation_type >
-{
-    using argument_type = game::animation_type;
-    using underlying_type = std::underlying_type< argument_type >::type;
-    using result_type = std::hash< underlying_type >::result_type;
-
-    size_t operator()( const argument_type& arg ) const
-    {
-        std::hash< underlying_type > hasher;
-        return hasher( static_cast< underlying_type >( arg ) );
-    }
-};
-
-}// std
 
 namespace game
 {
@@ -85,7 +69,8 @@ class respawn_system final : public ecs::system,
 
 public:
     template< typename rep, typename period >
-    respawn_system( const std::chrono::duration< rep, period >& respawn_delay, ecs::world& world ):
+    respawn_system( const std::chrono::duration< rep, period >& respawn_delay,
+                    ecs::world& world ):
         ecs::system( world ),
         m_respawn_delay( std::chrono::duration_cast< std::chrono::milliseconds >( respawn_delay ) )
     {
@@ -181,7 +166,7 @@ private:
 
 private:
     std::list< animation_info > m_animations;
-    std::unordered_map< animation_type, animation_data > m_animation_data;
+    std::map< animation_type, animation_data > m_animation_data;
 };
 }// system
 
