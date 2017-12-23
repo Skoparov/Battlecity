@@ -2,13 +2,14 @@
 
 #include <thread>
 
-#include "ecs/systems.h"
-
 #include <QDir>
 #include <QThread>
 #include <QFileInfo>
 
-static constexpr auto map_extension = "bsmap";
+#include "ecs/systems.h"
+#include "ecs/framework/details/rw_lock_guard.h"
+
+static constexpr auto map_extension = "bcmap";
 static constexpr auto map_dir_path = ":/maps/";
 
 static const uint32_t map_switch_pause_duration{ 2000 };
@@ -87,19 +88,17 @@ void controller::init()
         anim_sys->add_animation_settings( data_pair.first, data_pair.second );
     }
 
-    m_world.add_system( *move_system );
-    m_world.add_system( *animation_system );
-    m_world.add_system( *vic_def_system );
-    m_world.add_system( *proj_system );
-    m_world.add_system( *respawn_system );
-    m_world.add_system( *tank_ai_system );
-
     m_systems.emplace_back( std::move( move_system ) );
     m_systems.emplace_back( std::move( animation_system ) );
     m_systems.emplace_back( std::move( vic_def_system ) );
     m_systems.emplace_back( std::move( proj_system ) );
     m_systems.emplace_back( std::move( respawn_system ) );
     m_systems.emplace_back( std::move( tank_ai_system ) );
+
+    for( auto& system : m_systems )
+    {
+        m_world.add_system( *system );
+    }
 
     m_world.subscribe< event::level_completed >( *this );
     m_world.subscribe< event::projectile_fired >( *this );
@@ -293,7 +292,7 @@ uint32_t controller::get_player_remaining_lifes()
 {
     ecs::entity* player{ m_world.get_entities_with_component< component::player >().front() };
     component::lifes& lifes = player->get_component< component::lifes >();
-    std::lock_guard< ecs::lockable > l{ lifes };
+    ecs::rw_lock_guard< ecs::rw_lock > l{ lifes, ecs::lock_mode::read };
 
     return lifes.get_lifes();
 }
@@ -302,7 +301,7 @@ uint32_t controller::get_base_remaining_health()
 {
     ecs::entity* player_base{ m_world.get_entities_with_component< component::player_base >().front() };
     component::health& health = player_base->get_component< component::health >();
-    std::lock_guard< ecs::lockable > l{ health };
+    ecs::rw_lock_guard< ecs::rw_lock > l{ health, ecs::lock_mode::read };
 
     return health.get_health();
 }

@@ -11,8 +11,8 @@
         <file>qml/Frag.qml</file>
         <file>qml/MAnimation.qml</file>
 
-        <file>maps/map0.bsmap</file>
-        <file>maps/map1.bsmap</file>
+        <file>maps/map0.bcmap</file>
+        <file>maps/map1.bcmap</file>
         <file>settings/settings.xml</file>
 
         <file>graphics/tile_empty.png</file>

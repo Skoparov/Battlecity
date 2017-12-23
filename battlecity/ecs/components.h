@@ -7,7 +7,6 @@
 #include <QString>
 
 #include "ecs/framework/entity.h"
-#include "ecs/details/spinlock.h"
 #include "general_enums.h"
 
 namespace game
@@ -31,7 +30,7 @@ private:
 
 //
 
-class turret_object final : public ecs::lockable
+class turret_object final : public ecs::rw_lock
 {
     using clock = std::chrono::high_resolution_clock;
 
@@ -110,7 +109,7 @@ private:
 
 //
 
-class geometry final : public ecs::lockable
+class geometry final : public ecs::rw_lock
 {
 public:
     geometry() = default;
@@ -138,7 +137,7 @@ private:
 
 //
 
-class movement final : public ecs::lockable
+class movement final : public ecs::rw_lock
 {
 public:
     movement() = default;
@@ -161,7 +160,7 @@ class flying final{}; // can pass through non_traversible
 
 //
 
-class graphics final : public ecs::lockable
+class graphics final : public ecs::rw_lock
 {
 public:
     graphics() = default;
@@ -213,7 +212,7 @@ private:
 
 //
 
-class health final : public ecs::lockable
+class health final : public ecs::rw_lock
 {
 public:
     health() = default;
@@ -232,7 +231,7 @@ private:
     const uint32_t m_max_health{ 0 };
 };
 
-class lifes final : public ecs::lockable
+class lifes final : public ecs::rw_lock
 {
 public:
     lifes() = default;

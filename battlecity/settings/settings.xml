@@ -20,7 +20,7 @@
     <AiChanceToFire>0.03</AiChanceToFire>
 
     <ExplosionAnimation>
-        <FrameNum>12</FrameNum>
+        <FrameNum>8</FrameNum>
         <FrameRate>6</FrameRate>
         <LoopsNum>1</LoopsNum>
         <DurationMs>400</DurationMs>

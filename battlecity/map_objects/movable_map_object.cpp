@@ -3,6 +3,7 @@
 #include <mutex>
 
 #include "ecs/components.h"
+#include "ecs/framework/details/rw_lock_guard.h"
 
 static constexpr auto str_move_direction_up = "Up";
 static constexpr auto str_move_direction_down = "Down";
@@ -76,14 +77,14 @@ movable_map_object::~movable_map_object()
 void movable_map_object::set_move_direction( const QString& direction )
 {
     component::movement& m = m_entity->get_component_unsafe< component::movement >();
-    std::lock_guard< ecs::lockable > l{ m };
+    ecs::rw_lock_guard< ecs::rw_lock> l{ m, ecs::lock_mode::read };
     m.set_move_direction( str_to_move_direction( direction ) );
 }
 
 QString movable_map_object::get_move_direction() const
 {
     component::movement& m = m_entity->get_component_unsafe< component::movement >();
-    std::lock_guard< ecs::lockable > l{ m };
+    ecs::rw_lock_guard< ecs::rw_lock> l{ m, ecs::lock_mode::read };
     return move_direction_to_str( m.get_move_direction() );
 }
 
@@ -96,7 +97,7 @@ void movable_map_object::on_event( const event::geometry_changed& event )
 
         {
             component::geometry& g = m_entity->get_component_unsafe< component::geometry >();
-            std::lock_guard< ecs::lockable > l{ g };
+            ecs::rw_lock_guard< ecs::rw_lock> l{ g, ecs::lock_mode::read };
             pos = g.get_pos();
             rotation = g.get_rotation();
         }

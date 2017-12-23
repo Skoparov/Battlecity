@@ -19,6 +19,16 @@ void entity::remove_component_from_world( const component_id& id )
     m_world->remove_component( *this, id );
 }
 
+void entity::set_state( const entity_state& state ) noexcept
+{
+    m_state = state;
+}
+
+const entity_state& entity::get_state() const noexcept
+{
+    return m_state;
+}
+
 entity_id entity::get_id() const noexcept
 {
     return m_id;

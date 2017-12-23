@@ -1,5 +1,5 @@
-#ifndef _POLYMORPH_H_
-#define _POLYMORPH_H_
+#ifndef ECS_POLYMORPH_H
+#define ECS_POLYMORPH_H
 
 #include <memory>
 #include <typeinfo>
@@ -11,38 +11,38 @@ namespace _detail{ class base_type_storage; }
 
 class polymorph
 {
-  template< typename T >
+  template< typename type >
   using disable_if_polymorph = typename std::enable_if< !std::is_same<
-    typename std::decay< T >::type, polymorph >::value >::type;
+    typename std::decay< type >::type, polymorph >::value >::type;
 
 public:
     polymorph() = default;
 
-    template< typename T, typename = disable_if_polymorph< T > >
-    polymorph( T&& t ); // internal data assignment  constructor
+    template< typename type, typename = disable_if_polymorph< type > >
+    polymorph( type&& t ); // internal data assignment  constructor
 
-    template< typename T, typename = disable_if_polymorph< T > >
-    polymorph& operator=( T&& t ); // internal data assignment operator
+    template< typename type, typename = disable_if_polymorph< type > >
+    polymorph& operator=( type&& t ); // internal data assignment operator
 
     polymorph( const polymorph& other ) = delete;
     polymorph( polymorph&& other ) noexcept;
     polymorph& operator=( const polymorph& other ) = delete;
     polymorph& operator=( polymorph&& other ) noexcept;
 
-    template< class T >
-    T& get();
+    template< typename type >
+    type& get();
 
-    template< class T >
-    const T& get() const;
+    template< typename type >
+    const type& get() const;
 
     // unsafe get functions use static_cast, no runtime checks are performed
-    template< class T >
-    T& get_unsafe() noexcept;
+    template< typename type >
+    type& get_unsafe() noexcept;
 
-    template< class T >
-    const T& get_unsafe() const noexcept;
+    template< typename type >
+    const type& get_unsafe() const noexcept;
 
-    template< typename T >
+    template< typename type >
     bool check_type() const noexcept;
 
     const std::type_info& type_info() const noexcept;

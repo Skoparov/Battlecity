@@ -43,7 +43,10 @@ private:
     void handle_obstacle( ecs::entity& obstacle,
                           const component::projectile& projectile_comp );
 
-    void kill_entity( ecs::entity& entity );
+    void kill_entity( ecs::entity& victim,
+                      const object_type& victim_type,
+                      ecs::entity* killer,
+                      const object_type& killer_type );
 
     void handle_existing_projectiles();
     void create_new_projectiles();
@@ -86,7 +89,7 @@ public:
     void on_event( const event::entity_killed& );
 
 private:
-    void respawn_list( std::list< death_info >& list,
+    void respawn_is_ready( std::list< death_info >& list,
                        std::vector< const component::geometry* > free_respawns );
     void respawn_entity( ecs::entity& entity, const component::geometry& respawn );
     std::vector< const component::geometry* > get_free_respawns();

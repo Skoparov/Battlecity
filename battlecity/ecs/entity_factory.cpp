@@ -139,7 +139,6 @@ ecs::entity& create_entity_tank( const QRect& rect,
         entity.add_component< component::turret_object >( std::chrono::milliseconds{ turret_cooldown_msec } );
         entity.add_component< component::geometry >( rect );
         entity.add_component< component::health >( health );
-        entity.add_component< component::non_traversible >();
         entity.add_component< component::movement >( speed );
         entity.add_component< component::kills_counter >();
         entity.add_component< component::graphics >( tank_image_path( align ) );
@@ -147,6 +146,7 @@ ecs::entity& create_entity_tank( const QRect& rect,
         if( align == alignment::player )
         {
             entity.add_component< component::player >();
+            entity.add_component< component::non_traversible >();
             entity.add_component< component::lifes >( has_infinite_lifes::no, lifes );
         }
         else

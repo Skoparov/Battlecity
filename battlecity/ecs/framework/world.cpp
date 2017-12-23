@@ -82,12 +82,13 @@ void world::remove_entity( entity_id id )
 
 void world::schedule_remove_entity( entity& e )
 {
-    schedule_remove_entity( e.get_id() );
+    e.set_state( entity_state::invalid );
+    m_entities_to_remove.emplace( &e );
 }
 
 void world::schedule_remove_entity( entity_id id )
 {
-    m_entities_to_remove.emplace_back( id );
+    schedule_remove_entity( *m_entities.at( id ) );
 }
 
 void world::add_system( system& system )
@@ -103,7 +104,7 @@ void world::remove_system( system& s )
 
 void world::schedule_remove_system( system& system )
 {
-    m_systems_to_remove.emplace_back( &system );
+    m_systems_to_remove.emplace( &system );
 }
 
 void world::add_component( entity& e, const entity::component_id& id, entity::component_wrapper& w )
@@ -111,9 +112,9 @@ void world::add_component( entity& e, const entity::component_id& id, entity::co
     m_components[ id ].emplace( &e, &w );
 }
 
-void world::remove_component( entity& e, const entity::component_id& c_id )
+void world::remove_component( entity& e, const entity::component_id& id )
 {
-    auto it = m_components.find( c_id );
+    auto it = m_components.find( id );
     if( it !=  m_components.end() )
     {
         it->second.erase( &e );
@@ -126,13 +127,9 @@ void world::remove_component( entity& e, const entity::component_id& c_id )
 
 void world::cleanup()
 {
-    for( entity_id id : m_entities_to_remove )
+    for( entity* e : m_entities_to_remove )
     {
-        auto it = m_entities.find( id );
-        if( it != m_entities.end() )
-        {
-            remove_entity( *it->second );
-        }
+        remove_entity( *e );
     }
 
     for( system* s : m_systems_to_remove )

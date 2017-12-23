@@ -6,33 +6,38 @@
 
 #include "id_engine.h"
 #include "details/polymorph.h"
-#include "../details/spinlock.h"
+
+#ifdef ECS_LOCK_ATOMIC
+#include "details/atomic_locks.h"
+#elif ECS_LOCK_REGULAR
+#include "details/rw_lock.h"
+#endif
+
+#if __cplusplus < 199711L
+  #error This library needs at least a C++11 compliant compiler
+#endif
+
+#if( defined __linux__ && __cplusplus == 199711L )
+#include "details/cpp14/make_unique.h"
+#include "details/cpp14/integer_sequence.h"
+#endif
+
+#include <utility>
+#include <type_traits>
 
 namespace ecs
 {
 
-namespace _detail
-{
-
-template< size_t... >struct integer_sequence{};
-
-template< size_t n, size_t... tail >
-struct generate_integer_sequence : generate_integer_sequence< n-1, n-1, tail...>{};
-
-template< size_t... seq >
-struct generate_integer_sequence< 0, seq... >
-{
-    using type = integer_sequence< seq... >;
-};
-
-}// _detail
-
-using entity_id = numeric_id;
 class world;
 
+using entity_id = numeric_id;
+enum class entity_state{ ok, invalid };
+
 class entity final
-        #ifdef ECS_CONCURRENCY
-        : public lockable
+        #ifdef ECS_LOCK_ATOMIC
+        : public rw_spinlock
+        #elif ECS_LOCK_REGULAR
+        : public rw_lock
         #endif
 {
     friend class world;
@@ -49,7 +54,7 @@ public:
     template< typename component_type, typename... constructor_args >
     void add_component( constructor_args&&... args )
     {
-        component_type component{ std::forward< constructor_args >( args )... };
+        auto component = std::make_unique< component_type >( std::forward< constructor_args >( args )... );
         component_id id{ get_type_id< component_type >() };
 
         auto result = m_components.emplace( id, std::move( component ) );
@@ -79,28 +84,28 @@ public:
     component_type& get_component()
     {
             component_wrapper& ch = m_components.at( get_type_id< component_type >() );
-            return ch.get< component_type >();
+            return *ch.get< std::unique_ptr< component_type > >();
     }
 
     template< typename component_type >
     const component_type& get_component() const
     {
         const component_wrapper& ch = m_components.at( get_type_id< component_type >() );
-        return ch.get< component_type >();
+        return *ch.get< std::unique_ptr< component_type > >();
     }
 
     template< typename component_type >
     component_type& get_component_unsafe()
     {
         component_wrapper& ch = m_components.at( get_type_id< component_type >() );
-        return ch.get_unsafe< component_type >();
+        return *ch.get_unsafe< std::unique_ptr< component_type > >();
     }
 
     template< typename component_type >
     const component_type& get_component_unsafe() const
     {
         const component_wrapper& ch = m_components.at( get_type_id< component_type >() );
-        return ch.get_unsafe< component_type >();
+        return *ch.get_unsafe< std::unique_ptr< component_type > >();
     }
 
     template< typename component >
@@ -184,21 +189,24 @@ public:
     {
         return dispatch( get_components< components... >(),
                   std::forward< func_type >( func ),
-                  typename _detail::generate_integer_sequence< sizeof...( components ) >::type{} );
+                  std::index_sequence_for< components... >{} );
     }
 
+    const entity_state& get_state() const noexcept;
     entity_id get_id() const noexcept;
     world& get_world() noexcept;
 
 private:
     entity( world* world, entity_id id ) noexcept;
+
+    void set_state( const entity_state& state ) noexcept;
     void add_component_to_world( const component_id& id, component_wrapper& w );
     void remove_component_from_world( const component_id& id );
 
     template< typename components_tuple, typename func_type, size_t... seq >
     bool dispatch( components_tuple& tuple,
                    func_type&& func,
-                   const _detail::integer_sequence< seq... >& )
+                   const std::integer_sequence< size_t, seq... >& )
     {
         return func( *this, std::get< seq >( tuple )... );
     }
@@ -206,6 +214,7 @@ private:
 private:
     world* m_world{ nullptr };
     const entity_id m_id{ INVALID_NUMERIC_ID };
+    entity_state m_state{ entity_state::ok };
     std::unordered_map< component_id, component_wrapper > m_components;
 };
 
