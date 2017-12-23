@@ -310,8 +310,7 @@ void projectile_system::handle_obstacle( ecs::entity& obstacle,
             {
                 if( obstacle_type == object_type::tile )
                 {
-                    obstacle.remove_component< health >();
-                    obstacle.remove_component< non_traversible >();
+                    obstacle.remove_components< health, non_traversible >();
                     obstacle.get_component< tile_object >().set_tile_type( tile_type::empty );
                     obstacle.get_component< graphics >().set_image_path( tile_image_path( tile_type::empty ) );
                 }

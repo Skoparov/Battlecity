@@ -108,9 +108,9 @@ public:
         return entities;
     }
 
-    // func should be of signature bool< entity&, component_type& >
+    // func should be of signature bool< entity&, component_type_1&, ..., component_type_n&.... >
     // where bool indicates whether for_each loop should continue execution upon function return
-    template< typename component_type, typename func_type >
+    template< typename component_type, typename... other_components, typename func_type >
     void for_each( func_type&& func )
     {
         auto it = m_components.find( get_type_id< component_type >() );
@@ -119,9 +119,9 @@ public:
             for( auto value_pair : it->second )
             {
                 entity& e = *value_pair.first;
-                entity::component_wrapper* w{ value_pair.second };
 
-                if( !func( e, w->get< component_type >() ) )
+                if( e.has_components< component_type, other_components... >() &&
+                    !e.apply_to< component_type, other_components... >( func ))
                 {
                     break;
                 }
