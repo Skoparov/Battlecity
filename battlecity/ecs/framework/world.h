@@ -111,7 +111,7 @@ public:
     // func should be of signature bool< entity&, component_type_1&, ..., component_type_n&.... >
     // where bool indicates whether for_each loop should continue execution upon function return
     template< typename component_type, typename... other_components, typename func_type >
-    void for_each( func_type&& func )
+    void for_each_with( func_type&& func )
     {
         auto it = m_components.find( get_type_id< component_type >() );
         if( it !=  m_components.end() )

@@ -110,8 +110,10 @@ void movement_system::tick()
 {
     using namespace component;
 
-    m_world.for_each< movement >( [ & ]( ecs::entity& curr_entity, movement& move )
+    m_world.for_each_with< movement, geometry >( [ & ]( ecs::entity& curr_entity, movement& move, geometry& curr_geom )
     {
+        std::lock_guard< ecs::lockable > l{ move };
+
         if( move.get_move_direction() != movement_direction::none )
         {
             bool x_changed{ false };
@@ -119,10 +121,7 @@ void movement_system::tick()
             bool rotation_changed{ false };
 
             {
-                std::lock_guard< ecs::lockable > l{ move };
-
-                geometry& curr_geom = curr_entity.get_component_unsafe< geometry >();
-                std::lock_guard< ecs::lockable > l1{ curr_entity };
+                std::lock_guard< ecs::lockable > l{ curr_geom };
 
                 int prev_rotation{ curr_geom.get_rotation() };
                 bool is_flying{ curr_entity.has_component< flying >() };
@@ -132,11 +131,12 @@ void movement_system::tick()
 
                 if( !is_flying )
                 {
-                    m_world.for_each< non_traversible >( [ & ]( ecs::entity& other_entity, non_traversible& )
+                    m_world.for_each_with< non_traversible, geometry >(
+                    [ & ]( ecs::entity& other_entity, non_traversible&, geometry& other_geom )
                     {
                         if( curr_entity != other_entity )
                         {
-                            const geometry& other_geom = other_entity.get_component_unsafe< geometry >();
+                            std::lock_guard< ecs::lockable > l{ other_geom };
                             if( other_geom.intersects_with( rect_after_move ) )
                             {
                                 movement_valid = false;
@@ -347,40 +347,39 @@ void projectile_system::handle_existing_projectiles()
     // Calc existing projectiles
     event::entities_removed entities_removed_event;
 
-    m_world.for_each< projectile >( [ & ]( ecs::entity& projectile_entity, projectile& projectile_component )
+    m_world.for_each_with< projectile, geometry >(
+    [ & ]( ecs::entity& projectile_entity, projectile& projectile_comp, geometry& projectile_geom )
     {
-        if( !projectile_component.get_destroyed() )
+        if( !projectile_comp.get_destroyed() )
         {
-            const geometry& projectile_geom = projectile_entity.get_component_unsafe< geometry >();
-
             if( !m_map_geom->intersects_with( projectile_geom ) )
             {
-                projectile_component.set_destroyed();
+                projectile_comp.set_destroyed();
             }
             else
             {
-                m_world.for_each< non_traversible >( [ & ]( ecs::entity& obstacle, non_traversible& )
+                m_world.for_each_with< non_traversible, geometry >(
+                [ & ]( ecs::entity& obstacle, non_traversible&, geometry& obstacle_geom )
                 {
-                    if( projectile_component.get_shooter_id() != obstacle.get_id() )
+                    if( projectile_comp.get_shooter_id() != obstacle.get_id() )
                     {
-                        geometry& obstacle_geom = obstacle.get_component_unsafe< geometry >();
                         if( obstacle_geom.intersects_with( projectile_geom ) )
                         {
-                            handle_obstacle( obstacle, projectile_component );
+                            handle_obstacle( obstacle, projectile_comp );
 
                             event::projectile_collision event_collision;
                             event_collision.set_cause_entity( obstacle );
                             m_world.emit_event( event_collision );
 
-                            projectile_component.set_destroyed();
+                            projectile_comp.set_destroyed();
                         }
                     }
 
-                    return !projectile_component.get_destroyed();;
+                    return !projectile_comp.get_destroyed();;
                 } );
             }
 
-            if( projectile_component.get_destroyed() )
+            if( projectile_comp.get_destroyed() )
             {
                 entities_removed_event.add_entity( object_type::projectile, projectile_entity );
             }
@@ -399,7 +398,8 @@ void projectile_system::create_new_projectiles()
 {
     using namespace component;
 
-    m_world.for_each< turret_object >( [ & ]( ecs::entity& turret_entity, turret_object& turret_info )
+    m_world.for_each_with< turret_object, geometry >(
+    [ & ]( ecs::entity& turret_entity, turret_object& turret_info, geometry& tank_geom )
     {
         ecs::entity* proj_entity{ nullptr };
 
@@ -408,7 +408,6 @@ void projectile_system::create_new_projectiles()
 
             if( turret_info.has_fired() )
             {
-                const geometry& tank_geom = turret_entity.get_component< geometry >();
                 QRect projectile_rect{ get_projectile_rect( tank_geom.get_rect(), m_projectile_size ) };
 
                 movement_direction direction{ get_direction_by_rotation( tank_geom.get_rotation() ) };
@@ -585,7 +584,7 @@ std::vector< const component::geometry* > respawn_system::get_free_respawns()
     {
         bool respawn_free{ true };
 
-        m_world.for_each< tank_object >( [ & ]( ecs::entity& e, tank_object& )
+        m_world.for_each_with< tank_object >( [ & ]( ecs::entity& e, tank_object& )
         {
             if( e.has_component< non_traversible >() &&
                 e.get_component< geometry >().intersects_with( *curr_geom ) )
