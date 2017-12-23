@@ -292,13 +292,19 @@ const QString& controller::get_level() const noexcept
 uint32_t controller::get_player_remaining_lifes()
 {
     ecs::entity* player{ m_world.get_entities_with_component< component::player >().front() };
-    return player->get_component< component::lifes >().get_lifes();
+    component::lifes& lifes = player->get_component< component::lifes >();
+    std::lock_guard< ecs::lockable > l{ lifes };
+
+    return lifes.get_lifes();
 }
 
 uint32_t controller::get_base_remaining_health()
 {
     ecs::entity* player_base{ m_world.get_entities_with_component< component::player_base >().front() };
-    return player_base->get_component< component::health >().get_health();
+    component::health& health = player_base->get_component< component::health >();
+    std::lock_guard< ecs::lockable > l{ health };
+
+    return health.get_health();
 }
 
 void controller::on_event( const event::level_completed& event )

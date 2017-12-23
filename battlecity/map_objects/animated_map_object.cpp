@@ -8,7 +8,7 @@ namespace game
 uint32_t animated_map_object::get_loops_num() const noexcept
 {
     const component::animation_info& ai = m_entity->get_component_unsafe< component::animation_info >();
-    return ai.get_loops_num();
+        return ai.get_loops_num();
 }
 
 uint32_t animated_map_object::get_frame_rate() const noexcept

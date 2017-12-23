@@ -29,6 +29,6 @@
         <FrameNum>9</FrameNum>
         <FrameRate>9</FrameRate>
         <LoopsNum>1</LoopsNum>
-        <DurationMs>400</DurationMs>
+        <DurationMs>500</DurationMs>
     </RespawnAnimation>
 </Settings>

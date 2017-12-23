@@ -1,5 +1,7 @@
 #include "base_map_object.h"
 
+#include <mutex>
+
 #include "ecs/components.h"
 
 namespace game
@@ -38,36 +40,42 @@ const object_type& base_map_object::get_type() const noexcept
 
 int base_map_object::get_position_x() const noexcept
 {
-    const component::geometry& g = m_entity->get_component_unsafe< component::geometry >();
+    component::geometry& g = m_entity->get_component_unsafe< component::geometry >();
+    std::lock_guard< ecs::lockable > l{ g };
     return g.get_pos().x();
 }
 
 int base_map_object::get_position_y() const noexcept
 {
-    const component::geometry& g = m_entity->get_component_unsafe< component::geometry >();
+    component::geometry& g = m_entity->get_component_unsafe< component::geometry >();
+    std::lock_guard< ecs::lockable > l{ g };
     return g.get_pos().y();
 }
 
 int base_map_object::get_width() const noexcept
 {
-    const component::geometry& g = m_entity->get_component_unsafe< component::geometry >();
+    component::geometry& g = m_entity->get_component_unsafe< component::geometry >();
+    std::lock_guard< ecs::lockable > l{ g };
     return g.get_size().width();
 }
 
 int base_map_object::get_height() const noexcept
 {
-    const component::geometry& g = m_entity->get_component_unsafe< component::geometry >();
+    component::geometry& g = m_entity->get_component_unsafe< component::geometry >();
+    std::lock_guard< ecs::lockable > l{ g };
     return g.get_size().height();
 }
 
 int base_map_object::get_rotation() const noexcept
 {
-    const component::geometry& g = m_entity->get_component_unsafe< component::geometry >();
+    component::geometry& g = m_entity->get_component_unsafe< component::geometry >();
+    std::lock_guard< ecs::lockable > l{ g };
     return g.get_rotation();
 }
 
 bool base_map_object::get_traversible() const noexcept
 {
+    std::lock_guard< ecs::lockable > l{ *m_entity };
     return !m_entity->has_component< component::non_traversible >();
 }
 
