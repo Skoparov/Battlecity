@@ -52,6 +52,47 @@ bool turret_object::has_fired() const noexcept
 
 //
 
+power_up::power_up( const powerup_type& type ) noexcept : m_type( type ){}
+
+void power_up::set_state( const state& state ) noexcept
+{
+    m_state = state;
+}
+
+const powerup_type& power_up::get_type() const noexcept
+{
+    return m_type;
+}
+
+auto power_up::get_state() const noexcept -> const state&
+{
+    return m_state;
+}
+
+//
+
+respawn_delay::respawn_delay( const std::chrono::milliseconds& delay ) noexcept:
+    m_respawn_delay( delay ){}
+
+const std::chrono::milliseconds& respawn_delay::get_respawn_delay() const noexcept
+{
+    return m_respawn_delay;
+}
+
+//
+
+void object_effects::add_effect( ecs::entity& e )
+{
+    m_effects.emplace_back( &e );
+}
+
+std::list< ecs::entity* >& object_effects::get_effects() noexcept
+{
+    return m_effects;
+}
+
+//
+
 frag::frag( uint32_t num ) noexcept: m_num( num ){}
 
 uint32_t frag::get_num() const noexcept
@@ -114,6 +155,11 @@ const object_type& projectile::get_shooter_type() const noexcept
 geometry::geometry( const QRect& rect, int rotation ) noexcept:
     m_rect( rect ),
     m_rotation( rotation ){}
+
+void geometry::move_center_to( const QPoint& pos ) noexcept
+{
+    m_rect.moveCenter( pos );
+}
 
 bool geometry::intersects_with( const geometry& other ) const noexcept
 {
@@ -218,6 +264,11 @@ bool graphics::get_visible() const noexcept
 
 //
 
+void animation_info::force_stop() noexcept
+{
+    m_duration = std::chrono::milliseconds{ 1 };
+}
+
 const animation_type& animation_info::get_type() const noexcept
 {
     return m_type;
@@ -241,6 +292,11 @@ uint32_t animation_info::get_loops_num() const noexcept
 const std::chrono::milliseconds& animation_info::get_duration() const noexcept
 {
     return m_duration;
+}
+
+bool animation_info::is_infinite() const noexcept
+{
+    return ( m_duration.count() == 0 );
 }
 
 //
@@ -320,6 +376,60 @@ void kills_counter::increase( uint32_t value ) noexcept
 uint32_t kills_counter::get_kills() const noexcept
 {
     return m_kills;
+}
+
+shield::shield( uint32_t max_shield ) noexcept :
+    m_shield( max_shield ),
+    m_max_shield( max_shield ){}
+
+void shield::increase( uint32_t value ) noexcept
+{
+    m_shield = std::max( m_shield + value, m_max_shield );
+}
+
+void shield::decrease( uint32_t value ) noexcept
+{
+    m_shield = ( m_shield >= value) ? m_shield - value : 0;
+}
+
+bool shield::has_shield() const noexcept
+{
+    return ( m_shield != 0 );
+}
+
+uint32_t shield::get_shield_health() const noexcept
+{
+    return m_shield;
+}
+
+uint32_t shield::get_max_shield_ehalth() const noexcept
+{
+    return m_max_shield;
+}
+
+void powerup_animations::add_animation( const powerup_type& type, ecs::entity& e )
+{
+    m_animations[ type ] = &e;
+}
+
+void powerup_animations::remove_animation( const powerup_type& type )
+{
+    m_animations.erase( type );
+}
+
+ecs::entity& powerup_animations::get_animation( const powerup_type& type )
+{
+    return *m_animations.at( type );
+}
+
+bool powerup_animations::has_animation( const powerup_type& type ) const
+{
+    return ( m_animations.count( type ) != 0 );
+}
+
+std::map<powerup_type, ecs::entity *>& powerup_animations::get_animations() noexcept
+{
+    return m_animations;
 }
 
 }// component

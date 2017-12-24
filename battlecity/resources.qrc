@@ -26,5 +26,7 @@
         <file>graphics/heart.png</file>
         <file>graphics/explosion.png</file>
 		<file>graphics/respawn.png</file>
+		<file>graphics/shield.png</file>
+		<file>graphics/shield_animation.png</file>
     </qresource>
 </RCC>

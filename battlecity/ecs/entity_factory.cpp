@@ -12,6 +12,8 @@ static constexpr auto image_projectile = "projectile";
 static constexpr auto image_frag = "frag";
 static constexpr auto image_explosion = "explosion";
 static constexpr auto image_respawn = "respawn";
+static constexpr auto image_shield = "shield";
+static constexpr auto image_shield_animation = "shield_animation";
 
 namespace game
 {
@@ -63,16 +65,6 @@ QString tank_image_path( const alignment& align )
     }
 
     return get_image_path( image_name );
-}
-
-ecs::entity& create_respawn_point_entity( const QRect& rect, ecs::world& world )
-{
-    ecs::entity& entity = world.create_entity();
-
-    entity.add_component< component::respawn_point >();
-    entity.add_component< component::geometry >( rect );
-
-    return entity;
 }
 
 ecs::entity& create_map_entity(const QRect& rect, ecs::world& world )
@@ -129,6 +121,7 @@ ecs::entity& create_entity_tank( const QRect& rect,
                                  uint32_t health,
                                  uint32_t lifes,
                                  uint32_t turret_cooldown_msec,
+                                 uint32_t respawn_delay,
                                  ecs::world& world )
 {
     ecs::entity& entity = world.create_entity();
@@ -141,7 +134,9 @@ ecs::entity& create_entity_tank( const QRect& rect,
         entity.add_component< component::health >( health );
         entity.add_component< component::movement >( speed );
         entity.add_component< component::kills_counter >();
+        entity.add_component< component::powerup_animations >();
         entity.add_component< component::graphics >( tank_image_path( align ) );
+        entity.add_component< component::respawn_delay >( std::chrono::milliseconds{ respawn_delay } );
 
         if( align == alignment::player )
         {
@@ -201,6 +196,20 @@ QString get_animation_path( const animation_type& type )
     {
     case animation_type::explosion : image_name = image_explosion; break;
     case animation_type::respawn : image_name = image_respawn; break;
+    case animation_type::shield : image_name = image_shield_animation; break;
+    default: throw std::invalid_argument{ "Unimplemented animation type" };
+    }
+
+    return get_image_path( image_name );
+}
+
+QString get_powerup_image_path( const powerup_type& type )
+{
+    QString image_name;
+
+    switch( type )
+    {
+    case powerup_type::shield : image_name = image_shield; break;
     default: throw std::invalid_argument{ "Unimplemented animation type" };
     }
 
@@ -226,6 +235,22 @@ ecs::entity& create_animation( const QRect& rect,
 
     entity.add_component< component::geometry >( rect );
     entity.add_component< component::graphics >( get_animation_path( type ) );
+
+    return entity;
+}
+
+ecs::entity& create_power_up( const QRect& rect,
+                              const powerup_type& type,
+                              const std::chrono::milliseconds& respawn_time,
+                              ecs::world& world )
+{
+    ecs::entity& entity = world.create_entity();
+
+    entity.add_component< component::geometry >( rect );
+    entity.add_component< component::power_up >( type );
+    entity.add_component< component::respawn_delay >( respawn_time );
+    entity.add_component< component::graphics >( get_powerup_image_path( type ), false );
+    entity.add_component< component::lifes >( has_infinite_lifes::yes );
 
     return entity;
 }

@@ -18,6 +18,7 @@
     <ProjectileDamage>1</ProjectileDamage>
     <TurretCooldownMs>500</TurretCooldownMs>
     <AiChanceToFire>0.03</AiChanceToFire>
+    <ShieldRespawnTimeoutMs>1000</ShieldRespawnTimeoutMs>
 
     <ExplosionAnimation>
         <FrameNum>8</FrameNum>
@@ -25,10 +26,18 @@
         <LoopsNum>1</LoopsNum>
         <DurationMs>400</DurationMs>
     </ExplosionAnimation>
+
     <RespawnAnimation>
         <FrameNum>9</FrameNum>
         <FrameRate>9</FrameRate>
         <LoopsNum>1</LoopsNum>
         <DurationMs>500</DurationMs>
     </RespawnAnimation>
+
+    <ShieldAnimation>
+        <FrameNum>5</FrameNum>
+        <FrameRate>5</FrameRate>
+        <LoopsNum>0</LoopsNum>
+        <DurationMs>0</DurationMs>
+    </ShieldAnimation>
 </Settings>

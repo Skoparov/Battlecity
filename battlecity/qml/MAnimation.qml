@@ -20,11 +20,11 @@ Item
         loops: modelData.loops_num
     }
 
-    NumberAnimation on rotation
-    {
-        to: 0
-        duration: modelData.duration
-    }
+//    NumberAnimation on rotation
+//    {
+//        to: 0
+//        duration: modelData.duration
+//    }
 }
 
 

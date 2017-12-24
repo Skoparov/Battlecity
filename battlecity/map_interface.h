@@ -56,6 +56,7 @@ public:
     QQmlListProperty< movable_map_object > get_projectiles();
     QQmlListProperty< graphics_map_object > get_remaining_frags();
     QQmlListProperty< animated_map_object > get_animations();
+    QQmlListProperty< graphics_map_object > get_powerups();
 
     Q_PROPERTY( int rows_num READ get_rows_num NOTIFY rows_num_changed )
     Q_PROPERTY( int columns_num READ get_columns_num  NOTIFY columns_num_changed )
@@ -72,6 +73,7 @@ public:
     Q_PROPERTY( QQmlListProperty< game::movable_map_object > projectiles READ get_projectiles NOTIFY projectiles_changed )
     Q_PROPERTY( QQmlListProperty< game::graphics_map_object > remaining_frags READ get_remaining_frags NOTIFY remaining_frags_changed )
     Q_PROPERTY( QQmlListProperty< game::animated_map_object > animations READ get_animations NOTIFY animations_changed )
+    Q_PROPERTY( QQmlListProperty< game::graphics_map_object > powerups READ get_powerups() NOTIFY powerups_changed )
     Q_PROPERTY( QString announcement_text READ get_announcement_text NOTIFY announcement_text_changed )
     Q_PROPERTY( bool announcement_visible READ get_announecement_visible NOTIFY announcement_visibility_changed )
     Q_PROPERTY( QString pause_play_button_text READ get_pause_resume_button_text NOTIFY pause_resume_button_text_changed )
@@ -90,6 +92,8 @@ signals:
     void projectiles_changed( QQmlListProperty< game::movable_map_object > );
     void remaining_frags_changed( QQmlListProperty< game::graphics_map_object > );
     void animations_changed( QQmlListProperty< game::animated_map_object > );
+    void powerups_changed( QQmlListProperty< game::graphics_map_object > );
+
     void player_remaining_lifes_changed( int );
     void base_remaining_health_changed( int );
     void announcement_text_changed( const QString& );
@@ -118,6 +122,7 @@ private:
     QList< movable_map_object* > m_projectiles;
     QList< graphics_map_object* > m_remaining_frags;
     QList< animated_map_object* > m_animations;
+    QList< graphics_map_object* > m_powerups;
 
     using object_umap = std::unordered_map< ecs::entity_id, std::unique_ptr< base_map_object > >;
     std::unordered_map< object_type, object_umap > m_map_objects;

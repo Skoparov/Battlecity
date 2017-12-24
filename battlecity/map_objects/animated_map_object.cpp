@@ -10,7 +10,8 @@ uint32_t animated_map_object::get_loops_num() const noexcept
     const component::animation_info& ai =
             m_entity->get_component_unsafe< component::animation_info >();
 
-        return ai.get_loops_num();
+        return ai.is_infinite()?
+                    std::numeric_limits< uint32_t >::max() : ai.get_loops_num();
 }
 
 uint32_t animated_map_object::get_frame_rate() const noexcept

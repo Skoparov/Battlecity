@@ -14,5 +14,6 @@ Item
         anchors.centerIn: parent
         source: modelData.image_path
         rotation: modelData.rotation
+        visible: modelData.visible
     }
 }

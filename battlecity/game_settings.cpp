@@ -23,10 +23,12 @@ static constexpr auto tag_turret_cooldown_ms = "TurretCooldownMs";
 static constexpr auto tag_ai_chance_to_fire = "AiChanceToFire";
 static constexpr auto tag_explosion_animation_data = "ExplosionAnimation";
 static constexpr auto tag_respawn_animation_data = "RespawnAnimation";
+static constexpr auto tag_shield_animation_data = "ShieldAnimation";
 static constexpr auto tag_animation_frame_num = "FrameNum";
 static constexpr auto tag_animation_frame_rate = "FrameRate";
 static constexpr auto tag_animation_loops_num = "LoopsNum";
 static constexpr auto tag_animation_duration_ms = "DurationMs";
+static constexpr auto tag_respawn_shield_timeout = "ShieldRespawnTimeoutMs";
 
 namespace game
 {
@@ -211,6 +213,16 @@ float game_settings::get_ai_chance_to_fire() const noexcept
     return m_ai_chance_to_file;
 }
 
+void game_settings::set_powerup_respawn_timeout( const powerup_type& type, uint32_t timeout )
+{
+    m_powerup_timeouts[ type ] = timeout;
+}
+
+uint32_t game_settings::get_powerup_respawn_timeout( const powerup_type& type ) const
+{
+    return m_powerup_timeouts.at( type );
+}
+
 void game_settings::set_animation_data( const animation_type& type, const animation_data& data )
 {
     m_animation_data[ type ] = data;
@@ -363,6 +375,16 @@ game_settings read_game_settings( const QString& file )
             {
                 settings.set_animation_data( animation_type::respawn,
                                              read_animation_data( xml_reader, name ) );
+            }
+            else if( name == tag_shield_animation_data )
+            {
+                settings.set_animation_data( animation_type::shield,
+                                             read_animation_data( xml_reader, name ) );
+            }
+            else if( name == tag_respawn_shield_timeout )
+            {
+                settings.set_powerup_respawn_timeout( powerup_type::shield,
+                                                      xml_reader.readElementText().toUInt() );
             }
         }
     }

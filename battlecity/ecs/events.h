@@ -109,42 +109,51 @@ namespace _detail
 {
 
 // Contains information of the collision
-class projectile_hit_info
+class action_done
 {
 public:
-    projectile_hit_info() = default;
-    projectile_hit_info( const object_type& victim_type,
-                         ecs::entity& victim,
-                         const object_type& shooter_type,
-                         ecs::entity* shooter = nullptr ) noexcept;
+    action_done() = default;
+    action_done( const object_type& subject_type,
+                 ecs::entity& subject,
+                 const object_type& performer_type,
+                 ecs::entity* performer = nullptr ) noexcept;
 
-    ecs::entity* get_shooter() const noexcept;
-    ecs::entity& get_victim() const noexcept;
-    const object_type& get_shooter_type() const noexcept;
-    const object_type& get_victim_type() const noexcept;
+    ecs::entity* get_performer() const noexcept;
+    ecs::entity& get_subject() const noexcept;
+    const object_type& get_performer_type() const noexcept;
+    const object_type& get_subject_type() const noexcept;
 
 private:
-    object_type m_victim_type;
-    ecs::entity* m_victim{ nullptr };
-    object_type m_shooter_type;
-    ecs::entity* m_shooter{ nullptr };
+    object_type m_subject_type;
+    ecs::entity* m_subject{ nullptr };
+    object_type m_performer_type;
+    ecs::entity* m_performer{ nullptr };
 };
 
 }// details
 
 //
 
-class entity_hit final : public _detail::projectile_hit_info
+class entity_hit final : public _detail::action_done
 {
 public:
-    using _detail::projectile_hit_info::projectile_hit_info;
+    using _detail::action_done::action_done;
 };
 
-class entity_killed final : public _detail::projectile_hit_info
+class entity_killed final : public _detail::action_done
 {
 public:
-    using _detail::projectile_hit_info::projectile_hit_info;
+    using _detail::action_done::action_done;
 };
+
+//
+
+class powerup_taken final : public _detail::action_done
+{
+public:
+    using _detail::action_done::action_done;
+};
+
 
 //
 

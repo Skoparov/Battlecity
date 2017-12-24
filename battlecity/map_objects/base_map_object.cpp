@@ -17,10 +17,15 @@ base_map_object::base_map_object( ecs::entity* entity, const object_type& type, 
     {
         throw std::invalid_argument{ "Map object entity is null" };
     }
+
+    ecs::world& world = m_entity->get_world();
+    world.subscribe< event::geometry_changed >( *this );
 }
 
 base_map_object::~base_map_object()
 {
+    ecs::world& world = m_entity->get_world();
+    world.unsubscribe< event::geometry_changed >( *this );
     m_entity->get_world().schedule_remove_entity( *m_entity );
 }
 
@@ -78,6 +83,37 @@ bool base_map_object::get_traversible() const noexcept
 {
     ecs::rw_lock_guard< ecs::rw_lock > l{ *m_entity, ecs::lock_mode::read };
     return !m_entity->has_component< component::non_traversible >();
+}
+
+void base_map_object::on_event( const event::geometry_changed& event )
+{
+    if( event.get_cause_entity() == m_entity )
+    {
+        QPoint pos;
+        int rotation{ 0 };
+
+        {
+            component::geometry& g = m_entity->get_component_unsafe< component::geometry >();
+            ecs::rw_lock_guard< ecs::rw_lock > l{ g, ecs::lock_mode::read };
+            pos = g.get_pos();
+            rotation = g.get_rotation();
+        }
+
+        if( event.x_is_changed() )
+        {
+            emit pos_x_changed( pos.x() );
+        }
+
+        if( event.y_is_changed() )
+        {
+            emit pos_y_changed( pos.y() );
+        }
+
+        if( event.rotation_is_changed() )
+        {
+            emit rotation_changed( rotation );
+        }
+    }
 }
 
 }// game

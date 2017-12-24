@@ -69,6 +69,9 @@ public:
     void set_ai_chance_to_fire( float chance_to_fire ) noexcept;
     float get_ai_chance_to_fire() const noexcept;
 
+    void set_powerup_respawn_timeout( const powerup_type& type, uint32_t timeout );
+    uint32_t get_powerup_respawn_timeout( const powerup_type& type ) const;
+
     void set_animation_data( const animation_type& type, const animation_data& data );
     const animation_data& get_animation_data( const animation_type& type ) const;
     const std::map< animation_type, animation_data >& get_animation_data() const noexcept;
@@ -94,6 +97,7 @@ private:
     float m_ai_chance_to_file{ 0.0 };
 
     std::map< animation_type, animation_data > m_animation_data;
+    std::map< powerup_type, uint32_t > m_powerup_timeouts;
 };
 
 game_settings read_game_settings( const QString& file );

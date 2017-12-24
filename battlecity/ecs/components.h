@@ -1,7 +1,8 @@
 #ifndef COMPONENTS_H
 #define COMPONENTS_H
 
-#include <chrono>
+#include <map>
+#include <unordered_set>
 
 #include <QRect>
 #include <QString>
@@ -74,6 +75,51 @@ class animation final{};
 
 //
 
+class power_up final
+{
+public:
+    enum class state{ active, waiting_to_respawn };
+
+public:
+    explicit power_up( const powerup_type& type ) noexcept;
+
+    void set_state( const state& state ) noexcept;
+
+    const powerup_type& get_type() const noexcept;
+    const state& get_state() const noexcept;
+
+private:
+    powerup_type m_type;
+    state m_state{ state::waiting_to_respawn };
+};
+
+//
+
+class object_effects final
+{
+public:
+    void add_effect( ecs::entity& e );
+    std::list< ecs::entity* >& get_effects() noexcept;
+
+private:
+    std::list< ecs::entity* > m_effects;
+};
+
+//
+
+class respawn_delay final
+{
+public:
+    explicit respawn_delay( const std::chrono::milliseconds& delay ) noexcept;
+    const std::chrono::milliseconds& get_respawn_delay() const noexcept;
+
+private:
+    std::chrono::milliseconds m_respawn_delay;
+};
+
+
+//
+
 class frag final
 {
 public:
@@ -114,6 +160,8 @@ class geometry final : public ecs::rw_lock
 public:
     geometry() = default;
     geometry( const QRect& rect, int rotation = 0 ) noexcept;
+
+    void move_center_to( const QPoint& pos ) noexcept;
 
     bool intersects_with( const geometry& other ) const noexcept;
     bool intersects_with( const QRect& rect ) const noexcept;
@@ -196,11 +244,14 @@ public:
            m_loops_num( loops_num ),
            m_duration( std::chrono::duration_cast< std::chrono::milliseconds >( duration ) ){}
 
+    void force_stop() noexcept;
+
     const animation_type& get_type() const noexcept;
     uint32_t get_frames_num() const noexcept;
     uint32_t get_frame_rate() const noexcept;
     uint32_t get_loops_num() const noexcept;
     const std::chrono::milliseconds& get_duration() const noexcept;
+    bool is_infinite() const noexcept;
 
 private:
     animation_type m_type;
@@ -261,7 +312,46 @@ private:
     uint32_t m_kills{ 0 };
 };
 
+//
+
 class respawn_point{};
+
+//
+
+class shield final
+{
+public:
+    shield() = default;
+    explicit shield( uint32_t max_health ) noexcept;
+
+    void increase( uint32_t value ) noexcept;
+    void decrease( uint32_t value ) noexcept;
+
+    uint32_t get_shield_health() const noexcept;
+    uint32_t get_max_shield_ehalth() const noexcept;
+
+    bool has_shield() const noexcept;
+
+private:
+    uint32_t m_shield{ 0 };
+    const uint32_t m_max_shield{ 0 };
+};
+
+//
+
+class powerup_animations final
+{
+public:
+    void add_animation( const powerup_type& type, ecs::entity& e );
+    void remove_animation( const powerup_type& type );
+    ecs::entity& get_animation( const powerup_type& type );
+    bool has_animation( const powerup_type& type ) const;
+
+    std::map< powerup_type, ecs::entity* >& get_animations() noexcept;
+
+private:
+    std::map< powerup_type, ecs::entity* > m_animations;
+};
 
 }// components
 

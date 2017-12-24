@@ -10,7 +10,8 @@ enum class tile_type{ wall, iron_wall, empty };
 enum class alignment{ player, enemy };
 enum class movement_direction{ left, right, up, down, none };
 enum class has_infinite_lifes{ yes, no };
-enum class animation_type{ explosion, respawn };
+enum class animation_type{ explosion, respawn, shield };
+enum class powerup_type{ shield };
 enum class object_type{ tile,
                         player_base,
                         player_tank,
@@ -18,7 +19,8 @@ enum class object_type{ tile,
                         projectile,
                         respawn_point,
                         frag,
-                        animation };
+                        animation,
+                        power_up };
 
 struct animation_data
 {
@@ -28,6 +30,10 @@ struct animation_data
     uint32_t loops;
 };
 
+struct powerup_data
+{
+
+};
 
 }// game
 

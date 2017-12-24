@@ -79,7 +79,13 @@ void qml_map_interface::add_object( const object_type& type, ecs::entity* entity
         map_object = std::move( object );
         break;
     }
-    case object_type::respawn_point: break;
+    case object_type::power_up:
+    {
+        auto object = std::make_unique< graphics_map_object >( entity, type );
+        m_powerups.append( object.get() );
+        map_object = std::move( object );
+        break;
+    }
     default:
         assert( false );
     }
@@ -103,6 +109,7 @@ void qml_map_interface::remove_all_objects()
     m_remaining_frags.clear();
     m_projectiles.clear();
     m_animations.clear();
+    m_powerups.clear();
 
     update_all();
 
@@ -117,7 +124,7 @@ void qml_map_interface::prepare_to_load_next_level()
 
 void qml_map_interface::entity_hit( const event::entity_hit& event )
 {
-    const object_type& victim_type = event.get_victim_type();
+    const object_type& victim_type = event.get_subject_type();
     if( victim_type ==  object_type::player_base )
     {
         emit base_remaining_health_changed( m_controller.get_base_remaining_health() );
@@ -126,7 +133,7 @@ void qml_map_interface::entity_hit( const event::entity_hit& event )
 
 void qml_map_interface::entity_killed( const event::entity_killed& event )
 {
-    const object_type& victim_type = event.get_victim_type();
+    const object_type& victim_type = event.get_subject_type();
     if( victim_type ==  object_type::player_tank )
     {
         emit player_remaining_lifes_changed( m_controller.get_player_remaining_lifes() );
@@ -306,6 +313,11 @@ QQmlListProperty< animated_map_object > qml_map_interface::get_animations()
     return QQmlListProperty< animated_map_object >{ this, m_animations };
 }
 
+QQmlListProperty< graphics_map_object > qml_map_interface::get_powerups()
+{
+    return QQmlListProperty< graphics_map_object >{ this, m_powerups};
+}
+
 void qml_map_interface::pause_resume()
 {
     const controller_state& state = m_controller.get_state();
@@ -372,6 +384,9 @@ void qml_map_interface::objects_of_type_changed( const object_type& type )
     case object_type::animation:
         emit animations_changed( get_animations() );
         break;
+    case object_type::power_up:
+        emit powerups_changed( get_powerups() );
+        break;
     default:
         assert( false );
     }
@@ -411,6 +426,7 @@ void qml_map_interface::update_all()
     emit player_remaining_lifes_changed( get_player_remaining_lifes() );
     emit base_remaining_health_changed( get_base_remaining_health() );
     emit animations_changed( get_animations() );
+    emit powerups_changed( get_powerups() );
 }
 
 }// game

@@ -57,6 +57,12 @@ Rectangle
                     model: map_interface.animations
                     MAnimation{}
                 }
+
+                Repeater
+                {
+                    model: map_interface.powerups
+                    Tile{}
+                }
             }
         }
 
