@@ -77,14 +77,14 @@ movable_map_object::~movable_map_object()
 void movable_map_object::set_move_direction( const QString& direction )
 {
     component::movement& m = m_entity->get_component_unsafe< component::movement >();
-    ecs::rw_lock_guard< ecs::rw_lock> l{ m, ecs::lock_mode::read };
+    ecs::rw_lock_guard< ecs::rw_lock > l{ m, ecs::lock_mode::read };
     m.set_move_direction( str_to_move_direction( direction ) );
 }
 
 QString movable_map_object::get_move_direction() const
 {
     component::movement& m = m_entity->get_component_unsafe< component::movement >();
-    ecs::rw_lock_guard< ecs::rw_lock> l{ m, ecs::lock_mode::read };
+    ecs::rw_lock_guard< ecs::rw_lock > l{ m, ecs::lock_mode::read };
     return move_direction_to_str( m.get_move_direction() );
 }
 
@@ -97,7 +97,7 @@ void movable_map_object::on_event( const event::geometry_changed& event )
 
         {
             component::geometry& g = m_entity->get_component_unsafe< component::geometry >();
-            ecs::rw_lock_guard< ecs::rw_lock> l{ g, ecs::lock_mode::read };
+            ecs::rw_lock_guard< ecs::rw_lock > l{ g, ecs::lock_mode::read };
             pos = g.get_pos();
             rotation = g.get_rotation();
         }

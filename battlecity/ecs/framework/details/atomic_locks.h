@@ -20,7 +20,7 @@ private:
     std::atomic_flag m_flag{ ATOMIC_FLAG_INIT };
 };
 
-class rw_spinlock final
+class rw_spinlock
 {
 public:
     void lock( const lock_mode& mode ) noexcept;

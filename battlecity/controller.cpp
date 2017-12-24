@@ -62,11 +62,11 @@ void controller::init()
 
     load_level();
 
-    // create systems
-    std::unique_ptr< ecs::system > move_system{ new system::movement_system{ m_world } };
-
     std::unique_ptr< ecs::system > vic_def_system{
         new system::win_defeat_system{ m_settings.get_base_kills_to_win(), m_world } };
+
+    // create systems
+    std::unique_ptr< ecs::system > move_system{ new system::movement_system{ m_world } };
 
     std::unique_ptr< ecs::system > proj_system{
         new system::projectile_system{ m_settings.get_projectile_size(),
@@ -90,10 +90,10 @@ void controller::init()
 
     m_systems.emplace_back( std::move( move_system ) );
     m_systems.emplace_back( std::move( animation_system ) );
-    m_systems.emplace_back( std::move( vic_def_system ) );
     m_systems.emplace_back( std::move( proj_system ) );
     m_systems.emplace_back( std::move( respawn_system ) );
     m_systems.emplace_back( std::move( tank_ai_system ) );
+    m_systems.emplace_back( std::move( vic_def_system ) );
 
     for( auto& system : m_systems )
     {

@@ -9,7 +9,7 @@
 
 #ifdef ECS_LOCK_ATOMIC
 #include "details/atomic_locks.h"
-#elif ECS_LOCK_REGULAR
+#elif ECS_LOCK_MUTEX
 #include "details/rw_lock.h"
 #endif
 
@@ -36,7 +36,7 @@ enum class entity_state{ ok, invalid };
 class entity final
         #ifdef ECS_LOCK_ATOMIC
         : public rw_spinlock
-        #elif ECS_LOCK_REGULAR
+        #elif ECS_LOCK_MUTEX
         : public rw_lock
         #endif
 {

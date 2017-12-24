@@ -128,6 +128,7 @@ class tank_ai_system final : public ecs::system
 {
 public:
     explicit tank_ai_system( float chance_to_fire, ecs::world& world ) noexcept;
+    void init();
     void tick() override;
     void clean() override;
 
@@ -135,6 +136,7 @@ private:
     bool maybe_fire();
 
 private:
+    ecs::entity* m_player{ nullptr };
     std::list< ecs::entity* > m_enemies;
     float m_chance_to_fire{ 0.0 };
 };

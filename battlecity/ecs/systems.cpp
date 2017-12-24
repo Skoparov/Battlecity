@@ -112,7 +112,7 @@ void movement_system::tick()
 
     m_world.for_each_with< movement, geometry >( [ & ]( ecs::entity& curr_entity, movement& move, geometry& curr_geom )
     {
-        ecs::rw_lock_guard< ecs::rw_lock> l{ move, ecs::lock_mode::write };
+        ecs::rw_lock_guard< ecs::rw_lock > l{ move, ecs::lock_mode::write };
 
         if( move.get_move_direction() != movement_direction::none )
         {
@@ -121,7 +121,7 @@ void movement_system::tick()
             bool rotation_changed{ false };
 
             {
-                ecs::rw_lock_guard< ecs::rw_lock> l{ curr_geom, ecs::lock_mode::write };
+                ecs::rw_lock_guard< ecs::rw_lock > l{ curr_geom, ecs::lock_mode::write };
 
                 int prev_rotation{ curr_geom.get_rotation() };
                 bool is_flying{ curr_entity.has_component< flying >() };
@@ -136,7 +136,7 @@ void movement_system::tick()
                     {
                         if( curr_entity != other_entity )
                         {
-                            ecs::rw_lock_guard< ecs::rw_lock> l{ other_geom, ecs::lock_mode::read };
+                            ecs::rw_lock_guard< ecs::rw_lock > l{ other_geom, ecs::lock_mode::read };
                             if( other_geom.intersects_with( rect_after_move ) )
                             {
                                 movement_valid = false;
@@ -336,7 +336,7 @@ void projectile_system::handle_obstacle( ecs::entity& obstacle,
     if( obstacle.has_component< health >() )
     {
         health& obstacle_health = obstacle.get_component< health >();
-        ecs::rw_lock_guard< ecs::rw_lock> l{ obstacle_health, ecs::lock_mode::write };
+        ecs::rw_lock_guard< ecs::rw_lock > l{ obstacle_health, ecs::lock_mode::write };
 
         obstacle_health.decrease( projectile_component.get_damage() );
         if( !obstacle_health.alive() )
@@ -410,7 +410,7 @@ void projectile_system::create_new_projectiles()
         ecs::entity* proj_entity{ nullptr };
 
         {
-            ecs::rw_lock_guard< ecs::rw_lock> l{ turret_info, ecs::lock_mode::write };
+            ecs::rw_lock_guard< ecs::rw_lock > l{ turret_info, ecs::lock_mode::write };
 
             if( turret_info.has_fired() )
             {
@@ -451,7 +451,7 @@ void respawn_system::respawn_entity( ecs::entity& entity, const component::geome
     using namespace component;
 
     {
-        ecs::rw_lock_guard< ecs::rw_lock> l{ entity, ecs::lock_mode::write };
+        ecs::rw_lock_guard< ecs::rw_lock > l{ entity, ecs::lock_mode::write };
 
         entity.get_component< movement >().set_move_direction( movement_direction::none );
 
@@ -560,7 +560,7 @@ void respawn_system::on_event( const event::entity_killed& event )
     if( victim.has_component< lifes >() )
     {
         lifes& victim_lifes_component = victim.get_component< lifes >();
-        ecs::rw_lock_guard< ecs::rw_lock> l{ victim_lifes_component, ecs::lock_mode::write };
+        ecs::rw_lock_guard< ecs::rw_lock > l{ victim_lifes_component, ecs::lock_mode::write };
 
         if( victim_lifes_component.has_life() )
         {
@@ -691,7 +691,7 @@ void win_defeat_system::on_event(const event::entity_killed& event )
             component::graphics& graphics = frag_entity->get_component< component::graphics >();
 
             {
-                ecs::rw_lock_guard< ecs::rw_lock> l{ graphics, ecs::lock_mode::write };
+                ecs::rw_lock_guard< ecs::rw_lock > l{ graphics, ecs::lock_mode::write };
                 graphics.set_visible( false );
             }
 
@@ -707,6 +707,19 @@ void win_defeat_system::on_event(const event::entity_killed& event )
 tank_ai_system::tank_ai_system( float chance_to_fire, ecs::world& world ) noexcept :
     ecs::system( world ),
     m_chance_to_fire( chance_to_fire ){}
+
+void tank_ai_system::init()
+{
+    m_enemies = m_world.get_entities_with_component< component::enemy >();
+
+    auto players = m_world.get_entities_with_component< component::player >();
+    if( players.size() != 1 )
+    {
+        throw std::logic_error{ "Exactly one player entity should exist" };
+    }
+
+    m_player = players.front();
+}
 
 
 movement_direction generate_move_direction()
@@ -726,28 +739,24 @@ bool tank_ai_system::maybe_fire()
 void tank_ai_system::tick()
 {
     using namespace component;
-    if( m_enemies.empty() )
-    {
-        m_enemies = m_world.get_entities_with_component< enemy >();
-    }
 
     for( ecs::entity* enemy : m_enemies )
     {
         health& enemy_health = enemy->get_component< health >();
-        ecs::rw_lock_guard< ecs::rw_lock> l{ enemy_health, ecs::lock_mode::read };
+        ecs::rw_lock_guard< ecs::rw_lock > l{ enemy_health, ecs::lock_mode::read };
 
         if( enemy_health.alive() )
         {
             movement& move = enemy->get_component< movement >();
-            ecs::rw_lock_guard< ecs::rw_lock> lm{ move, ecs::lock_mode::write };
+            ecs::rw_lock_guard< ecs::rw_lock > lm{ move, ecs::lock_mode::write };
+
+            turret_object& enemy_turret = enemy->get_component< turret_object >();
+            ecs::rw_lock_guard< ecs::rw_lock > let{ enemy_turret, ecs::lock_mode::write };
 
             if( move.get_move_direction() == movement_direction::none )
             {
                 move.set_move_direction( generate_move_direction() );
             }
-
-            turret_object& enemy_turret = enemy->get_component< turret_object >();
-            ecs::rw_lock_guard< ecs::rw_lock> let{ enemy_turret, ecs::lock_mode::write };
 
             if( !enemy_turret.has_fired() && maybe_fire() )
             {
@@ -760,6 +769,7 @@ void tank_ai_system::tick()
 void tank_ai_system::clean()
 {
     m_enemies.clear();
+    m_player = nullptr;
 }
 
 animation_system::animation_system( ecs::world& world ) noexcept : ecs::system( world )

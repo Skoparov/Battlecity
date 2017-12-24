@@ -59,8 +59,7 @@ SOURCES += \
         map_data.cpp
 
 RESOURCES += resources.qrc
-DEFINES += "ECS_CONCURRENCY"
-DEFINES += "ECS_LOCK_REGULAR"
+DEFINES += "ECS_LOCK_MUTEX"
 
 # Additional import path used to resolve QML modules in Qt Creator's code model
 QML_IMPORT_PATH =
