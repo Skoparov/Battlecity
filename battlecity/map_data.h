@@ -5,6 +5,7 @@
 
 #include <QSize>
 
+#include "ecs/map_graph.h"
 #include "map_objects/base_map_object.h"
 
 namespace ecs
@@ -58,8 +59,12 @@ public:
     const QSize& get_map_size() const noexcept;
     const QString& get_map_name() const noexcept;
 
+    map_graph& get_map_graph() noexcept{ return m_graph; }
+    const map_graph& get_map_graph() const noexcept{ return m_graph; }
+
 private:
     QSize m_map_size{};
+    map_graph m_graph;
     QString m_map_name;
 };
 

@@ -15,6 +15,7 @@ HEADERS += \
         ecs/systems.h \
         ecs/entity_factory.h \
         ecs/general_enums.h \
+        ecs/map_graph.h \
 # game stuff
         map_objects/base_map_object.h \
         map_objects/graphics_map_object.h \
@@ -41,6 +42,7 @@ SOURCES += \
         ecs/events.cpp \
         ecs/systems.cpp \
         ecs/entity_factory.cpp \
+        ecs/map_graph.cpp \
 # game stuff
         map_objects/base_map_object.cpp \
         map_objects/graphics_map_object.cpp \

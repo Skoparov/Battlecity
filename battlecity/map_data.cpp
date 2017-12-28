@@ -15,6 +15,12 @@ static constexpr auto tile_char_player_base = 'b';
 static constexpr auto tile_char_player_start_position = 'p';
 static constexpr auto tile_char_respawn_point = 'r';
 
+template< typename T >
+T abs_diff( T l, T r ) noexcept
+{
+    return  l >= r? l - r : r - l;
+}
+
 namespace game
 {
 
@@ -83,12 +89,6 @@ std::pair< tile_type, object_type > char_to_tile_info( char c )
     }
 
     return { ground, obj_located_on_ground };
-}
-
-template< typename T >
-T abs_diff( T l, T r ) noexcept
-{
-    return  l >= r? l - r : r - l;
 }
 
 QRect obj_rect( int row, int col, const QSize& tile_size, const QSize& size ) noexcept
@@ -198,6 +198,8 @@ void read_map_file( map_data& data,
     bool player_start_pos_found{ false };
     bool player_base_found{ false };
 
+    map_graph& graph = data.get_map_graph();
+
     while( !text_stream.atEnd() )
     {
         text_stream >> tile_char;
@@ -238,6 +240,8 @@ void read_map_file( map_data& data,
 
                 mediator->add_object( object_type::tile, &tile_entity, false );
             }
+
+            create_map_node( tile_entity, rows_count, curr_column, columns_count, graph );
 
             ++curr_column;
         }
