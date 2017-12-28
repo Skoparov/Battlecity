@@ -2,6 +2,7 @@
 #define COMPONENTS_H
 
 #include <map>
+#include <list>
 #include <unordered_set>
 
 #include <QRect>
