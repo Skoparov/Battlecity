@@ -94,33 +94,33 @@ bool graphics_changed::visibility_changed() const noexcept
 namespace _detail
 {
 
-projectile_hit_info::projectile_hit_info( const object_type& victim_type,
-                                ecs::entity& victim,
-                                const object_type& shooter_type,
-                                ecs::entity* shooter ) noexcept:
-    m_victim_type( victim_type ),
-    m_victim( &victim ),
-    m_shooter_type( shooter_type ),
-    m_shooter( shooter ){}
+action_done::action_done( const object_type& subject_type,
+                          ecs::entity& subject,
+                          const object_type& performer_type,
+                          ecs::entity* performer ) noexcept:
+    m_subject_type( subject_type ),
+    m_subject( &subject ),
+    m_performer_type( performer_type ),
+    m_performer( performer ){}
 
-ecs::entity* projectile_hit_info::get_shooter() const noexcept
+ecs::entity* action_done::get_performer() const noexcept
 {
-    return m_shooter;
+    return m_performer;
 }
 
-ecs::entity& projectile_hit_info::get_victim() const noexcept
+ecs::entity& action_done::get_subject() const noexcept
 {
-    return *m_victim;
+    return *m_subject;
 }
 
-const object_type& projectile_hit_info::get_shooter_type() const noexcept
+const object_type& action_done::get_performer_type() const noexcept
 {
-    return m_shooter_type;
+    return m_performer_type;
 }
 
-const object_type& projectile_hit_info::get_victim_type() const noexcept
+const object_type& action_done::get_subject_type() const noexcept
 {
-    return m_victim_type;
+    return m_subject_type;
 }
 
 }// _detail

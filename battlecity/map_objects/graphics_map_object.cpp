@@ -3,6 +3,7 @@
 #include <mutex>
 
 #include  "ecs/components.h"
+#include "ecs/framework/details/rw_lock_guard.h"
 
 namespace game
 {
@@ -23,14 +24,14 @@ graphics_map_object::~graphics_map_object()
 const QString& graphics_map_object::get_image_path() const noexcept
 {
     component::graphics& g = m_entity->get_component_unsafe< component::graphics >();
-    std::lock_guard< ecs::lockable > l{ g };
+    ecs::rw_lock_guard< ecs::rw_lock > l{ g, ecs::lock_mode::read };
     return g.get_image_path();
 }
 
 bool graphics_map_object::get_visible() const noexcept
 {
     component::graphics& g = m_entity->get_component_unsafe< component::graphics >();
-    std::lock_guard< ecs::lockable > l{ g };
+    ecs::rw_lock_guard< ecs::rw_lock > l{ g, ecs::lock_mode::read };
     return g.get_visible();
 }
 
@@ -39,7 +40,7 @@ void graphics_map_object::on_event( const event::graphics_changed& event )
     if( event.get_cause_entity() == m_entity )
     {
         component::graphics& g = m_entity->get_component_unsafe< component::graphics >();
-        std::lock_guard< ecs::lockable > l{ g };
+        ecs::rw_lock_guard< ecs::rw_lock > l{ g, ecs::lock_mode::read };
 
         if( event.visibility_changed() )
         {

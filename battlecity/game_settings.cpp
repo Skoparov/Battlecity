@@ -21,12 +21,15 @@ static constexpr auto tag_projectile_speed = "ProjectileSpeed";
 static constexpr auto tag_projectile_damage = "ProjectileDamage";
 static constexpr auto tag_turret_cooldown_ms = "TurretCooldownMs";
 static constexpr auto tag_ai_chance_to_fire = "AiChanceToFire";
+static constexpr auto tag_ai_chance_to_change_direction = "AiChanceToChangeDirection";
 static constexpr auto tag_explosion_animation_data = "ExplosionAnimation";
 static constexpr auto tag_respawn_animation_data = "RespawnAnimation";
+static constexpr auto tag_shield_animation_data = "ShieldAnimation";
 static constexpr auto tag_animation_frame_num = "FrameNum";
 static constexpr auto tag_animation_frame_rate = "FrameRate";
 static constexpr auto tag_animation_loops_num = "LoopsNum";
 static constexpr auto tag_animation_duration_ms = "DurationMs";
+static constexpr auto tag_respawn_shield_timeout = "ShieldRespawnTimeoutMs";
 
 namespace game
 {
@@ -203,12 +206,32 @@ uint32_t game_settings::get_turret_cooldown_ms() const noexcept
 
 void game_settings::set_ai_chance_to_fire( float chance_to_fire ) noexcept
 {
-    m_ai_chance_to_file = chance_to_fire;
+    m_ai_chance_to_fire = chance_to_fire;
 }
 
 float game_settings::get_ai_chance_to_fire() const noexcept
 {
-    return m_ai_chance_to_file;
+    return m_ai_chance_to_fire;
+}
+
+void game_settings::set_ai_chance_to_change_direction( float chance_to_change_direciton ) noexcept
+{
+    m_ai_chance_to_change_direction = chance_to_change_direciton;
+}
+
+float game_settings::get_ai_chance_to_change_direction() const noexcept
+{
+    return m_ai_chance_to_change_direction;
+}
+
+void game_settings::set_powerup_respawn_timeout( const powerup_type& type, uint32_t timeout )
+{
+    m_powerup_timeouts[ type ] = timeout;
+}
+
+uint32_t game_settings::get_powerup_respawn_timeout( const powerup_type& type ) const
+{
+    return m_powerup_timeouts.at( type );
 }
 
 void game_settings::set_animation_data( const animation_type& type, const animation_data& data )
@@ -354,6 +377,10 @@ game_settings read_game_settings( const QString& file )
             {
                 settings.set_ai_chance_to_fire( xml_reader.readElementText().toFloat() );
             }
+            else if( name == tag_ai_chance_to_change_direction )
+            {
+                settings.set_ai_chance_to_change_direction( xml_reader.readElementText().toFloat() );
+            }
             else if( name == tag_explosion_animation_data )
             {
                 settings.set_animation_data( animation_type::explosion,
@@ -363,6 +390,16 @@ game_settings read_game_settings( const QString& file )
             {
                 settings.set_animation_data( animation_type::respawn,
                                              read_animation_data( xml_reader, name ) );
+            }
+            else if( name == tag_shield_animation_data )
+            {
+                settings.set_animation_data( animation_type::shield,
+                                             read_animation_data( xml_reader, name ) );
+            }
+            else if( name == tag_respawn_shield_timeout )
+            {
+                settings.set_powerup_respawn_timeout( powerup_type::shield,
+                                                      xml_reader.readElementText().toUInt() );
             }
         }
     }

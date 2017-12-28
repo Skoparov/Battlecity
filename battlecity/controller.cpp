@@ -2,13 +2,14 @@
 
 #include <thread>
 
-#include "ecs/systems.h"
-
 #include <QDir>
 #include <QThread>
 #include <QFileInfo>
 
-static constexpr auto map_extension = "bsmap";
+#include "ecs/systems.h"
+#include "ecs/framework/details/rw_lock_guard.h"
+
+static constexpr auto map_extension = "bcmap";
 static constexpr auto map_dir_path = ":/maps/";
 
 static const uint32_t map_switch_pause_duration{ 2000 };
@@ -61,24 +62,25 @@ void controller::init()
 
     load_level();
 
-    // create systems
-    std::unique_ptr< ecs::system > move_system{ new system::movement_system{ m_world } };
-
     std::unique_ptr< ecs::system > vic_def_system{
         new system::win_defeat_system{ m_settings.get_base_kills_to_win(), m_world } };
 
+    // create systems
+    std::unique_ptr< ecs::system > move_system{ new system::movement_system{ m_world } };
+    std::unique_ptr< ecs::system > powerup_system{ new system::powerup_system{ m_world } };
+
     std::unique_ptr< ecs::system > proj_system{
         new system::projectile_system{ m_settings.get_projectile_size(),
-                    m_settings.get_projectile_damage(),
-                    m_settings.get_projectile_speed(),
-                    m_world } };
+                                       m_settings.get_projectile_damage(),
+                                       m_settings.get_projectile_speed(),
+                                       m_world } };
 
-    std::unique_ptr< ecs::system > respawn_system{
-        new system::respawn_system{ std::chrono::milliseconds{ m_settings.get_respawn_delay_ms() },
-                                    m_world } };
+    std::unique_ptr< ecs::system > respawn_system{ new system::respawn_system{  m_world } };
 
     std::unique_ptr< ecs::system > tank_ai_system{
-        new system::tank_ai_system{ m_settings.get_ai_chance_to_fire(), m_world } };
+        new system::tank_ai_system{ m_settings.get_ai_chance_to_fire(),
+                                    m_settings.get_ai_chance_to_change_direction(),
+                                    m_world } };
 
     std::unique_ptr< ecs::system > animation_system{ new system::animation_system{ m_world } };
     system::animation_system* anim_sys = dynamic_cast< system::animation_system* >( animation_system.get() );
@@ -87,19 +89,18 @@ void controller::init()
         anim_sys->add_animation_settings( data_pair.first, data_pair.second );
     }
 
-    m_world.add_system( *move_system );
-    m_world.add_system( *animation_system );
-    m_world.add_system( *vic_def_system );
-    m_world.add_system( *proj_system );
-    m_world.add_system( *respawn_system );
-    m_world.add_system( *tank_ai_system );
-
-    m_systems.emplace_back( std::move( move_system ) );
-    m_systems.emplace_back( std::move( animation_system ) );
     m_systems.emplace_back( std::move( vic_def_system ) );
+    m_systems.emplace_back( std::move( move_system ) );
+    m_systems.emplace_back( std::move( powerup_system ) );
+    m_systems.emplace_back( std::move( animation_system ) );
     m_systems.emplace_back( std::move( proj_system ) );
     m_systems.emplace_back( std::move( respawn_system ) );
     m_systems.emplace_back( std::move( tank_ai_system ) );
+
+    for( auto& system : m_systems )
+    {
+        m_world.add_system( *system );
+    }
 
     m_world.subscribe< event::level_completed >( *this );
     m_world.subscribe< event::projectile_fired >( *this );
@@ -142,6 +143,14 @@ void controller::start_level()
 
     m_world.reset();
     load_level();
+
+    if( m_mediator )
+    {
+        connect( this,
+                 SIGNAL( add_object_signal( game::object_type,ecs::entity* ) ),
+                 m_mediator,
+                 SLOT( add_object( game::object_type, ecs::entity* ) ) );
+    }
 
     emit level_started_signal( m_map_data.get_map_name() );
     emit start_tick_timer_signal();
@@ -209,14 +218,14 @@ void controller::set_map_mediator( map_data_mediator* mediator ) noexcept
              SLOT( game_completed() ), Qt::QueuedConnection );
 
     connect( this,
-             SIGNAL( add_object_signal(game::object_type,ecs::entity*) ),
-             mediator,
-             SLOT( add_object(game::object_type,ecs::entity*) ) );
-
-    connect( this,
              SIGNAL( entity_hit_signal( const event::entity_hit& ) ),
              mediator,
              SLOT( entity_hit( const event::entity_hit& ) ) );
+
+    connect( this,
+             SIGNAL( add_object_signal( game::object_type,ecs::entity* ) ),
+             m_mediator,
+             SLOT( add_object( game::object_type, ecs::entity* ) ) );
 
     connect( this,
              SIGNAL( entity_killed_signal( const event::entity_killed& ) ),
@@ -291,24 +300,48 @@ const QString& controller::get_level() const noexcept
 
 uint32_t controller::get_player_remaining_lifes()
 {
-    ecs::entity* player{ m_world.get_entities_with_component< component::player >().front() };
-    component::lifes& lifes = player->get_component< component::lifes >();
-    std::lock_guard< ecs::lockable > l{ lifes };
+    uint32_t lifes_num{ 0 };
 
-    return lifes.get_lifes();
+    auto players =  m_world.get_entities_with_component< component::player >();
+    if( !players.empty() )
+    {
+        ecs::entity* player{ players.front() };
+        component::lifes& lifes = player->get_component< component::lifes >();
+        ecs::rw_lock_guard< ecs::rw_lock > l{ lifes, ecs::lock_mode::read };
+        lifes_num = lifes.get_lifes();
+    }
+
+    return lifes_num;
 }
 
 uint32_t controller::get_base_remaining_health()
 {
-    ecs::entity* player_base{ m_world.get_entities_with_component< component::player_base >().front() };
-    component::health& health = player_base->get_component< component::health >();
-    std::lock_guard< ecs::lockable > l{ health };
+    uint32_t remaining_health{ 0 };
 
-    return health.get_health();
+    auto player_bases =  m_world.get_entities_with_component< component::player_base >();
+    if( !player_bases.empty() )
+    {
+        ecs::entity* player_base{ player_bases.front() };
+        component::health& health = player_base->get_component< component::health >();
+        ecs::rw_lock_guard< ecs::rw_lock > l{ health, ecs::lock_mode::read };
+
+        remaining_health = health.get_health();
+    }
+
+    return remaining_health;
+
 }
 
 void controller::on_event( const event::level_completed& event )
 {
+    if( m_mediator )
+    {
+        disconnect( this,
+                 SIGNAL( add_object_signal( game::object_type,ecs::entity* ) ),
+                 m_mediator,
+                 SLOT( add_object( game::object_type, ecs::entity* ) ) );
+    }
+
     pause();
 
     if( event.get_result() == level_game_result::victory )
@@ -319,6 +352,7 @@ void controller::on_event( const event::level_completed& event )
     if( !m_levels.empty() )
     {
         emit level_completed_signal( event.get_result() );
+        // Give the player some time to figure out what's happening, show victory/defeat
         std::this_thread::sleep_for( std::chrono::milliseconds{ map_switch_pause_duration } );
         emit prepare_to_load_next_level_signal();
     }

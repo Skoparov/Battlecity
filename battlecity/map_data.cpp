@@ -13,7 +13,6 @@ static constexpr auto tile_char_wall = 'w';
 static constexpr auto tile_char_iron_wall = 'i';
 static constexpr auto tile_char_player_base = 'b';
 static constexpr auto tile_char_player_start_position = 'p';
-static constexpr auto tile_char_respawn_point = 'r';
 
 template< typename T >
 T abs_diff( T l, T r ) noexcept
@@ -81,10 +80,6 @@ std::pair< tile_type, object_type > char_to_tile_info( char c )
         ground = tile_type::empty;
         obj_located_on_ground = object_type::player_tank;
         break;
-    case tile_char_respawn_point :
-        ground = tile_type::empty;
-        obj_located_on_ground = object_type::respawn_point;
-        break;
     default: throw std::invalid_argument{ std::string{ "Unknown map character: " } + c }; break;
     }
 
@@ -118,12 +113,13 @@ add_tank( int row, int col, const alignment& align, const game_settings& setting
     QRect tank_rect{ obj_rect( row, col, settings.get_tile_size(), settings.get_tank_size() ) };
 
     ecs::entity& e = create_entity_tank( tank_rect,
-                               align,
-                               settings.get_tank_speed(),
-                               settings.get_tank_health(),
-                               settings.get_player_lives(),
-                               settings.get_turret_cooldown_ms(),
-                               world );
+                                         align,
+                                         settings.get_tank_speed(),
+                                         settings.get_tank_health(),
+                                         settings.get_player_lives(),
+                                         settings.get_turret_cooldown_ms(),
+                                         settings.get_respawn_delay_ms(),
+                                         world );
 
     if( align == alignment::enemy )
     {
@@ -159,10 +155,13 @@ add_tile( const tile_type& type, int row, int col, const game_settings& settings
 }
 
 ecs::entity&
-add_respawn_point( int row, int col, const game_settings& settings, ecs::world& world )
+add_powerup( const powerup_type& type, const game_settings& settings, ecs::world& world )
 {
-    QRect base_rect{ obj_rect( row, col, settings.get_tile_size(), settings.get_tank_size() ) };
-    return create_respawn_point_entity( base_rect, world );
+    const QSize& tile_size{ settings.get_tile_size() };
+    return create_power_up( QRect{ QPoint{}, tile_size },
+                            type,
+                            std::chrono::milliseconds{ settings.get_powerup_respawn_timeout( type ) },
+                            world );
 }
 
 void read_map_file( map_data& data,
@@ -224,10 +223,6 @@ void read_map_file( map_data& data,
                 player_start_pos_found = true;
                 entity = &add_tank( rows_count, curr_column, alignment::player, settings, world );
             }
-            else if( tile_info.second == object_type::respawn_point )
-            {
-                add_respawn_point( rows_count, curr_column, settings, world );
-            }
 
             ecs::entity& tile_entity = add_tile( type, rows_count, curr_column, settings, world );
 
@@ -286,6 +281,12 @@ void read_map_file( map_data& data,
         {
             mediator->add_object( object_type::frag, &entity, false );
         }
+    }
+
+    ecs::entity& shield_entity = add_powerup( powerup_type::shield, settings, world );
+    if( mediator )
+    {
+        mediator->add_object( object_type::power_up, &shield_entity, false );
     }
 
     QSize map_size{ columns_count, rows_count };

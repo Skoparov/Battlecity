@@ -1,5 +1,5 @@
-#ifndef _POLYMORPH_IMPL_
-#define _POLYMORPH_IMPL_
+#ifndef ECS_POLYMORPH_IMPL
+#define ECS_POLYMORPH_IMPL
 
 #include "polymorph.h"
 
@@ -13,7 +13,7 @@ namespace _detail
 
 class base_type_storage
 {
-    template< typename T >
+    template< typename type >
     friend class type_storage;
 
 private:
@@ -27,12 +27,12 @@ public:
     virtual ~base_type_storage() = default;
 };
 
-template< typename T >
+template< typename type >
 class type_storage final : public base_type_storage
 {
     friend class ecs::polymorph;
-    using base_type = T;
-    using base_unref_type = typename std::remove_reference< T >::type;
+    using base_type = type;
+    using base_unref_type = typename std::remove_reference< type >::type;
 
 public:
     type_storage() = delete;
@@ -44,14 +44,14 @@ private:
     explicit type_storage( base_unref_type&& data ) :
         base_type_storage( base_type_storage::access{} ), m_data( std::move( data ) ){}
 
-    static std::unique_ptr< type_storage< T > > create( const base_unref_type& data )
+    static std::unique_ptr< type_storage< type > > create( const base_unref_type& data )
     {
-        return std::unique_ptr< type_storage< T > >( new type_storage< T >{ data } );
+        return std::unique_ptr< type_storage< type > >( new type_storage< type >{ data } );
     }
 
-    static std::unique_ptr< type_storage< T > > create( base_unref_type&& data )
+    static std::unique_ptr< type_storage< type > > create( base_unref_type&& data )
     {
-        return std::unique_ptr< type_storage< T > >( new type_storage< T >{ std::move( data ) } );
+        return std::unique_ptr< type_storage< type > >( new type_storage< type >{ std::move( data ) } );
     }
 
     const std::type_info& type_info() const noexcept{ return typeid( base_type ); }
@@ -67,10 +67,10 @@ private:
     base_type m_data;
 };
 
-template< typename T >
-type_storage< T >* try_cast( const std::unique_ptr< _detail::base_type_storage >& data )
+template< typename type >
+type_storage< type >* try_cast( const std::unique_ptr< _detail::base_type_storage >& data )
 {
-    auto data_casted = dynamic_cast< type_storage< T >* >( data.get() );
+    auto data_casted = dynamic_cast< type_storage< type >* >( data.get() );
     if( !data_casted )
     {
         throw std::bad_cast{};
@@ -79,59 +79,60 @@ type_storage< T >* try_cast( const std::unique_ptr< _detail::base_type_storage >
     return data_casted;
 }
 
-template< typename T >
-using type_storage_t = _detail::type_storage< typename std::decay< T >::type >;
+template< typename type >
+using type_storage_t = _detail::type_storage< typename std::decay< type >::type >;
 
 }// detail
 
-template< typename T, typename >
-polymorph::polymorph( T&& t ) : m_data( _detail::type_storage_t< T >::create( std::forward< T >( t ) ) ){}
+template< typename type, typename >
+polymorph::polymorph( type&& t ) :
+    m_data( _detail::type_storage_t< type >::create( std::forward< type >( t ) ) ){}
 
-template< typename T, typename >
-polymorph& polymorph::operator=( T&& t )
+template< typename type, typename >
+polymorph& polymorph::operator=( type&& t )
 {
-    m_data = _detail::type_storage_t< T >::create( std::forward< T >( t ) );
+    m_data = _detail::type_storage_t< type >::create( std::forward< type >( t ) );
     return *this;
 }
 
-template< class T >
-T& polymorph::get()
+template< typename type >
+type& polymorph::get()
 {
     if( empty() )
     {
         throw polymorph_empty{};
     }
 
-    return _detail::try_cast< T >( m_data )->get();
+    return _detail::try_cast< type >( m_data )->get();
 }
 
-template< class T >
-const T& polymorph::get() const
+template< typename type >
+const type& polymorph::get() const
 {
     if( empty() )
     {
         throw polymorph_empty{};
     }
 
-    return _detail::try_cast< T >( m_data )->get();
+    return _detail::try_cast< type >( m_data )->get();
 }
 
-template< class T >
-T& polymorph::get_unsafe() noexcept
+template< class type >
+type& polymorph::get_unsafe() noexcept
 {
-    return static_cast< _detail::type_storage< T >* >( m_data.get() )->get();
+    return static_cast< _detail::type_storage< type >* >( m_data.get() )->get();
 }
 
-template< class T >
-const T& polymorph::get_unsafe() const noexcept
+template< class type >
+const type& polymorph::get_unsafe() const noexcept
 {
-    return static_cast< _detail::type_storage< T >* >( m_data.get() )->get();
+    return static_cast< _detail::type_storage< type >* >( m_data.get() )->get();
 }
 
-template< typename T >
+template< typename type >
 bool polymorph::check_type() const noexcept
 {
-    return empty()? false : ( typeid( T ) == m_data->type_info() );
+    return empty()? false : ( typeid( type ) == m_data->type_info() );
 }
 
 }// ecs

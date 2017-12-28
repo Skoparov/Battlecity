@@ -8,8 +8,13 @@ HEADERS += \
         ecs/framework/id_engine.h \
         ecs/framework/world.h \
         ecs/framework/details/polymorph.h \
+        ecs/framework/details/rw_lock.h \
+        ecs/framework/details/atomic_locks.h \
+        ecs/framework/details/rw_lock_guard.h \
+        ecs/framework/details/rw_lock_modes.h \
+        ecs/framework/details/cpp14/make_unique.h \
+        ecs/framework/details/cpp14/integer_sequence.h \
 # game ecs stuff
-        ecs/details/spinlock.h \
         ecs/components.h \
         ecs/events.h \
         ecs/systems.h \
@@ -36,8 +41,9 @@ SOURCES += \
         ecs/framework/world.cpp \
         ecs/framework/details/polymorph.cpp \
         ecs/framework/details/polymorph.impl \
+        ecs/framework/details/rw_lock.cpp \
+        ecs/framework/details/atomic_locks.cpp \
 # game ecs stuff
-        ecs/details/spinlock.cpp \
         ecs/components.cpp \
         ecs/events.cpp \
         ecs/systems.cpp \
@@ -55,7 +61,7 @@ SOURCES += \
         map_data.cpp
 
 RESOURCES += resources.qrc
-DEFINES += "ECS_CONCURRENCY"
+DEFINES += "ECS_LOCK_MUTEX"
 
 # Additional import path used to resolve QML modules in Qt Creator's code model
 QML_IMPORT_PATH =

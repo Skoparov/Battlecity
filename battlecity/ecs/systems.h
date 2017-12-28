@@ -19,12 +19,14 @@ public:
     explicit movement_system( ecs::world& world );
 
     void init() override;
-    void tick() override;
+    bool tick() override;
     void clean() override;
 
 private:
     component::geometry* m_map_geom{ nullptr };
 };
+
+//
 
 class projectile_system final : public ecs::system
 {
@@ -35,7 +37,7 @@ public:
                        ecs::world& world ) noexcept;
 
     void init() override;
-    void tick() override;
+    bool tick() override;
     void clean() override;
 
 private:
@@ -43,7 +45,10 @@ private:
     void handle_obstacle( ecs::entity& obstacle,
                           const component::projectile& projectile_comp );
 
-    void kill_entity( ecs::entity& entity );
+    void kill_entity( ecs::entity& victim,
+                      const object_type& victim_type,
+                      ecs::entity* killer,
+                      const object_type& killer_type );
 
     void handle_existing_projectiles();
     void create_new_projectiles();
@@ -56,8 +61,11 @@ private:
     component::geometry* m_map_geom{ nullptr };
 };
 
+//
+
 class respawn_system final : public ecs::system,
-                             public ecs::event_callback< event::entity_killed >
+                             public ecs::event_callback< event::entity_killed >,
+                             public ecs::event_callback< event::powerup_taken >
 
 {
     using clock = std::chrono::high_resolution_clock;
@@ -68,36 +76,48 @@ class respawn_system final : public ecs::system,
     };
 
 public:
-    template< typename rep, typename period >
-    respawn_system( const std::chrono::duration< rep, period >& respawn_delay,
-                    ecs::world& world ):
-        ecs::system( world ),
-        m_respawn_delay( std::chrono::duration_cast< std::chrono::milliseconds >( respawn_delay ) )
-    {
-        m_world.subscribe< event::entity_killed >( *this );
-    }
-
+    explicit respawn_system( ecs::world& world ) noexcept;
     ~respawn_system() override;
 
-    void tick() override;
+    bool tick() override;
     void init() override;
     void clean() override;
 
     void on_event( const event::entity_killed& );
+    void on_event( const event::powerup_taken& );
 
 private:
-    void respawn_list( std::list< death_info >& list,
-                       std::vector< const component::geometry* > free_respawns );
+    void maybe_add_to_respawn_list( ecs::entity& e );
+    void respawn_if_ready( std::list< death_info >& list,
+                           std::vector< const component::geometry* > free_respawns );
     void respawn_entity( ecs::entity& entity, const component::geometry& respawn );
+
     std::vector< const component::geometry* > get_free_respawns();
 
 private:
-    std::list< death_info > m_players_death_info;
-    std::list< death_info > m_enemies_death_info;
-    std::list< const component::geometry* > m_respawn_points;
-
-    std::chrono::milliseconds m_respawn_delay{ 0 };
+    std::list< death_info > m_death_info;
+    std::vector< const component::geometry* > m_empty_tiles;
 };
+
+//
+
+class powerup_system final : public ecs::system
+{
+public:
+    explicit powerup_system( ecs::world& world ) noexcept;
+
+    bool tick() override;
+
+private:
+    void apply_powerup( const powerup_type& type, ecs::entity& target );
+    void deactivate_powerup( ecs::entity& powerup,
+                             component::power_up& comp,
+                             ecs::entity& taker );
+
+
+};
+
+//
 
 class win_defeat_system final : public ecs::system,
                                 public ecs::event_callback< event::entity_killed >
@@ -108,7 +128,7 @@ public:
     ~win_defeat_system();
 
     void init() override;
-    void tick() override;
+    bool tick() override;
     void clean() override;
 
     void on_event( const event::entity_killed& );
@@ -121,29 +141,41 @@ private:
     std::vector< ecs::entity* > m_frag_entities;
 };
 
+//
+
 class tank_ai_system final : public ecs::system
 {
 public:
-    explicit tank_ai_system( float chance_to_fire, ecs::world& world ) noexcept;
-    void tick() override;
+    explicit tank_ai_system( float chance_to_fire,
+                             float chance_to_change_direction,
+                             ecs::world& world ) noexcept;
+    void init();
+    bool tick() override;
     void clean() override;
 
 private:
     bool maybe_fire();
+    bool maybe_change_direction();
+    bool make_decision( float chance ) const;
 
 private:
+    ecs::entity* m_player{ nullptr };
     std::list< ecs::entity* > m_enemies;
     float m_chance_to_fire{ 0.0 };
+    float m_chance_to_change_direction{ 0.0 };
 };
+
+//
 
 class animation_system final : public ecs::system,
                                public ecs::event_callback< event::projectile_collision >,
-                               public ecs::event_callback< event::entity_respawned >
+                               public ecs::event_callback< event::entity_respawned >,
+                               public ecs::event_callback< event::powerup_taken >
 {
 private:
     using clock = std::chrono::high_resolution_clock;
 
-    struct animation_info
+    struct animation_start_info
     {
         ecs::entity* entity;
         clock::time_point start;
@@ -154,18 +186,19 @@ public:
     ~animation_system();
 
     void clean();
-    void tick() override;
+    bool tick() override;
 
     void add_animation_settings( const animation_type& type, const animation_data& data );
 
     void on_event( const event::projectile_collision& );
     void on_event( const event::entity_respawned& );
+    void on_event( const event::powerup_taken& );
 
 private:
-    void create_animation_entity( const QRect& rect, const animation_type& type );
+    ecs::entity& create_animation_entity( const QRect& rect, const animation_type& type );
 
 private:
-    std::list< animation_info > m_animations;
+    std::list< animation_start_info > m_animations;
     std::map< animation_type, animation_data > m_animation_data;
 };
 }// system

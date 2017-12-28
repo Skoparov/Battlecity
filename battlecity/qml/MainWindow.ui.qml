@@ -3,10 +3,9 @@ import QtQuick.Dialogs 1.1
 
 Rectangle
 {
-    property alias mouseArea: mouse_area
-
     width: game_map.width + side_bar.width
     height: game_map.height
+
     color: "#333333"
 
     MouseArea
@@ -57,6 +56,12 @@ Rectangle
                 {
                     model: map_interface.animations
                     MAnimation{}
+                }
+
+                Repeater
+                {
+                    model: map_interface.powerups
+                    Tile{}
                 }
             }
         }
