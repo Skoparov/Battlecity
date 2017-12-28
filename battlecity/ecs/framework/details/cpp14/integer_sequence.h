@@ -4,7 +4,7 @@
 #include <cstddef>
 #include <type_traits>
 
-namespace ecs
+namespace std
 {
 
 template< typename type, type... values >

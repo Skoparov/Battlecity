@@ -78,7 +78,9 @@ void controller::init()
     std::unique_ptr< ecs::system > respawn_system{ new system::respawn_system{  m_world } };
 
     std::unique_ptr< ecs::system > tank_ai_system{
-        new system::tank_ai_system{ m_settings.get_ai_chance_to_fire(), m_world } };
+        new system::tank_ai_system{ m_settings.get_ai_chance_to_fire(),
+                                    m_settings.get_ai_chance_to_change_direction(),
+                                    m_world } };
 
     std::unique_ptr< ecs::system > animation_system{ new system::animation_system{ m_world } };
     system::animation_system* anim_sys = dynamic_cast< system::animation_system* >( animation_system.get() );
@@ -87,13 +89,13 @@ void controller::init()
         anim_sys->add_animation_settings( data_pair.first, data_pair.second );
     }
 
+    m_systems.emplace_back( std::move( vic_def_system ) );
     m_systems.emplace_back( std::move( move_system ) );
     m_systems.emplace_back( std::move( powerup_system ) );
     m_systems.emplace_back( std::move( animation_system ) );
     m_systems.emplace_back( std::move( proj_system ) );
     m_systems.emplace_back( std::move( respawn_system ) );
     m_systems.emplace_back( std::move( tank_ai_system ) );
-    m_systems.emplace_back( std::move( vic_def_system ) );
 
     for( auto& system : m_systems )
     {
@@ -141,6 +143,14 @@ void controller::start_level()
 
     m_world.reset();
     load_level();
+
+    if( m_mediator )
+    {
+        connect( this,
+                 SIGNAL( add_object_signal( game::object_type,ecs::entity* ) ),
+                 m_mediator,
+                 SLOT( add_object( game::object_type, ecs::entity* ) ) );
+    }
 
     emit level_started_signal( m_map_data.get_map_name() );
     emit start_tick_timer_signal();
@@ -208,14 +218,14 @@ void controller::set_map_mediator( map_data_mediator* mediator ) noexcept
              SLOT( game_completed() ), Qt::QueuedConnection );
 
     connect( this,
-             SIGNAL( add_object_signal(game::object_type,ecs::entity*) ),
-             mediator,
-             SLOT( add_object(game::object_type,ecs::entity*) ) );
-
-    connect( this,
              SIGNAL( entity_hit_signal( const event::entity_hit& ) ),
              mediator,
              SLOT( entity_hit( const event::entity_hit& ) ) );
+
+    connect( this,
+             SIGNAL( add_object_signal( game::object_type,ecs::entity* ) ),
+             m_mediator,
+             SLOT( add_object( game::object_type, ecs::entity* ) ) );
 
     connect( this,
              SIGNAL( entity_killed_signal( const event::entity_killed& ) ),
@@ -324,6 +334,14 @@ uint32_t controller::get_base_remaining_health()
 
 void controller::on_event( const event::level_completed& event )
 {
+    if( m_mediator )
+    {
+        disconnect( this,
+                 SIGNAL( add_object_signal( game::object_type,ecs::entity* ) ),
+                 m_mediator,
+                 SLOT( add_object( game::object_type, ecs::entity* ) ) );
+    }
+
     pause();
 
     if( event.get_result() == level_game_result::victory )

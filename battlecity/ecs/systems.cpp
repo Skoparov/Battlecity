@@ -106,7 +106,7 @@ QRect calc_move( component::movement& move,
     return obj_rect;
 }
 
-void movement_system::tick()
+bool movement_system::tick()
 {
     using namespace component;
 
@@ -191,6 +191,8 @@ void movement_system::tick()
 
         return true;
     } );
+
+    return true;
 }
 
 void movement_system::clean()
@@ -245,10 +247,12 @@ QRect get_projectile_rect( const QRect& tank_rect, const QSize& proj_size )
     return QRect{ projectile_top_left, proj_size };
 }
 
-void projectile_system::tick()
+bool projectile_system::tick()
 {
     handle_existing_projectiles();
     create_new_projectiles();
+
+    return true;
 }
 
 void projectile_system::clean()
@@ -527,13 +531,15 @@ void respawn_system::init()
     }
 }
 
-void respawn_system::tick()
+bool respawn_system::tick()
 {
     if( !m_empty_tiles.empty() && !m_death_info.empty()  )
     {
         std::vector< const component::geometry* > free_respawns{ get_free_respawns() };
         respawn_if_ready( m_death_info, free_respawns );
     }
+
+    return true;
 }
 
 void respawn_system::clean()
@@ -686,7 +692,7 @@ std::vector< const component::geometry* > respawn_system::get_free_respawns()
 
 powerup_system::powerup_system( ecs::world& world ) noexcept : ecs::system( world ){}
 
-void powerup_system::tick()
+bool powerup_system::tick()
 {
     using namespace component;
 
@@ -715,6 +721,8 @@ void powerup_system::tick()
 
         return true;
     } );
+
+    return true;
 }
 
 void powerup_system::apply_powerup( const powerup_type& type, ecs::entity& target )
@@ -797,21 +805,27 @@ void win_defeat_system::init()
     m_player_base = player_bases.front();
 }
 
-void win_defeat_system::tick()
+bool win_defeat_system::tick()
 {
     using namespace component;
     const health& player_base_health = m_player_base->get_component< health >();
     const kills_counter& player_kills = m_player->get_component< kills_counter >();
     const lifes& player_lifes = m_player->get_component< lifes >();
 
+    bool result{ true };
+
     if( !player_base_health.alive() || !player_lifes.has_life() )
     {
         m_world.emit_event( event::level_completed{ level_game_result::defeat } );
+        result = false;
     }
     else if( player_kills.get_kills() == m_kills_to_win )
     {
         m_world.emit_event( event::level_completed{ level_game_result::victory } );
+        result = false;
     }
+
+    return result;
 }
 
 void win_defeat_system::clean()
@@ -848,12 +862,16 @@ void win_defeat_system::on_event(const event::entity_killed& event )
 
 //
 
-tank_ai_system::tank_ai_system( float chance_to_fire, ecs::world& world ) noexcept :
+tank_ai_system::tank_ai_system( float chance_to_fire,
+                                float chance_to_change_direction,
+                                ecs::world& world ) noexcept :
     ecs::system( world ),
-    m_chance_to_fire( chance_to_fire ){}
+    m_chance_to_fire( chance_to_fire ),
+    m_chance_to_change_direction( chance_to_change_direction ){}
 
 void tank_ai_system::init()
 {
+    m_chance_to_change_direction = 0.03;
     m_enemies = m_world.get_entities_with_component< component::enemy >();
 
     auto players = m_world.get_entities_with_component< component::player >();
@@ -875,12 +893,22 @@ movement_direction generate_move_direction()
 
 bool tank_ai_system::maybe_fire()
 {
-    static std::mt19937 rng{ std::random_device{}() };
-    static std::uniform_int_distribution< std::mt19937::result_type >dist{ 0, 100 };
-    return ( dist( rng ) < m_chance_to_fire * 100 );
+    return make_decision( m_chance_to_fire );
 }
 
-void tank_ai_system::tick()
+bool tank_ai_system::maybe_change_direction()
+{
+    return make_decision( m_chance_to_change_direction );
+}
+
+bool tank_ai_system::make_decision( float chance ) const
+{
+    static std::mt19937 rng{ std::random_device{}() };
+    static std::uniform_int_distribution< std::mt19937::result_type >dist{ 0, 100 };
+    return ( dist( rng ) < chance * 100 );
+}
+
+bool tank_ai_system::tick()
 {
     using namespace component;
 
@@ -897,7 +925,8 @@ void tank_ai_system::tick()
             turret_object& enemy_turret = enemy->get_component< turret_object >();
             ecs::rw_lock_guard< ecs::rw_lock > let{ enemy_turret, ecs::lock_mode::write };
 
-            if( move.get_move_direction() == movement_direction::none )
+            if( move.get_move_direction() == movement_direction::none ||
+                maybe_change_direction() )
             {
                 move.set_move_direction( generate_move_direction() );
             }
@@ -908,6 +937,8 @@ void tank_ai_system::tick()
             }
         }
     }
+
+    return true;
 }
 
 void tank_ai_system::clean()
@@ -935,7 +966,7 @@ void animation_system::clean()
     m_animations.clear();
 }
 
-void animation_system::tick()
+bool animation_system::tick()
 {
     using namespace std::chrono;
 
@@ -977,6 +1008,8 @@ void animation_system::tick()
     {
         m_world.emit_event( entities_removed_event );
     }
+
+    return true;
 }
 
 void animation_system::add_animation_settings( const animation_type& type,

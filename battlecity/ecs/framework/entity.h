@@ -17,7 +17,7 @@
   #error This library needs at least a C++11 compliant compiler
 #endif
 
-#if( defined __linux__ && __cplusplus == 199711L )
+#if( defined __linux__ && __cplusplus == 201103L )
 #include "details/cpp14/make_unique.h"
 #include "details/cpp14/integer_sequence.h"
 #endif
@@ -187,9 +187,10 @@ public:
     template< typename... components, typename func_type >
     bool apply_to( func_type&& func )
     {
-        return dispatch( get_components< components... >(),
-                  std::forward< func_type >( func ),
-                  std::index_sequence_for< components... >{} );
+        auto components_tuple = get_components< components... >();
+        return dispatch( components_tuple,
+                         std::forward< func_type >( func ),
+                         std::index_sequence_for< components... >{} );
     }
 
     const entity_state& get_state() const noexcept;

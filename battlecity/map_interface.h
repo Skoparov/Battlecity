@@ -132,6 +132,7 @@ private:
     QTimer* m_hide_announcement_timer{ nullptr };
 
     bool m_pause_play_button_visible{ false };
+    bool m_level_running{ false };
 };
 
 }// game

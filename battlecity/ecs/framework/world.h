@@ -39,7 +39,7 @@ public:
     virtual ~system() = default;
 
     virtual void init(){}
-    virtual void tick() = 0;
+    virtual bool tick() = 0;
     virtual void clean(){}
 
 protected:
@@ -59,7 +59,7 @@ public:
     world() = default;
 
     // calls tick() of each system, clears objects schduled to be removed
-    void tick();
+    bool tick();
 
     void reset(); // remove all entities, clean() systems
     void clean(); // remove all entities and systems

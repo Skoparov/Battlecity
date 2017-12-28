@@ -14,14 +14,21 @@ entity_id generate_entity_id( const std::unordered_map< entity_id, std::unique_p
     return id;
 }
 
-void world::tick()
+bool world::tick()
 {
     cleanup();
+    bool result{ true };
 
     for( system* system : m_systems )
     {
-        system->tick();
+        result = system->tick();
+        if( !result )
+        {
+            break;
+        }
     }
+
+    return result;
 }
 
 void world::reset()

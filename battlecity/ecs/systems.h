@@ -19,7 +19,7 @@ public:
     explicit movement_system( ecs::world& world );
 
     void init() override;
-    void tick() override;
+    bool tick() override;
     void clean() override;
 
 private:
@@ -37,7 +37,7 @@ public:
                        ecs::world& world ) noexcept;
 
     void init() override;
-    void tick() override;
+    bool tick() override;
     void clean() override;
 
 private:
@@ -79,7 +79,7 @@ public:
     explicit respawn_system( ecs::world& world ) noexcept;
     ~respawn_system() override;
 
-    void tick() override;
+    bool tick() override;
     void init() override;
     void clean() override;
 
@@ -106,7 +106,7 @@ class powerup_system final : public ecs::system
 public:
     explicit powerup_system( ecs::world& world ) noexcept;
 
-    void tick() override;
+    bool tick() override;
 
 private:
     void apply_powerup( const powerup_type& type, ecs::entity& target );
@@ -128,7 +128,7 @@ public:
     ~win_defeat_system();
 
     void init() override;
-    void tick() override;
+    bool tick() override;
     void clean() override;
 
     void on_event( const event::entity_killed& );
@@ -146,18 +146,23 @@ private:
 class tank_ai_system final : public ecs::system
 {
 public:
-    explicit tank_ai_system( float chance_to_fire, ecs::world& world ) noexcept;
+    explicit tank_ai_system( float chance_to_fire,
+                             float chance_to_change_direction,
+                             ecs::world& world ) noexcept;
     void init();
-    void tick() override;
+    bool tick() override;
     void clean() override;
 
 private:
     bool maybe_fire();
+    bool maybe_change_direction();
+    bool make_decision( float chance ) const;
 
 private:
     ecs::entity* m_player{ nullptr };
     std::list< ecs::entity* > m_enemies;
     float m_chance_to_fire{ 0.0 };
+    float m_chance_to_change_direction{ 0.0 };
 };
 
 //
@@ -181,7 +186,7 @@ public:
     ~animation_system();
 
     void clean();
-    void tick() override;
+    bool tick() override;
 
     void add_animation_settings( const animation_type& type, const animation_data& data );
 

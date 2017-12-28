@@ -69,6 +69,9 @@ public:
     void set_ai_chance_to_fire( float chance_to_fire ) noexcept;
     float get_ai_chance_to_fire() const noexcept;
 
+    void set_ai_chance_to_change_direction( float chance_to_change_direciton ) noexcept;
+    float get_ai_chance_to_change_direction() const noexcept;
+
     void set_powerup_respawn_timeout( const powerup_type& type, uint32_t timeout );
     uint32_t get_powerup_respawn_timeout( const powerup_type& type ) const;
 
@@ -94,7 +97,8 @@ private:
     uint32_t m_projectile_speed{ 0 };
     uint32_t m_projectile_damage{ 0 };
     uint32_t m_turret_cooldown_ms{ 0 };
-    float m_ai_chance_to_file{ 0.0 };
+    float m_ai_chance_to_fire{ 0.0 };
+    float m_ai_chance_to_change_direction{ 0.0 };
 
     std::map< animation_type, animation_data > m_animation_data;
     std::map< powerup_type, uint32_t > m_powerup_timeouts;

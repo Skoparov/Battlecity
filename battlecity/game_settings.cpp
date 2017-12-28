@@ -21,6 +21,7 @@ static constexpr auto tag_projectile_speed = "ProjectileSpeed";
 static constexpr auto tag_projectile_damage = "ProjectileDamage";
 static constexpr auto tag_turret_cooldown_ms = "TurretCooldownMs";
 static constexpr auto tag_ai_chance_to_fire = "AiChanceToFire";
+static constexpr auto tag_ai_chance_to_change_direction = "AiChanceToChangeDirection";
 static constexpr auto tag_explosion_animation_data = "ExplosionAnimation";
 static constexpr auto tag_respawn_animation_data = "RespawnAnimation";
 static constexpr auto tag_shield_animation_data = "ShieldAnimation";
@@ -205,12 +206,22 @@ uint32_t game_settings::get_turret_cooldown_ms() const noexcept
 
 void game_settings::set_ai_chance_to_fire( float chance_to_fire ) noexcept
 {
-    m_ai_chance_to_file = chance_to_fire;
+    m_ai_chance_to_fire = chance_to_fire;
 }
 
 float game_settings::get_ai_chance_to_fire() const noexcept
 {
-    return m_ai_chance_to_file;
+    return m_ai_chance_to_fire;
+}
+
+void game_settings::set_ai_chance_to_change_direction( float chance_to_change_direciton ) noexcept
+{
+    m_ai_chance_to_change_direction = chance_to_change_direciton;
+}
+
+float game_settings::get_ai_chance_to_change_direction() const noexcept
+{
+    return m_ai_chance_to_change_direction;
 }
 
 void game_settings::set_powerup_respawn_timeout( const powerup_type& type, uint32_t timeout )
@@ -365,6 +376,10 @@ game_settings read_game_settings( const QString& file )
             else if( name == tag_ai_chance_to_fire )
             {
                 settings.set_ai_chance_to_fire( xml_reader.readElementText().toFloat() );
+            }
+            else if( name == tag_ai_chance_to_change_direction )
+            {
+                settings.set_ai_chance_to_change_direction( xml_reader.readElementText().toFloat() );
             }
             else if( name == tag_explosion_animation_data )
             {

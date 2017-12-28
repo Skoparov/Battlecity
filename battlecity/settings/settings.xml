@@ -18,6 +18,7 @@
     <ProjectileDamage>1</ProjectileDamage>
     <TurretCooldownMs>500</TurretCooldownMs>
     <AiChanceToFire>0.03</AiChanceToFire>
+    <AiChanceToChangeDirection>0.01</AiChanceToChangeDirection>
     <ShieldRespawnTimeoutMs>1000</ShieldRespawnTimeoutMs>
 
     <ExplosionAnimation>
