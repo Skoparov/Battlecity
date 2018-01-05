@@ -20,7 +20,8 @@ enum class object_type{ tile,
                         respawn_point,
                         frag,
                         animation,
-                        power_up };
+                        power_up,
+                        none };
 
 struct animation_data
 {

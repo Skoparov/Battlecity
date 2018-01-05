@@ -1,6 +1,7 @@
 #ifndef MAP_GRAPH_H
 #define MAP_GRAPH_H
 
+#include <vector>
 #include <deque>
 
 #include <QRect>
@@ -40,12 +41,12 @@ private:
     ecs::entity* m_tile_entity{ nullptr };
 };
 
-using map_graph = std::vector< map_tile_node >;
+using map_graph = std::vector< std::unique_ptr< map_tile_node > >;
 using map_path = std::deque< map_tile_node* >;
 using map_path_key = QPair< QRect, QRect >;
 using map_paths = QHash< map_path_key, map_path >;
 
-void create_map_node( ecs::entity& e, int row, int col, int col_count, map_graph& graph );
+map_tile_node& create_map_node( ecs::entity& e, int row, int col, int col_count, map_graph& graph );
 void dijkstra( size_t from, map_graph& graph, size_t col_count, map_paths& paths );
 
 }// game

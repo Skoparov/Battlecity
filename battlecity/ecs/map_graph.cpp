@@ -2,6 +2,9 @@
 
 #include "components.h"
 
+static const int value_traversible{ 1 };
+static const int value_non_traversible{ 5 };
+
 inline uint qHash( const QRect& r)
 {
     return qHash( r.left() ) + qHash( r.top() ) + qHash( r.width() ) + qHash( r.bottom() );
@@ -70,7 +73,8 @@ const ecs::entity& map_tile_node::get_entity() const noexcept
 
 bool map_tile_node::is_traversible() const noexcept
 {
-    return m_tile_entity->has_component< component::non_traversible >();
+    return m_tile_entity->has_component< component::non_traversible_tile >() ||
+           m_tile_entity->has_component< component::non_traversible_object >();
 }
 
 const QRect& map_tile_node::get_rect() const noexcept
@@ -90,7 +94,7 @@ size_t get_col( size_t node, size_t col_count ) noexcept
 
 map_tile_node& get_node( int row, int col, size_t col_count, map_graph& graph ) noexcept
 {
-    return graph[ row * col_count +col ];
+    return *graph[ row * col_count +col ];
 }
 
 bool is_adjacent( size_t node1, size_t node2, size_t col_count ) noexcept
@@ -106,7 +110,8 @@ bool is_adjacent( size_t node1, size_t node2, size_t col_count ) noexcept
 
 int get_dist_adjacent( size_t to, const map_graph& graph ) noexcept
 {
-    return graph[ to ].get_entity().has_component< component::non_traversible >()? 5 : 1;
+    return graph[ to ]->get_entity().has_component< component::non_traversible_tile >()?
+                value_non_traversible : value_traversible;
 }
 
 int min_distance( const std::vector< int >& dist, const std::vector< bool >& spt_set, int max ) noexcept
@@ -132,8 +137,8 @@ void construct_path( size_t from,
                      map_graph& graph,
                      map_paths& paths )
 {
-    const map_tile_node& from_node = graph[ from ];
-    const map_tile_node& to_node = graph[ to ];
+    const map_tile_node& from_node = *graph[ from ];
+    const map_tile_node& to_node = *graph[ to ];
 
     if( paths.count( map_path_key{ to_node.get_rect(), from_node.get_rect() } ) )
     {
@@ -147,7 +152,7 @@ void construct_path( size_t from,
     int parent{ parents[ to ] };
     while( parent != -1 )
     {
-        path.push_front( &graph[ parent ] );
+        path.push_front( graph[ parent ].get() );
         parent = parents[ parent ];
     }
 }
@@ -199,24 +204,26 @@ void dijkstra( size_t from, map_graph& graph, size_t col_count, map_paths& paths
     }
 }
 
-void create_map_node( ecs::entity& e, int row, int col, int col_count, map_graph& graph )
+map_tile_node& create_map_node( ecs::entity& e, int row, int col, int col_count, map_graph& graph )
 {
-    graph.emplace_back( e );
-    map_tile_node& node = graph.back();
+    graph.emplace_back( std::make_unique< map_tile_node >( e ) );
+    auto& node = graph.back();
 
     if( row > 0 )
     {
         map_tile_node& top_node = get_node( row - 1, col, col_count, graph );
-        node.set_top( top_node );
-        top_node.set_bottom( node );
+        node->set_top( top_node );
+        top_node.set_bottom( *node );
     }
 
     if( col > 0 )
     {
         map_tile_node& left_node = get_node( row, col - 1, col_count, graph );
-        node.set_left( left_node );
-        left_node.set_right( node );
+        node->set_left( left_node );
+        left_node.set_right( *node );
     }
+
+    return *node;
 }
 
 }// game

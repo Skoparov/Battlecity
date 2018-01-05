@@ -198,6 +198,7 @@ void read_map_file( map_data& data,
     bool player_base_found{ false };
 
     map_graph& graph = data.get_map_graph();
+    graph.clear();
 
     while( !text_stream.atEnd() )
     {
@@ -207,6 +208,11 @@ void read_map_file( map_data& data,
         {
             std::pair< tile_type, object_type > tile_info{ char_to_tile_info( tile_char ) };
             const tile_type& type{ tile_info.first };
+
+            ecs::entity& tile_entity = add_tile( type, rows_count, curr_column, settings, world );
+
+            map_tile_node& node =
+                    create_map_node( tile_entity, rows_count, curr_column, columns_count, graph );
 
             ecs::entity* entity{ nullptr };
             if( tile_info.second == object_type::player_base )
@@ -224,7 +230,11 @@ void read_map_file( map_data& data,
                 entity = &add_tank( rows_count, curr_column, alignment::player, settings, world );
             }
 
-            ecs::entity& tile_entity = add_tile( type, rows_count, curr_column, settings, world );
+            tile_entity.add_component< component::positioning >( node );
+            if( entity )
+            {
+                entity->add_component< component::positioning >( node );
+            }
 
             if( mediator )
             {
@@ -235,8 +245,6 @@ void read_map_file( map_data& data,
 
                 mediator->add_object( object_type::tile, &tile_entity, false );
             }
-
-            create_map_node( tile_entity, rows_count, curr_column, columns_count, graph );
 
             ++curr_column;
         }
@@ -268,6 +276,7 @@ void read_map_file( map_data& data,
     for( uint32_t enemy{ 0 }; enemy < settings.get_enemies_number(); ++enemy )
     {
         ecs::entity& entity = add_tank( 0, 0, alignment::enemy, settings, world );
+        entity.add_component< component::positioning >();
         if( mediator )
         {
             mediator->add_object( object_type::enemy_tank, &entity, false );
@@ -284,8 +293,9 @@ void read_map_file( map_data& data,
     }
 
     ecs::entity& shield_entity = add_powerup( powerup_type::shield, settings, world );
+    shield_entity.add_component< component::positioning >();
     if( mediator )
-    {
+    {        
         mediator->add_object( object_type::power_up, &shield_entity, false );
     }
 
