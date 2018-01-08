@@ -31,11 +31,6 @@ struct animation_data
     uint32_t loops;
 };
 
-struct powerup_data
-{
-
-};
-
 }// game
 
 #endif

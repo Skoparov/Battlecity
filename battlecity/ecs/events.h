@@ -157,6 +157,7 @@ public:
 
 //
 
+// Empty performer means that projectile has left the map borders
 class projectile_collision final : public _detail::action_done
 {
 public:

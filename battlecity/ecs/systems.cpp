@@ -173,7 +173,9 @@ movement_system::validate_movement( ecs::entity& curr_entity,
     std::unordered_set< map_tile_node* >& nodes = pos.get_nodes();
     const movement_direction& direction = move.get_move_direction();
 
+    // Check nodes
     std::list< map_tile_node* > new_nodes;
+    std::list< map_tile_node* > nodes_to_erase;
 
     for( auto it = nodes.begin(); it != nodes.end(); )
     {
@@ -208,35 +210,43 @@ movement_system::validate_movement( ecs::entity& curr_entity,
         }
         else
         {
-            nodes.erase( it++ );
+            nodes_to_erase.emplace_back( *(it++) );
         }
     }
 
-    for( map_tile_node* new_node : new_nodes )
+    if( result.first )
     {
-        pos.add_node( *new_node );
-    }
-
-    // check objects
-
-    if( m_map_geom->get_rect().contains( new_position ) )
-    {
-        m_world.for_each_with< non_traversible_object, geometry >( [ & ]( ecs::entity& e,
-                                                                 non_traversible_object&,
-                                                                 geometry& obstacle_geom )
+        for( map_tile_node* node_to_erase : nodes_to_erase )
         {
-            if( e != curr_entity && new_position.intersects( obstacle_geom.get_rect() ) )
-            {
-                result.first = false;
-                result.second = &e;
-            }
+            pos.remove_node( *node_to_erase );
+        }
 
-            return result.first;
-        } );
-    }
-    else
-    {
-        result.first = false;
+        for( map_tile_node* new_node : new_nodes )
+        {
+            pos.add_node( *new_node );
+        }
+
+        // Check objects
+
+        if( m_map_geom->get_rect().contains( new_position ) )
+        {
+            m_world.for_each_with< non_traversible_object, geometry >( [ & ]( ecs::entity& e,
+                                                                     non_traversible_object&,
+                                                                     geometry& obstacle_geom )
+            {
+                if( e != curr_entity && new_position.intersects( obstacle_geom.get_rect() ) )
+                {
+                    result.first = false;
+                    result.second = &e;
+                }
+
+                return result.first;
+            } );
+        }
+        else
+        {
+            result.first = false;
+        }
     }
 
     return result;
@@ -276,6 +286,8 @@ bool movement_system::tick()
                 }
                 else if( !is_valid_and_obstacle.first )
                 {
+                    // Since we have already calculated if projectile's collided with something/left the map,
+                    // we emit the event to inform the corresponding system about it
                     if( curr_entity.has_component< projectile >() )
                     {
                         ecs::entity* obstacle{ is_valid_and_obstacle.second };
@@ -313,12 +325,14 @@ bool movement_system::tick()
                 }
             }
 
+            // Emit position update events
             if( x_changed || y_changed || rotation_changed )
             {
                 event::geometry_changed event{ x_changed, y_changed, rotation_changed };
                 event.set_cause_entity( curr_entity );
                 m_world.emit_event( event );
 
+                // Update powerups
                 if( curr_entity.has_component< powerup_animations >() )
                 {
                     powerup_animations& animations_comp = curr_entity.get_component< powerup_animations >();
@@ -352,22 +366,6 @@ void movement_system::clean()
     m_map_geom = nullptr;
 }
 
-movement_direction get_direction_by_rotation( int rotation )
-{
-    movement_direction direction{ movement_direction::none };
-
-    switch( rotation )
-    {
-    case rotation_left: direction = movement_direction::left; break;
-    case rotation_right: direction = movement_direction::right; break;
-    case rotation_top: direction = movement_direction::up; break;
-    case rotation_bottom: direction = movement_direction::down; break;
-    default: throw std::invalid_argument{ "Invalid rotation value" }; break;
-    }
-
-    return direction;
-}
-
 //
 
 projectile_system::projectile_system( const QSize& projectile_size,
@@ -397,14 +395,6 @@ void projectile_system::init()
 
     ecs::entity* map_entity{ map_entities.front() };
     m_map_geom = &map_entity->get_component_unsafe< component::geometry >();
-}
-
-QRect get_projectile_rect( const QRect& tank_rect, const QSize& proj_size )
-{
-    QPoint projectile_top_left{ tank_rect.center() };
-    projectile_top_left.setX( projectile_top_left.x() - proj_size.width() / 2 );
-    projectile_top_left.setY( projectile_top_left.y() - proj_size.height() / 2 );
-    return QRect{ projectile_top_left, proj_size };
 }
 
 bool projectile_system::tick()
@@ -493,7 +483,7 @@ void projectile_system::handle_obstacle( ecs::entity& obstacle,
 
     uint32_t damage_to_do{ projectile_component.get_damage() };
 
-    // Damage obstacle if it has health
+    // Damage obstacle if it has health or/and shield
     if( obstacle.has_component< shield >() )
     {
         shield& obstacle_shield = obstacle.get_component< shield >();
@@ -563,6 +553,30 @@ void projectile_system::handle_existing_projectiles()
     }
 
     m_collisions.clear();
+}
+
+movement_direction get_direction_by_rotation( int rotation )
+{
+    movement_direction direction{ movement_direction::none };
+
+    switch( rotation )
+    {
+    case rotation_left: direction = movement_direction::left; break;
+    case rotation_right: direction = movement_direction::right; break;
+    case rotation_top: direction = movement_direction::up; break;
+    case rotation_bottom: direction = movement_direction::down; break;
+    default: throw std::invalid_argument{ "Invalid rotation value" }; break;
+    }
+
+    return direction;
+}
+
+QRect get_projectile_rect( const QRect& tank_rect, const QSize& proj_size )
+{
+    QPoint projectile_top_left{ tank_rect.center() };
+    projectile_top_left.setX( projectile_top_left.x() - proj_size.width() / 2 );
+    projectile_top_left.setY( projectile_top_left.y() - proj_size.height() / 2 );
+    return QRect{ projectile_top_left, proj_size };
 }
 
 void projectile_system::create_new_projectiles()
@@ -676,6 +690,7 @@ void respawn_system::maybe_add_to_respawn_list( ecs::entity& e )
 {
     using namespace component;
 
+    // If entity still has a spare life, shedule it's respawn
     if( e.has_components< lifes, respawn_delay >() )
     {
         lifes& lifes_component = e.get_component< lifes >();
@@ -998,7 +1013,7 @@ tank_ai_system::tank_ai_system( float chance_to_fire,
 
 void tank_ai_system::init()
 {
-    m_chance_to_change_direction = 0.03;
+    m_chance_to_change_direction = 0.03f;
     m_enemies = m_world.get_entities_with_component< component::enemy >();
 
     auto players = m_world.get_entities_with_component< component::player >();

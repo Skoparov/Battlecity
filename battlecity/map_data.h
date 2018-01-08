@@ -18,12 +18,14 @@ class world;
 namespace game
 {
 
-class map_data_mediator : public QObject
+// Abstract map data mediator between the controller and actual graphics engine.
+// Can be adapted for non-qml graphics
+class map_interface : public QObject
 {
     Q_OBJECT
 
 public:
-    map_data_mediator( QObject* parent = nullptr ): QObject( parent ){}
+    map_interface( QObject* parent = nullptr ): QObject( parent ){}
 
 public slots:
     virtual void add_object( const object_type& type, ecs::entity* entity, bool send_update = true ) = 0;
@@ -73,7 +75,7 @@ void read_map_file( map_data& data,
                     const QString& file,
                     const game_settings& settings,
                     ecs::world& world ,
-                    map_data_mediator* mediator = nullptr );
+                    map_interface* mediator = nullptr );
 
 }// game
 

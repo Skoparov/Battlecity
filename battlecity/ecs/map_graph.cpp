@@ -173,7 +173,7 @@ void dijkstra( size_t from, map_graph& graph, size_t col_count, map_paths& paths
     {
         parents[ i ] = -1;
         spt_set[ i ] = false;
-        distances[ i ] = graph.size() + 1;
+        distances[ i ] = (int)graph.size() + 1;
     }
 
 
@@ -181,7 +181,7 @@ void dijkstra( size_t from, map_graph& graph, size_t col_count, map_paths& paths
 
     for( size_t count{ 0 }; count < graph.size() - 1; ++count )
     {
-        int min_index{ min_distance( distances, spt_set, graph.size() ) };
+        int min_index{ min_distance( distances, spt_set, (int)graph.size() ) };
         spt_set[ min_index ] = true;
 
          for( size_t node{ 0 }; node < graph.size(); ++node )
