@@ -10,12 +10,31 @@
 
 #include "ecs/framework/entity.h"
 #include "general_enums.h"
+#include "map_graph.h"
 
 namespace game
 {
 
 namespace component
 {
+
+class positioning final
+{
+public:
+    positioning() = default;
+    explicit positioning( map_tile_node& initial_node );
+
+
+    void add_node( map_tile_node& node );
+    void remove_node( map_tile_node& node );
+    std::unordered_set< map_tile_node* >& get_nodes() noexcept;
+    const std::unordered_set< map_tile_node* >& get_nodes() const noexcept;
+
+private:
+    std::unordered_set< map_tile_node* > m_nodes;
+};
+
+//
 
 class tile_object final
 {
@@ -204,7 +223,8 @@ private:
 
 //
 
-class non_traversible final{};
+class non_traversible_tile final{};
+class non_traversible_object final{};
 class flying final{}; // can pass through non_traversible
 
 //

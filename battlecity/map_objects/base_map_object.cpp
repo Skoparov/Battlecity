@@ -82,7 +82,8 @@ int base_map_object::get_rotation() const noexcept
 bool base_map_object::get_traversible() const noexcept
 {
     ecs::rw_lock_guard< ecs::rw_lock > l{ *m_entity, ecs::lock_mode::read };
-    return !m_entity->has_component< component::non_traversible >();
+    return !( m_entity->has_component< component::non_traversible_tile >() ||
+              m_entity->has_component< component::non_traversible_object >() );
 }
 
 void base_map_object::on_event( const event::geometry_changed& event )

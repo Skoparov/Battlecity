@@ -83,8 +83,8 @@ public:
     template< typename component_type >
     component_type& get_component()
     {
-            component_wrapper& ch = m_components.at( get_type_id< component_type >() );
-            return *ch.get< std::unique_ptr< component_type > >();
+        component_wrapper& ch = m_components.at( get_type_id< component_type >() );
+        return *ch.get< std::unique_ptr< component_type > >();
     }
 
     template< typename component_type >

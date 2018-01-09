@@ -5,6 +5,7 @@
 
 #include <QSize>
 
+#include "ecs/map_graph.h"
 #include "map_objects/base_map_object.h"
 
 namespace ecs
@@ -17,12 +18,14 @@ class world;
 namespace game
 {
 
-class map_data_mediator : public QObject
+// Abstract map data mediator between the controller and actual graphics engine.
+// Can be adapted for non-qml graphics
+class map_interface : public QObject
 {
     Q_OBJECT
 
 public:
-    map_data_mediator( QObject* parent = nullptr ): QObject( parent ){}
+    map_interface( QObject* parent = nullptr ): QObject( parent ){}
 
 public slots:
     virtual void add_object( const object_type& type, ecs::entity* entity, bool send_update = true ) = 0;
@@ -58,8 +61,12 @@ public:
     const QSize& get_map_size() const noexcept;
     const QString& get_map_name() const noexcept;
 
+    map_graph& get_map_graph() noexcept{ return m_graph; }
+    const map_graph& get_map_graph() const noexcept{ return m_graph; }
+
 private:
     QSize m_map_size{};
+    map_graph m_graph;
     QString m_map_name;
 };
 
@@ -68,7 +75,7 @@ void read_map_file( map_data& data,
                     const QString& file,
                     const game_settings& settings,
                     ecs::world& world ,
-                    map_data_mediator* mediator = nullptr );
+                    map_interface* mediator = nullptr );
 
 }// game
 

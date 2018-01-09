@@ -14,7 +14,6 @@ static constexpr auto map_dir_path = ":/maps/";
 
 static const uint32_t map_switch_pause_duration{ 2000 };
 
-
 namespace game
 {
 
@@ -196,7 +195,7 @@ const controller_state& controller::get_state() const noexcept
     return m_state;
 }
 
-void controller::set_map_mediator( map_data_mediator* mediator ) noexcept
+void controller::set_map_mediator( map_interface* mediator ) noexcept
 {
     std::lock_guard< std::mutex > l{ m_mutex };
 
@@ -352,7 +351,7 @@ void controller::on_event( const event::level_completed& event )
     if( !m_levels.empty() )
     {
         emit level_completed_signal( event.get_result() );
-        // Give the player some time to figure out what's happening, show victory/defeat
+        // Give the player some time to figure out what's happening, show victory/defeat message
         std::this_thread::sleep_for( std::chrono::milliseconds{ map_switch_pause_duration } );
         emit prepare_to_load_next_level_signal();
     }

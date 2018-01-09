@@ -14,6 +14,12 @@ static constexpr auto tile_char_iron_wall = 'i';
 static constexpr auto tile_char_player_base = 'b';
 static constexpr auto tile_char_player_start_position = 'p';
 
+template< typename T >
+T abs_diff( T l, T r ) noexcept
+{
+    return  l >= r? l - r : r - l;
+}
+
 namespace game
 {
 
@@ -80,12 +86,6 @@ std::pair< tile_type, object_type > char_to_tile_info( char c )
     return { ground, obj_located_on_ground };
 }
 
-template< typename T >
-T abs_diff( T l, T r ) noexcept
-{
-    return  l >= r? l - r : r - l;
-}
-
 QRect obj_rect( int row, int col, const QSize& tile_size, const QSize& size ) noexcept
 {
     int delta_x{ ( abs_diff( size.width(), tile_size.width() ) % tile_size.width() ) / 2 };
@@ -112,14 +112,18 @@ add_tank( int row, int col, const alignment& align, const game_settings& setting
 {
     QRect tank_rect{ obj_rect( row, col, settings.get_tile_size(), settings.get_tank_size() ) };
 
-    ecs::entity& e = create_entity_tank( tank_rect,
-                                         align,
-                                         settings.get_tank_speed(),
-                                         settings.get_tank_health(),
-                                         settings.get_player_lives(),
-                                         settings.get_turret_cooldown_ms(),
-                                         settings.get_respawn_delay_ms(),
-                                         world );
+    tank_entity_params params
+    {
+        tank_rect,
+        settings.get_tank_speed(),
+        settings.get_tank_health(),
+        settings.get_player_lives(),
+        std::chrono::milliseconds{ settings.get_turret_cooldown_ms() },
+        std::chrono::milliseconds{ settings.get_respawn_delay_ms() },
+        align
+    };
+
+    ecs::entity& e = create_entity_tank( params, world );
 
     if( align == alignment::enemy )
     {
@@ -164,11 +168,52 @@ add_powerup( const powerup_type& type, const game_settings& settings, ecs::world
                             world );
 }
 
+void create_enemies( const game_settings& settings,
+                     ecs::world& world,
+                     map_interface* mediator )
+{
+    for( uint32_t enemy{ 0 }; enemy < settings.get_enemies_number(); ++enemy )
+    {
+        ecs::entity& entity = add_tank( 0, 0, alignment::enemy, settings, world );
+        entity.add_component< component::positioning >();
+        if( mediator )
+        {
+            mediator->add_object( object_type::enemy_tank, &entity, false );
+        }
+    }
+}
+
+void create_frags( const game_settings& settings,
+                   ecs::world& world,
+                   map_interface* mediator )
+{
+    for( uint32_t frag{ 0 }; frag < settings.get_base_kills_to_win(); ++frag )
+    {
+        ecs::entity& entity = create_entity_frag( QRect{ 0, 0, 32, 32 }, world, frag );
+        if( mediator )
+        {
+            mediator->add_object( object_type::frag, &entity, false );
+        }
+    }
+}
+
+void create_powerups( const game_settings& settings,
+                      ecs::world& world,
+                      map_interface* mediator )
+{
+    ecs::entity& shield_entity = add_powerup( powerup_type::shield, settings, world );
+    shield_entity.add_component< component::positioning >();
+    if( mediator )
+    {
+        mediator->add_object( object_type::power_up, &shield_entity, false );
+    }
+}
+
 void read_map_file( map_data& data,
                     const QString& file,
                     const game_settings& settings,
                     ecs::world& world,
-                    map_data_mediator* mediator )
+                    map_interface* mediator )
 {
     QFile map_file{ file };
     if ( !map_file.open( QIODevice::ReadOnly | QIODevice::Text ) )
@@ -184,11 +229,6 @@ void read_map_file( map_data& data,
 
     data.set_map_name( text_stream.readLine() );
 
-    if( text_stream.atEnd() )
-    {
-        throw std::logic_error{ "Map file is empty" };
-    }
-
     int rows_count{ 0 };
     int columns_count{ 0 };
 
@@ -196,6 +236,9 @@ void read_map_file( map_data& data,
     int curr_column{ 0 };
     bool player_start_pos_found{ false };
     bool player_base_found{ false };
+
+    map_graph& graph = data.get_map_graph();
+    graph.clear();
 
     while( !text_stream.atEnd() )
     {
@@ -205,6 +248,11 @@ void read_map_file( map_data& data,
         {
             std::pair< tile_type, object_type > tile_info{ char_to_tile_info( tile_char ) };
             const tile_type& type{ tile_info.first };
+
+            ecs::entity& tile_entity = add_tile( type, rows_count, curr_column, settings, world );
+
+            map_tile_node& node =
+                    create_map_node( tile_entity, rows_count, curr_column, columns_count, graph );
 
             ecs::entity* entity{ nullptr };
             if( tile_info.second == object_type::player_base )
@@ -222,7 +270,11 @@ void read_map_file( map_data& data,
                 entity = &add_tank( rows_count, curr_column, alignment::player, settings, world );
             }
 
-            ecs::entity& tile_entity = add_tile( type, rows_count, curr_column, settings, world );
+            tile_entity.add_component< component::positioning >( node );
+            if( entity )
+            {
+                entity->add_component< component::positioning >( node );
+            }
 
             if( mediator )
             {
@@ -261,30 +313,6 @@ void read_map_file( map_data& data,
         throw std::logic_error{ "Player start position not found" };
     }
 
-    for( uint32_t enemy{ 0 }; enemy < settings.get_enemies_number(); ++enemy )
-    {
-        ecs::entity& entity = add_tank( 0, 0, alignment::enemy, settings, world );
-        if( mediator )
-        {
-            mediator->add_object( object_type::enemy_tank, &entity, false );
-        }
-    }
-
-    for( uint32_t frag{ 0 }; frag < settings.get_base_kills_to_win(); ++frag )
-    {
-        ecs::entity& entity = create_entity_frag( QRect{ 0, 0, 32, 32 }, world, frag );
-        if( mediator )
-        {
-            mediator->add_object( object_type::frag, &entity, false );
-        }
-    }
-
-    ecs::entity& shield_entity = add_powerup( powerup_type::shield, settings, world );
-    if( mediator )
-    {
-        mediator->add_object( object_type::power_up, &shield_entity, false );
-    }
-
     QSize map_size{ columns_count, rows_count };
     data.set_map_size( map_size );
 
@@ -292,6 +320,10 @@ void read_map_file( map_data& data,
     const QSize& tile_size{ settings.get_tile_size() };
     QRect map_rect{ 0, 0, tile_size.width() * map_size.width(), tile_size.height() * map_size.height() };
     create_map_entity( map_rect, world );
+
+    create_enemies( settings, world, mediator );
+    create_frags( settings, world, mediator );
+    create_powerups( settings, world, mediator );
 }
 
 }// game

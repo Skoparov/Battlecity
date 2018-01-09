@@ -9,7 +9,7 @@
 #include "map_interface.h"
 #include "ecs/framework/world.h"
 
-int main(int argc, char *argv[])
+int main( int argc, char *argv[] )
 {
     int exit_code{ 0 };
 

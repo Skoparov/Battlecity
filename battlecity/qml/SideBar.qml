@@ -103,7 +103,6 @@ Item
             id: pause_resume_button
             anchors.topMargin: 12;
             anchors.top : base_lifes_count.bottom
-            anchors.horizontalCenter: enemies_text
             text: map_interface.pause_play_button_text
             visible: map_interface.pause_play_button_visible
 

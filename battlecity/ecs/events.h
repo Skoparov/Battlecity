@@ -157,7 +157,12 @@ public:
 
 //
 
-class projectile_collision final : public _detail::event_cause{};
+// Empty performer means that projectile has left the map borders
+class projectile_collision final : public _detail::action_done
+{
+public:
+    using _detail::action_done::action_done;
+};
 
 class animation_started final : public _detail::event_cause
 {
