@@ -14,6 +14,9 @@ namespace game
 
 enum class controller_state{ unintialized, stopped, paused, running };
 
+// A general class that handles all game logic.
+// It's not related to graphics, though it may supply the
+
 class controller :  public QObject,
                     public ecs::event_callback< event::level_completed >,
                     public ecs::event_callback< event::projectile_fired >,
@@ -32,7 +35,7 @@ public:
 
     const controller_state& get_state() const noexcept;
 
-    void set_map_mediator( map_data_mediator* mediator ) noexcept;
+    void set_map_mediator( map_interface* mediator ) noexcept;
 
     template< typename event_type >
     void emit_event( const event_type& event )
@@ -87,7 +90,7 @@ private:
     ecs::world& m_world;
     map_data m_map_data;
     game_settings m_settings;
-    map_data_mediator* m_mediator{ nullptr };
+    map_interface* m_mediator{ nullptr };
 
     QStringList m_levels;
 

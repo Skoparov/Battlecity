@@ -2,6 +2,7 @@
 #define SYSTEMS_H
 
 #include <map>
+#include <vector>
 
 #include "events.h"
 #include "components.h"
@@ -23,12 +24,19 @@ public:
     void clean() override;
 
 private:
+    std::pair< bool, ecs::entity* > validate_movement( ecs::entity &curr_entity,
+                                                       component::movement& move,
+                                                       const QRect& new_position,
+                                                       component::positioning& pos );
+
+private:
     component::geometry* m_map_geom{ nullptr };
 };
 
 //
 
-class projectile_system final : public ecs::system
+class projectile_system final : public ecs::system,
+                                public ecs::event_callback< event::projectile_collision >
 {
 public:
     projectile_system( const QSize& projectile_size,
@@ -36,9 +44,13 @@ public:
                        uint32_t projectile_speed,
                        ecs::world& world ) noexcept;
 
+    ~projectile_system();
+
     void init() override;
     bool tick() override;
     void clean() override;
+
+    void on_event( const event::projectile_collision& );
 
 private:
     void create_explosion( const component::geometry& obstacle_geom );
@@ -59,6 +71,7 @@ private:
     uint32_t m_speed{ 0 };
 
     component::geometry* m_map_geom{ nullptr };
+    std::list< event::projectile_collision > m_collisions;
 };
 
 //
@@ -89,14 +102,14 @@ public:
 private:
     void maybe_add_to_respawn_list( ecs::entity& e );
     void respawn_if_ready( std::list< death_info >& list,
-                           std::vector< const component::geometry* > free_respawns );
-    void respawn_entity( ecs::entity& entity, const component::geometry& respawn );
+                           std::vector< const ecs::entity* > free_respawns );
+    void respawn_entity( ecs::entity& entity, const ecs::entity& respawn );
 
-    std::vector< const component::geometry* > get_free_respawns();
+    std::vector< const ecs::entity* > get_free_respawns();
 
 private:
     std::list< death_info > m_death_info;
-    std::vector< const component::geometry* > m_empty_tiles;
+    std::vector< const ecs::entity* > m_empty_tiles;
 };
 
 //

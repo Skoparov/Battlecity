@@ -6,6 +6,33 @@ namespace game
 namespace component
 {
 
+positioning::positioning( map_tile_node& initial_node )
+{
+    m_nodes.emplace( &initial_node );
+}
+
+void positioning::add_node( map_tile_node& node )
+{
+    m_nodes.emplace( &node );
+}
+
+void positioning::remove_node( map_tile_node& node )
+{
+    m_nodes.erase( &node );
+}
+
+std::unordered_set< map_tile_node* >& positioning::get_nodes() noexcept
+{
+    return m_nodes;
+}
+
+const std::unordered_set< map_tile_node* >& positioning::get_nodes() const noexcept
+{
+    return m_nodes;
+}
+
+//
+
 tile_object::tile_object( const tile_type& type ) noexcept :
     m_tile_type( type ){}
 

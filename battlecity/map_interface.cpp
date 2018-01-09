@@ -12,7 +12,7 @@ namespace game
 
 qml_map_interface::qml_map_interface( controller& controller,
                                       QObject* parent ) :
-    map_data_mediator( parent ),
+    map_interface( parent ),
     m_controller( controller )
 {
     m_hide_announcement_timer = new QTimer{ this };

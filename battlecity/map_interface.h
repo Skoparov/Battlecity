@@ -13,7 +13,7 @@ namespace game
 
 class controller;
 
-class qml_map_interface : public map_data_mediator
+class qml_map_interface : public map_interface
 {
     Q_OBJECT
 

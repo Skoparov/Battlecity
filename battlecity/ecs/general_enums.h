@@ -20,7 +20,8 @@ enum class object_type{ tile,
                         respawn_point,
                         frag,
                         animation,
-                        power_up };
+                        power_up,
+                        none };
 
 struct animation_data
 {
@@ -28,11 +29,6 @@ struct animation_data
     uint32_t frame_num;
     uint32_t frame_rate;
     uint32_t loops;
-};
-
-struct powerup_data
-{
-
 };
 
 }// game
