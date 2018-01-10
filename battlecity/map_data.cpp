@@ -112,14 +112,18 @@ add_tank( int row, int col, const alignment& align, const game_settings& setting
 {
     QRect tank_rect{ obj_rect( row, col, settings.get_tile_size(), settings.get_tank_size() ) };
 
-    ecs::entity& e = create_entity_tank( tank_rect,
-                                         align,
-                                         settings.get_tank_speed(),
-                                         settings.get_tank_health(),
-                                         settings.get_player_lives(),
-                                         settings.get_turret_cooldown_ms(),
-                                         settings.get_respawn_delay_ms(),
-                                         world );
+    tank_entity_params params
+    {
+        tank_rect,
+        settings.get_tank_speed(),
+        settings.get_tank_health(),
+        settings.get_player_lives(),
+        std::chrono::milliseconds{ settings.get_turret_cooldown_ms() },
+        std::chrono::milliseconds{ settings.get_respawn_delay_ms() },
+        align
+    };
+
+    ecs::entity& e = create_entity_tank( params, world );
 
     if( align == alignment::enemy )
     {

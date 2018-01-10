@@ -11,11 +11,8 @@
 namespace game
 {
 
-ecs::entity& create_animation( const QRect& rect,
-                               uint32_t frame_num,
-                               uint32_t frame_rate,
-                               uint32_t loops_num,
-                               const std::chrono::milliseconds& duration,
+ecs::entity& create_animation( const QRect &rect,
+                               const animation_data& params,
                                const animation_type& type,
                                ecs::world& world );
 
@@ -28,21 +25,30 @@ ecs::entity& create_entity_frag( const QRect& rect, ecs::world& world, uint32_t 
 ecs::entity& create_map_entity( const QRect& rect, ecs::world& world );
 ecs::entity& create_entity_player_base( const QRect& rect, uint32_t health, ecs::world& world );
 ecs::entity& create_entity_tile( const tile_type& type, const QRect& rect, uint32_t health, ecs::world& world );
-ecs::entity& create_entity_projectile( const QRect& rect,
-                                       uint32_t damage,
-                                       uint32_t speed,
-                                       const movement_direction& direction,
-                                       ecs::entity& owner,
-                                       ecs::world& world );
 
-ecs::entity& create_entity_tank( const QRect& rect,
-                                 const alignment& align,
-                                 uint32_t speed,
-                                 uint32_t health,
-                                 uint32_t lifes,
-                                 uint32_t turret_cooldown_msec,
-                                 uint32_t respawn_delay,
-                                 ecs::world& world );
+struct projectile_params
+{
+    QRect rect;
+    uint32_t damage;
+    uint32_t speed;
+    movement_direction direction;
+    ecs::entity& owner;
+};
+
+ecs::entity& create_entity_projectile( const projectile_params& params, ecs::world& world );
+
+struct tank_entity_params
+{
+    QRect rect;
+    uint32_t speed;
+    uint32_t health;
+    uint32_t lifes;
+    std::chrono::milliseconds turret_cooldown_msec;
+    std::chrono::milliseconds respawn_delay;
+    alignment align;
+};
+
+ecs::entity& create_entity_tank( const tank_entity_params& params, ecs::world& world );
 
 QString tile_image_path( const tile_type& type );
 

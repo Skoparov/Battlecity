@@ -115,14 +115,7 @@ ecs::entity& create_entity_tile( const tile_type& type, const QRect& rect, uint3
     return entity;
 }
 
-ecs::entity& create_entity_tank( const QRect& rect,
-                                 const alignment& align,
-                                 uint32_t speed,
-                                 uint32_t health,
-                                 uint32_t lifes,
-                                 uint32_t turret_cooldown_msec,
-                                 uint32_t respawn_delay,
-                                 ecs::world& world )
+ecs::entity& create_entity_tank( const tank_entity_params& params, ecs::world& world )
 {
     using namespace component;
 
@@ -131,22 +124,20 @@ ecs::entity& create_entity_tank( const QRect& rect,
     try
     {
         entity.add_component< tank_object >();
-        entity.add_component< geometry >( rect );
-        entity.add_component< component::health >( health );
-        entity.add_component< movement >( speed );
+        entity.add_component< geometry >( params.rect );
+        entity.add_component< component::health >( params.health );
+        entity.add_component< movement >( params.speed );
         entity.add_component< kills_counter >();
         entity.add_component< powerup_animations >();
-        entity.add_component< graphics >( tank_image_path( align ) );
-        entity.add_component< component::respawn_delay >(
-                    std::chrono::milliseconds{ respawn_delay } );
-        entity.add_component< turret_object >(
-                    std::chrono::milliseconds{ turret_cooldown_msec } );
+        entity.add_component< graphics >( tank_image_path( params.align ) );
+        entity.add_component< component::respawn_delay >( params.respawn_delay );
+        entity.add_component< turret_object >( params.turret_cooldown_msec );
 
-        if( align == alignment::player )
+        if( params.align == alignment::player )
         {
             entity.add_component< player >();
             entity.add_component< non_traversible_object >();
-            entity.add_component< component::lifes >( has_infinite_lifes::no, lifes );
+            entity.add_component< component::lifes >( has_infinite_lifes::no, params.lifes );
         }
         else
         {
@@ -163,28 +154,23 @@ ecs::entity& create_entity_tank( const QRect& rect,
     return entity;
 }
 
-ecs::entity& create_entity_projectile( const QRect& rect,
-                                       uint32_t damage,
-                                       uint32_t speed,
-                                       const movement_direction& direction,
-                                       ecs::entity& owner,
-                                       ecs::world& world )
+ecs::entity& create_entity_projectile( const projectile_params& params, ecs::world& world )
 {
     using namespace component;
     ecs::entity& entity = world.create_entity();
 
-    entity.add_component< projectile >( damage, owner );
-    entity.add_component< geometry >( rect );
+    entity.add_component< projectile >( params.damage, params.owner );
+    entity.add_component< geometry >( params.rect );
     entity.add_component< flying >();
-    entity.add_component< movement >( speed, direction );
+    entity.add_component< movement >( params.speed, params.direction );
     entity.add_component< graphics >( get_image_path( image_projectile ) );
     entity.add_component< positioning >();
 
     positioning& p = entity.get_component< positioning >();
-    auto& nodes = owner.get_component< positioning >().get_nodes();
+    auto& nodes = params.owner.get_component< positioning >().get_nodes();
     for( map_tile_node* node : nodes )
     {
-        if( node->get_rect().intersects( rect ) )
+        if( node->get_rect().intersects( params.rect ) )
         {
             p.add_node( *node );
         }
@@ -233,10 +219,7 @@ QString get_powerup_image_path( const powerup_type& type )
 }
 
 ecs::entity& create_animation( const QRect& rect,
-                               uint32_t frame_num,
-                               uint32_t frame_rate,
-                               uint32_t loops_num,
-                               const std::chrono::milliseconds& duration,
+                               const animation_data& data,
                                const animation_type& type,
                                ecs::world& world )
 {
@@ -244,10 +227,10 @@ ecs::entity& create_animation( const QRect& rect,
 
     entity.add_component< component::animation >();
     entity.add_component< component::animation_info >( type,
-                                                       frame_num,
-                                                       frame_rate,
-                                                       loops_num,
-                                                       duration );
+                                                       data.frame_num,
+                                                       data.frame_rate,
+                                                       data.loops,
+                                                       data.duration );
 
     entity.add_component< component::geometry >( rect );
     entity.add_component< component::graphics >( get_animation_path( type ) );

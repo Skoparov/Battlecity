@@ -596,12 +596,16 @@ void projectile_system::create_new_projectiles()
                 QRect projectile_rect{ get_projectile_rect( tank_geom.get_rect(), m_projectile_size ) };
 
                 movement_direction direction{ get_direction_by_rotation( tank_geom.get_rotation() ) };
-                ecs::entity& entity = create_entity_projectile( projectile_rect,
-                                                                m_damage,
-                                                                m_speed,
-                                                                direction,
-                                                                turret_entity,
-                                                                m_world );
+                projectile_params params
+                {
+                    projectile_rect,
+                    m_damage,
+                    m_speed,
+                    direction,
+                    turret_entity
+                };
+
+                ecs::entity& entity = create_entity_projectile( params, m_world );
 
                 turret_info.set_fire_status( false );
                 proj_entity = &entity;
@@ -1218,13 +1222,7 @@ void animation_system::on_event( const event::powerup_taken& event )
 ecs::entity& animation_system::create_animation_entity( const QRect& rect, const animation_type& type )
 {
     const animation_data& data = m_animation_data.at( type );
-    ecs::entity& e = create_animation( rect,
-                                       data.frame_num,
-                                       data.frame_rate,
-                                       data.loops,
-                                       data.duration,
-                                       type,
-                                       m_world );
+    ecs::entity& e = create_animation( rect, data, type, m_world );
 
     event::animation_started event_animation{ type };
     event_animation.set_cause_entity( e );
