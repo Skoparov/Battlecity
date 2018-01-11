@@ -52,7 +52,7 @@ movement_system::movement_system( ecs::world& world ): ecs::system( world ){}
 
 void movement_system::init()
 {
-    auto map_entities = m_world.get_entities_with_component< component::game_map >();
+    auto map_entities = m_world.get_entities_with_components< component::game_map >();
     if( map_entities.size() != 1 )
     {
         throw std::logic_error{ "Exactly one map entity should exist" };
@@ -387,7 +387,7 @@ projectile_system::~projectile_system()
 
 void projectile_system::init()
 {
-    auto map_entities = m_world.get_entities_with_component< component::game_map >();
+    auto map_entities = m_world.get_entities_with_components< component::game_map >();
     if( map_entities.size() != 1 )
     {
         throw std::logic_error{ "Exactly one map entity should exist" };
@@ -639,7 +639,7 @@ respawn_system::~respawn_system()
 void respawn_system::init()
 {
     std::list< ecs::entity* > tiles{
-        m_world.get_entities_with_component< component::tile_object >() };
+        m_world.get_entities_with_components< component::tile_object >() };
 
     for( const ecs::entity* e : tiles )
     {
@@ -649,14 +649,14 @@ void respawn_system::init()
         }
     }
 
-    auto enemies = m_world.get_entities_with_component< component::enemy >();
+    auto enemies = m_world.get_entities_with_components< component::enemy >();
     for( ecs::entity* enemy : enemies )
     {
         m_death_info.emplace_back( death_info{ enemy, {} } );
     }
 
     auto curr_time = clock::now();
-    auto power_ups = m_world.get_entities_with_component< component::power_up >();
+    auto power_ups = m_world.get_entities_with_components< component::power_up >();
     for( ecs::entity* enemy : power_ups )
     {
         m_death_info.emplace_back( death_info{ enemy, curr_time } );
@@ -925,7 +925,7 @@ win_defeat_system::~win_defeat_system()
 
 void win_defeat_system::init()
 {
-    auto entities = m_world.get_entities_with_component< component::frag >();
+    auto entities = m_world.get_entities_with_components< component::frag >();
     std::copy( entities.begin(), entities.end(), std::back_inserter( m_frag_entities ) );
     std::sort( m_frag_entities.begin(), m_frag_entities.end(),
                []( const ecs::entity* l, const ecs::entity* r )
@@ -934,7 +934,7 @@ void win_defeat_system::init()
                r->get_component< component::frag >().get_num();
     } );
 
-    auto players = m_world.get_entities_with_component< component::player >();
+    auto players = m_world.get_entities_with_components< component::player >();
     if( players.size() != 1 )
     {
         throw std::logic_error{ "Exactly one player entity should exist" };
@@ -942,7 +942,7 @@ void win_defeat_system::init()
 
     m_player = players.front();
 
-    auto player_bases = m_world.get_entities_with_component< component::player_base >();
+    auto player_bases = m_world.get_entities_with_components< component::player_base >();
     if( player_bases.size() != 1 )
     {
         throw std::logic_error{ "Exactly one player base entity should exist" };
@@ -1018,9 +1018,9 @@ tank_ai_system::tank_ai_system( float chance_to_fire,
 void tank_ai_system::init()
 {
     m_chance_to_change_direction = 0.03f;
-    m_enemies = m_world.get_entities_with_component< component::enemy >();
+    m_enemies = m_world.get_entities_with_components< component::enemy >();
 
-    auto players = m_world.get_entities_with_component< component::player >();
+    auto players = m_world.get_entities_with_components< component::player >();
     if( players.size() != 1 )
     {
         throw std::logic_error{ "Exactly one player entity should exist" };

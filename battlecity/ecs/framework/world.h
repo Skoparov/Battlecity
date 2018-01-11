@@ -73,17 +73,21 @@ public:
     void schedule_remove_entity( entity& e );
     void schedule_remove_entity( ecs::entity_id id );
 
-    template< typename component_type >
-    std::list< entity* > get_entities_with_component()
+    template< typename component_1, typename... other_components >
+    std::list< entity* > get_entities_with_components()
     {
         std::list< entity* > entities;
 
-        auto it = m_components.find( get_type_id< component_type >() );
+        auto it = m_components.find( get_type_id< component_1 >() );
         if( it !=  m_components.end() )
         {
             for( auto& value_pair : it->second )
             {
-                entities.emplace_back( value_pair.first );
+                entity* e{ value_pair.first };
+                if( has_components< component_1, other_components... >( *e ) )
+                {
+                    entities.emplace_back( value_pair.first );
+                }
             }
         }
 
@@ -150,6 +154,14 @@ private:
     void add_component( entity& e, const entity::component_id& id, entity::component_wrapper& w );
     void remove_component( entity& e, const entity::component_id& id );
     void cleanup();
+
+    template< typename... components,
+              typename std::enable_if< sizeof...( components ) != 0 >::type* = nullptr >
+    bool has_components( const entity& e ){ return e.has_components< components... >(); }
+
+    template< typename... components,
+              typename std::enable_if< sizeof...( components ) == 0 >::type* = nullptr >
+    bool has_components( const entity& ){ return true; }
 
 private:
     std::unordered_set< system* > m_systems;

@@ -301,7 +301,7 @@ uint32_t controller::get_player_remaining_lifes()
 {
     uint32_t lifes_num{ 0 };
 
-    auto players =  m_world.get_entities_with_component< component::player >();
+    auto players =  m_world.get_entities_with_components< component::player >();
     if( !players.empty() )
     {
         ecs::entity* player{ players.front() };
@@ -317,7 +317,7 @@ uint32_t controller::get_base_remaining_health()
 {
     uint32_t remaining_health{ 0 };
 
-    auto player_bases =  m_world.get_entities_with_component< component::player_base >();
+    auto player_bases =  m_world.get_entities_with_components< component::player_base >();
     if( !player_bases.empty() )
     {
         ecs::entity* player_base{ player_bases.front() };
