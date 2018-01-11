@@ -84,7 +84,7 @@ public:
             for( auto& value_pair : it->second )
             {
                 entity* e{ value_pair.first };
-                if( has_components< component_1, other_components... >( *e ) )
+                if( has_components< other_components... >( *e ) )
                 {
                     entities.emplace_back( value_pair.first );
                 }

@@ -229,6 +229,19 @@ void ecs_tests::world_tests()
         QVERIFY( entity_two_comps.get_component< component_2 >().data == value );
 
         called = 0;
+        int new_value{ value * 2 };
+        world.for_each_with< component_1, component_2 >( [ & ]( ecs::entity& e, component_1&, component_2& comp )
+        {
+            ++called;
+            comp.data = new_value;
+            return true;
+        } );
+
+        QVERIFY( called == 1 );
+        QVERIFY( entity_one_comp.get_component< component_2 >().data == value );
+        QVERIFY( entity_two_comps.get_component< component_2 >().data == new_value );
+
+        called = 0;
         world.for_each_with< component_2 >( [ & ]( ecs::entity& e, component_2& comp )
         {
             ++called;
